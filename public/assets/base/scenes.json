@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "scenes": [
+    {
+      "id": "living-room-01",
+      "name": "リビング #1 (seed)",
+      "manifestUrl": "/assets/base/living-room-01/scene.json"
+    }
+  ]
+}
