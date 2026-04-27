@@ -8,6 +8,15 @@ import { resolveAssetUrl } from "@/lib/parts/load";
 import type { Part } from "@/lib/parts/types";
 import type { FinishOption } from "@/lib/finishes/schema";
 
+// `loadPartsForScene` attaches a per-part `_rev` (FNV-1a of polygon + asset
+// filenames) so we can cache-bust mask/shading URLs after /dev/trace edits.
+// Browsers (and our `useImageCache` Map) key images by URL — without a query
+// string they keep serving the previously-loaded mask even after the file
+// on disk changes via the dev API regen.
+function bust(url: string, rev: string | undefined): string {
+  return rev ? `${url}?v=${rev}` : url;
+}
+
 export function PartFinishLayer() {
   const scene = useCanvasStore((s) => s.activeScene);
   const parts = useCanvasStore((s) => s.parts);
@@ -25,6 +34,7 @@ export function PartFinishLayer() {
         if (!optionId) return null;
         const option = finishOptions.find((o) => o.id === optionId);
         if (!option) return null;
+        const rev = (part as Part & { _rev?: string })._rev;
         return (
           <Layer key={part.id} listening={false}>
             <PartFinish
@@ -32,9 +42,11 @@ export function PartFinishLayer() {
               option={option}
               sceneWidth={scene.width}
               sceneHeight={scene.height}
-              maskUrl={resolveAssetUrl(scene, part.mask)}
+              maskUrl={bust(resolveAssetUrl(scene, part.mask), rev)}
               shadingUrl={
-                part.shading ? resolveAssetUrl(scene, part.shading) : undefined
+                part.shading
+                  ? bust(resolveAssetUrl(scene, part.shading), rev)
+                  : undefined
               }
             />
           </Layer>

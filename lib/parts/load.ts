@@ -12,6 +12,23 @@ export class PartsLoadError extends Error {
   }
 }
 
+// Tiny non-cryptographic hash used only as a cache-buster for mask /
+// shading URLs. We don't need collision resistance — we need a string
+// that changes whenever the part's polygon (or asset filenames) change,
+// so the browser refetches mask_<id>.png after /dev/trace edits + regen.
+function partRevision(part: Part): string {
+  const payload =
+    JSON.stringify(part.polygon) + "|" + part.mask + "|" + (part.shading ?? "");
+  let h = 0x811c9dc5; // FNV-1a 32-bit offset basis
+  for (let i = 0; i < payload.length; i++) {
+    h ^= payload.charCodeAt(i);
+    h = Math.imul(h, 0x01000193); // FNV prime
+  }
+  return (h >>> 0).toString(36);
+}
+
+export type PartWithRevision = Part & { _rev: string };
+
 async function fetchJson(url: string): Promise<unknown> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
@@ -38,7 +55,9 @@ export function resolveAssetUrl(scene: Scene, filename: string): string {
   return `${dir}/${filename}`;
 }
 
-export async function loadPartsForScene(scene: Scene): Promise<Part[]> {
+export async function loadPartsForScene(
+  scene: Scene,
+): Promise<PartWithRevision[]> {
   const raw = await fetchJson(scene.partsManifestUrl);
   const result = partsManifestSchema.safeParse(raw);
   if (!result.success) {
@@ -81,5 +100,14 @@ export async function loadPartsForScene(scene: Scene): Promise<Part[]> {
     }),
   );
 
-  return manifest.parts;
+  // Attach a per-part revision derived from polygon + asset filenames so
+  // the runtime can cache-bust mask / shading URLs after /dev/trace edits.
+  // The browser's image cache is keyed by URL; without a query string,
+  // it serves the previously-loaded mask even after the file on disk
+  // changes (especially survives an in-tab reload via React's module
+  // cache for `useImageCache`). Appending `?v=<_rev>` invalidates per part.
+  return manifest.parts.map((p) => ({
+    ...p,
+    _rev: partRevision(p),
+  }));
 }
