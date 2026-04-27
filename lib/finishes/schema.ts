@@ -3,6 +3,15 @@ import { z } from "zod";
 export const sheetNameSchema = z.string().min(1);
 export type SheetName = z.infer<typeof sheetNameSchema>;
 
+export const textureBoxSchema = z.object({
+  x: z.number().int().min(0),
+  y: z.number().int().min(0),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+});
+
+export type TextureBox = z.infer<typeof textureBoxSchema>;
+
 export const finishOptionSchema = z
   .object({
     id: z.string().min(1),
@@ -16,6 +25,13 @@ export const finishOptionSchema = z
       .regex(/^#[0-9a-fA-F]{6}$/, "colorHex must be #RRGGBB")
       .optional(),
     textureUrl: z.string().min(1).optional(),
+    /**
+     * When set, the runtime paints `textureUrl` at (x, y) with the given
+     * width/height in scene coords (instead of the default full-scene
+     * paint at (0, 0) × scene dimensions). Used by base-variant cuts that
+     * are bbox-cropped at seed time to keep file sizes tractable.
+     */
+    textureBox: textureBoxSchema.optional(),
   })
   .refine(
     (o) => Boolean(o.colorHex) !== Boolean(o.textureUrl),

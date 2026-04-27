@@ -20,6 +20,13 @@ export const partSchema = z
   .refine(
     (p) => (p.renderMode === "color" ? typeof p.shading === "string" : true),
     { message: "color-mode parts must declare shading", path: ["shading"] },
+  )
+  .refine(
+    (p) => (p.renderMode === "texture" ? p.shading === undefined : true),
+    {
+      message: "texture-mode parts must NOT declare shading",
+      path: ["shading"],
+    },
   );
 
 export type Part = z.infer<typeof partSchema>;

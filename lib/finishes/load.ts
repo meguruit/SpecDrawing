@@ -12,19 +12,46 @@ export class FinishesLoadError extends Error {
   }
 }
 
-async function fetchJson(url: string): Promise<unknown> {
+async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     throw new FinishesLoadError(`Failed to fetch ${url}: HTTP ${res.status}`);
   }
-  return res.json();
+  return res.text();
 }
+
+// FNV-1a 32-bit. Same shape as the parts.json `_rev` cache-bust so the
+// runtime can append `?v=<rev>` to texture URLs after seed:variants
+// rewrites them. Re-running the seed step changes the catalog body,
+// which changes this hash, which busts the cached image.
+function catalogRevision(jsonBody: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < jsonBody.length; i++) {
+    h ^= jsonBody.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
+export type LoadedFinishOptions = {
+  options: FinishOption[];
+  /** Cache-bust hash for textureUrl appendages on the runtime. */
+  _rev: string;
+};
 
 export async function loadFinishOptions(
   url = "/catalog/finish-options.json",
-): Promise<FinishOption[]> {
-  const raw = await fetchJson(url);
-  const result = finishOptionsFileSchema.safeParse(raw);
+): Promise<LoadedFinishOptions> {
+  const raw = await fetchText(url);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new FinishesLoadError(
+      `Finish options file is not valid JSON: ${(err as Error).message}`,
+    );
+  }
+  const result = finishOptionsFileSchema.safeParse(parsed);
   if (!result.success) {
     const first = result.error.issues[0];
     throw new FinishesLoadError(
@@ -43,7 +70,7 @@ export async function loadFinishOptions(
     }
     seen.add(opt.id);
   }
-  return result.data.options;
+  return { options: result.data.options, _rev: catalogRevision(raw) };
 }
 
 /**

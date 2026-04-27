@@ -12,7 +12,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "seed:parts": "node scripts/extract-finish-options.mjs",
-    "seed:masks": "node scripts/generate-placeholder-masks.mjs"
+    "seed:masks": "node scripts/generate-placeholder-masks.mjs",
+    "seed:variants": "node scripts/cut-base-variants.mjs"
   },
   "dependencies": {
     "konva": "^9.3.16",
