@@ -1,11 +1,22 @@
-// Experimental: extract numbered-part polygon outlines from
-// resources/reference/部材対応番号-{1,2,3}.pdf by color-filtering pixels that
-// differ significantly from base.jpg, grouping into connected components,
-// classifying by hue, and approximating each component as a polygon.
+// Extract numbered-part polygon outlines from
+// resources/reference/部材対応番号-{1,2,3}.pdf by:
 //
-// Output: writes updated polygons to /tmp/parts-extracted.json for review.
-// Does NOT touch public/assets/base/main/parts.json — designer reviews
-// extracted polygons against the source PDFs and approves before promotion.
+//   1. rendering each PDF at scene resolution (3000×2142)
+//   2. computing pixel-wise color difference vs base.jpg → annotation pixels
+//   3. classifying each annotation pixel by HSV hue (red/orange/yellow/green/blue)
+//   4. detecting marker glyphs (small filled-ish circles ~50–100px) and using
+//      their centroids as accurate seed positions per part (overrides any
+//      placeholder marker coords in parts.json)
+//   5. dilating the rest by 4px to bridge marker-induced gaps in the outline
+//   6. taking connected components per (PDF, hue) on the dilated mask, then
+//      for each part picking the smallest-bbox component that contains the
+//      detected marker, and using its convex hull as the polygon
+//
+// Output: writes /tmp/parts-extracted.json (full updated manifest, with
+// detected marker positions and polygons where extraction succeeded; any
+// part whose polygon couldn't be extracted retains the input placeholder).
+// Also writes /tmp/parts-extract-summary.json — a per-part report of what
+// was promoted vs. left as placeholder, for designer review.
 //
 // Usage: node scripts/extract-pdf-polygons.mjs
 
@@ -24,20 +35,11 @@ const BASE_JPG = resolve(SCENE_DIR, "base.jpg");
 const PDF_DIR = resolve(ROOT, "resources/reference");
 const RENDER_DIR = "/tmp/pdf-render";
 const OUT = "/tmp/parts-extracted.json";
+const SUMMARY = "/tmp/parts-extract-summary.json";
 const exec = promisify(execFile);
 
-// HSV hue ranges per category color used on the PDFs.
-// (Approximate; tweak as needed.)
-const HUE_RANGES = {
-  red: { min: 0, max: 15, satMin: 0.4 },
-  orange: { min: 15, max: 40, satMin: 0.4 },
-  yellow: { min: 40, max: 75, satMin: 0.25 },
-  green: { min: 90, max: 160, satMin: 0.3 },
-  blue: { min: 180, max: 255, satMin: 0.3 },
-};
-
-// Map (sourcePdf, partId) → expected hue category. Derived from a manual look
-// at the three reference PDFs.
+// (sourcePdf, partId) → expected hue category. Manual map from a look at the
+// three reference PDFs.
 const PART_HUE = {
   // PDF 1
   "1:07": "green",
@@ -61,6 +63,8 @@ const PART_HUE = {
   "3:11": "orange",
 };
 
+const HUE_CLS = { red: 1, orange: 2, yellow: 3, green: 4, blue: 5 };
+
 function rgb2hsv(r, g, b) {
   const rn = r / 255;
   const gn = g / 255;
@@ -78,31 +82,35 @@ function rgb2hsv(r, g, b) {
   }
   const s = max === 0 ? 0 : d / max;
   const v = max;
-  // Encode hue as 0..255 for compactness in callers.
-  return [Math.round((h / 360) * 255), s, v];
+  return [h, s, v];
 }
 
-async function renderPdfs(width, height) {
+function classifyHue(h, s, v) {
+  if (s < 0.22 || v < 0.22) return 0;
+  if (h < 15 || h >= 345) return 1; // red
+  if (h < 45) return 2; // orange
+  if (h < 75) return 3; // yellow
+  if (h < 170) return 4; // green
+  if (h < 260) return 5; // blue
+  return 0;
+}
+
+async function renderPdfs() {
   await mkdir(RENDER_DIR, { recursive: true });
-  // Use pdftoppm at the scene resolution (will be a few px off due to PDF
-  // aspect; we'll resize to exact afterwards).
-  const dpi = 256;
   for (let n = 1; n <= 3; n++) {
-    const out = `${RENDER_DIR}/p${n}`;
     await exec("pdftoppm", [
       "-r",
-      String(dpi),
+      "256",
       "-png",
       resolve(PDF_DIR, `部材対応番号-${n}.pdf`),
-      out,
+      `${RENDER_DIR}/p${n}`,
     ]);
   }
 }
 
 async function loadRendered(n, width, height) {
-  // pdftoppm names files <prefix>-1.png for single-page PDFs.
   const path = `${RENDER_DIR}/p${n}-1.png`;
-  const { data, info } = await sharp(path)
+  const { data } = await sharp(path)
     .resize(width, height, { fit: "fill" })
     .removeAlpha()
     .raw()
@@ -110,9 +118,6 @@ async function loadRendered(n, width, height) {
   return data;
 }
 
-// Difference per pixel between PDF render and base; classify hue.
-// Returns a Uint8Array (width*height) where each cell is a hue-class index
-// (0 = none, 1 = red, 2 = orange, 3 = yellow, 4 = green, 5 = blue).
 function buildAnnotationMap(pdfRgb, baseRgb, width, height) {
   const out = new Uint8Array(width * height);
   for (let i = 0; i < width * height; i++) {
@@ -120,34 +125,61 @@ function buildAnnotationMap(pdfRgb, baseRgb, width, height) {
     const dr = pdfRgb[j] - baseRgb[j];
     const dg = pdfRgb[j + 1] - baseRgb[j + 1];
     const db = pdfRgb[j + 2] - baseRgb[j + 2];
-    const dist2 = dr * dr + dg * dg + db * db;
-    if (dist2 < 70 * 70) continue; // not an annotation pixel
-    const [h255, s, v] = rgb2hsv(pdfRgb[j], pdfRgb[j + 1], pdfRgb[j + 2]);
-    if (s < 0.25 || v < 0.25) continue;
-    const hue = (h255 / 255) * 360;
-    let cls = 0;
-    if (hue < 15 || hue >= 345) cls = 1; // red
-    else if (hue < 45) cls = 2; // orange
-    else if (hue < 75) cls = 3; // yellow
-    else if (hue < 170) cls = 4; // green
-    else if (hue < 260) cls = 5; // blue
-    out[i] = cls;
+    if (dr * dr + dg * dg + db * db < 65 * 65) continue;
+    const [h, s, v] = rgb2hsv(pdfRgb[j], pdfRgb[j + 1], pdfRgb[j + 2]);
+    out[i] = classifyHue(h, s, v);
   }
   return out;
 }
 
-const HUE_CLS = { red: 1, orange: 2, yellow: 3, green: 4, blue: 5 };
+// Square dilation of a single hue class on the annotation map.
+// Returns a new Uint8Array (binary 0/1) with 1 where dilation is true.
+function dilateClass(annot, hueCls, width, height, radius) {
+  const src = new Uint8Array(width * height);
+  for (let i = 0; i < src.length; i++) src[i] = annot[i] === hueCls ? 1 : 0;
+  // Two-pass separable dilation (max filter).
+  const tmp = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let v = 0;
+      for (let dx = -radius; dx <= radius; dx++) {
+        const nx = x + dx;
+        if (nx < 0 || nx >= width) continue;
+        if (src[y * width + nx]) {
+          v = 1;
+          break;
+        }
+      }
+      tmp[y * width + x] = v;
+    }
+  }
+  const out = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let v = 0;
+      for (let dy = -radius; dy <= radius; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= height) continue;
+        if (tmp[ny * width + x]) {
+          v = 1;
+          break;
+        }
+      }
+      out[y * width + x] = v;
+    }
+  }
+  return out;
+}
 
-// Connected components by 8-neighbor on a single hue class. Returns array of
-// { pixels: number[] (indices), bbox, centroid }.
-function connectedComponents(annot, hueCls, width, height) {
+// Connected components on a binary mask. Returns array of components with
+// pixel indices, bbox, fill ratio, centroid.
+function ccsOnBinary(mask, width, height) {
   const visited = new Uint8Array(width * height);
   const comps = [];
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = y * width + x;
-      if (visited[i] || annot[i] !== hueCls) continue;
-      // BFS
+      if (visited[i] || !mask[i]) continue;
       const queue = [i];
       visited[i] = 1;
       const pixels = [];
@@ -175,7 +207,7 @@ function connectedComponents(annot, hueCls, width, height) {
             const ny = cy + dy;
             if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
             const nk = ny * width + nx;
-            if (visited[nk] || annot[nk] !== hueCls) continue;
+            if (visited[nk] || !mask[nk]) continue;
             visited[nk] = 1;
             queue.push(nk);
           }
@@ -183,24 +215,13 @@ function connectedComponents(annot, hueCls, width, height) {
       }
       const w = maxX - minX + 1;
       const h = maxY - minY + 1;
-      const fill = pixels.length / (w * h);
-      // Skip noise.
-      if (pixels.length < 80) continue;
-      // Skip the small numbered-marker glyphs: a marker is a roughly square
-      // (filled or thick-stroked) circle, ~40–90 px on each side, with high
-      // fill ratio. The polygon outline, by contrast, is a thin curve with
-      // a large bbox and low fill.
-      const aspect = Math.max(w, h) / Math.min(w, h);
-      const isLikelyMarker =
-        Math.max(w, h) < 110 && aspect < 1.6 && fill > 0.18;
-      if (isLikelyMarker) continue;
-      // Skip very thin line fragments (sliver artifacts from misalignment).
-      if (Math.min(w, h) < 8) continue;
       comps.push({
         pixels,
         bbox: { minX, minY, maxX, maxY },
         bboxArea: w * h,
-        fill,
+        bboxW: w,
+        bboxH: h,
+        fill: pixels.length / (w * h),
         centroid: { x: sumX / pixels.length, y: sumY / pixels.length },
       });
     }
@@ -208,20 +229,49 @@ function connectedComponents(annot, hueCls, width, height) {
   return comps;
 }
 
-// Convex hull of a set of (x,y) points (Andrew's monotone chain).
+// Detect marker-glyph candidates per hue class on the UN-dilated map.
+// A marker is a roughly-square colored region ~50–100px with moderate fill.
+function detectMarkers(annot, hueCls, width, height) {
+  // Use small 1-px dilation to make marker pixels coherent.
+  const mask = dilateClass(annot, hueCls, width, height, 1);
+  const comps = ccsOnBinary(mask, width, height);
+  return comps.filter((c) => {
+    const aspect = Math.max(c.bboxW, c.bboxH) / Math.min(c.bboxW, c.bboxH);
+    const maxDim = Math.max(c.bboxW, c.bboxH);
+    return (
+      maxDim >= 40 &&
+      maxDim <= 110 &&
+      aspect <= 1.4 &&
+      c.fill >= 0.10 &&
+      c.fill <= 0.55 &&
+      c.pixels.length >= 200
+    );
+  });
+}
+
+// Convex hull (Andrew's monotone chain).
 function convexHull(points) {
   const pts = [...points].sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
   if (pts.length <= 1) return pts;
-  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const cross = (o, a, b) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
   const lower = [];
   for (const p of pts) {
-    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    while (
+      lower.length >= 2 &&
+      cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
+    )
+      lower.pop();
     lower.push(p);
   }
   const upper = [];
   for (let i = pts.length - 1; i >= 0; i--) {
     const p = pts[i];
-    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    while (
+      upper.length >= 2 &&
+      cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
+    )
+      upper.pop();
     upper.push(p);
   }
   upper.pop();
@@ -235,53 +285,100 @@ async function main() {
   const { width, height } = scene;
 
   console.log(`Rendering PDFs at ${width}×${height}…`);
-  await renderPdfs(width, height);
+  await renderPdfs();
 
   const { data: baseRgb } = await sharp(BASE_JPG)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  // Build annotation maps + per-hue-class component sets per PDF.
-  const components = { 1: {}, 2: {}, 3: {} };
+  // Build annotation maps + per-(PDF,hue) markers + per-(PDF,hue) dilated CCs.
+  const markersByPdfHue = { 1: {}, 2: {}, 3: {} };
+  const compsByPdfHue = { 1: {}, 2: {}, 3: {} };
   for (let n = 1; n <= 3; n++) {
     const pdfRgb = await loadRendered(n, width, height);
     const annot = buildAnnotationMap(pdfRgb, baseRgb, width, height);
+
     for (const [hueName, hueCls] of Object.entries(HUE_CLS)) {
-      components[n][hueName] = connectedComponents(annot, hueCls, width, height);
+      markersByPdfHue[n][hueName] = detectMarkers(annot, hueCls, width, height);
+      // Build a dilated mask for the polygon outline detection that EXCLUDES
+      // the detected marker glyph pixels so the outline doesn't get fused
+      // with the marker.
+      const dilated = dilateClass(annot, hueCls, width, height, 4);
+      // Punch out marker pixels from the dilated mask.
+      for (const m of markersByPdfHue[n][hueName]) {
+        for (const k of m.pixels) dilated[k] = 0;
+      }
+      const comps = ccsOnBinary(dilated, width, height).filter((c) => {
+        if (c.pixels.length < 400) return false;
+        if (Math.min(c.bboxW, c.bboxH) < 25) return false;
+        return true;
+      });
+      compsByPdfHue[n][hueName] = comps;
     }
     console.log(
-      `PDF ${n}: ${Object.entries(components[n])
-        .map(([k, v]) => `${k}=${v.length}`)
+      `PDF ${n}: ${Object.entries(markersByPdfHue[n])
+        .map(([k, v]) => `${k}_marker=${v.length}`)
+        .join(" ")}`,
+    );
+    console.log(
+      `       ${Object.entries(compsByPdfHue[n])
+        .map(([k, v]) => `${k}_outline=${v.length}`)
         .join(" ")}`,
     );
   }
 
-  // For each part, find the matching component (nearest centroid to marker).
+  // For each part, find its detected marker + its polygon outline.
   const out = JSON.parse(JSON.stringify(manifest));
-  let updated = 0;
-  let missing = 0;
+  const summary = [];
   for (const part of out.parts) {
     const key = `${part.sourcePdf}:${part.id}`;
     const hueName = PART_HUE[key];
-    if (!hueName) continue;
-    const comps = components[part.sourcePdf][hueName] ?? [];
-    if (!comps.length) {
-      console.log(`! part ${part.id} (${hueName}): no components found in PDF ${part.sourcePdf}`);
-      missing++;
+    const report = {
+      partId: part.id,
+      label: part.label,
+      sourcePdf: part.sourcePdf,
+      hueName,
+      markerOriginal: { ...part.marker },
+      markerExtracted: null,
+      polygonExtracted: false,
+      polygonVertices: 0,
+      bbox: null,
+      reason: null,
+    };
+    if (!hueName) {
+      report.reason = "no hue mapping for part";
+      summary.push(report);
       continue;
     }
-    // Prefer components whose bbox CONTAINS the marker (with small padding).
-    // Among those, pick the SMALLEST bbox — that's the most specific outline
-    // for this part. This handles the common case of one PDF having many
-    // same-colored parts (e.g. PDF-3 orange has ③ ⑤ ⑥ ⑪).
-    // Also reject components whose bbox is degenerate (a thin line) — real
-    // outlines have a non-trivial aspect ratio.
+
+    // 1) Find the marker glyph closest to the placeholder marker position.
+    const markers = markersByPdfHue[part.sourcePdf][hueName] ?? [];
+    let bestMarker = null;
+    let bestMarkerD = Infinity;
+    for (const m of markers) {
+      const dx = m.centroid.x - part.marker.x;
+      const dy = m.centroid.y - part.marker.y;
+      const d = dx * dx + dy * dy;
+      if (d < bestMarkerD) {
+        bestMarkerD = d;
+        bestMarker = m;
+      }
+    }
+    if (bestMarker && Math.sqrt(bestMarkerD) < 600) {
+      part.marker = {
+        x: Math.round(bestMarker.centroid.x),
+        y: Math.round(bestMarker.centroid.y),
+      };
+      report.markerExtracted = { ...part.marker };
+    } else {
+      report.reason = "no nearby marker glyph detected";
+    }
+
+    // 2) Find the polygon outline component closest to the (now-updated) marker.
+    const comps = compsByPdfHue[part.sourcePdf][hueName] ?? [];
     const containing = comps.filter((c) => {
-      const pad = 40;
-      const w = c.bbox.maxX - c.bbox.minX + 1;
-      const h = c.bbox.maxY - c.bbox.minY + 1;
-      if (Math.min(w, h) < 30) return false; // skip line-like fragments
+      const pad = 60;
       return (
         part.marker.x >= c.bbox.minX - pad &&
         part.marker.x <= c.bbox.maxX + pad &&
@@ -291,49 +388,77 @@ async function main() {
     });
     let best;
     if (containing.length) {
+      // Smallest bbox area that contains the marker (most specific outline).
       containing.sort((a, b) => a.bboxArea - b.bboxArea);
       best = containing[0];
     } else {
-      // Fallback: nearest component centroid within 400px, ignoring lines.
-      const candidates = comps
-        .filter((c) => {
-          const w = c.bbox.maxX - c.bbox.minX + 1;
-          const h = c.bbox.maxY - c.bbox.minY + 1;
-          return Math.min(w, h) >= 30;
-        })
+      // Fallback: nearest centroid within 350px.
+      const sorted = comps
         .map((c) => {
           const dx = c.centroid.x - part.marker.x;
           const dy = c.centroid.y - part.marker.y;
           return { c, d: Math.sqrt(dx * dx + dy * dy) };
         })
-        .filter((x) => x.d < 400)
+        .filter((x) => x.d < 350)
         .sort((a, b) => a.d - b.d);
-      best = candidates[0]?.c;
+      best = sorted[0]?.c;
     }
+
     if (!best) {
-      console.log(`! part ${part.id} (${hueName}): no candidate components`);
-      missing++;
+      report.reason = report.reason ?? "no candidate outline";
+      summary.push(report);
       continue;
     }
-    // Build polygon: convex hull of the component pixels, then decimate.
+
+    // 3) Sanity: bbox must be at least 100×100, otherwise we're picking up
+    // sliver / leftover marker fragments.
+    if (Math.min(best.bboxW, best.bboxH) < 60) {
+      report.reason = `outline candidate too small (${best.bboxW}×${best.bboxH})`;
+      summary.push(report);
+      continue;
+    }
+
     const points = best.pixels.map((k) => {
       const py = Math.floor(k / width);
       const px = k - py * width;
       return [px, py];
     });
     const hull = convexHull(points);
-    // Decimate to <= 24 vertices for compactness.
+    // Decimate to <= 24 vertices.
     const stride = Math.max(1, Math.ceil(hull.length / 24));
     const decimated = hull.filter((_, idx) => idx % stride === 0);
     part.polygon = decimated.map(([x, y]) => [Math.round(x), Math.round(y)]);
-    updated++;
-    console.log(
-      `  ✓ part ${part.id} (${hueName}): hull=${hull.length}pt → ${decimated.length}pt, bbox ${best.bbox.minX},${best.bbox.minY}–${best.bbox.maxX},${best.bbox.maxY}`,
-    );
+    report.polygonExtracted = true;
+    report.polygonVertices = decimated.length;
+    report.bbox = {
+      x0: best.bbox.minX,
+      y0: best.bbox.minY,
+      x1: best.bbox.maxX,
+      y1: best.bbox.maxY,
+      w: best.bboxW,
+      h: best.bboxH,
+    };
+    summary.push(report);
   }
 
   await writeFile(OUT, JSON.stringify(out, null, 2));
-  console.log(`\n✓ wrote ${OUT} (updated ${updated}, missing ${missing})`);
+  await writeFile(SUMMARY, JSON.stringify(summary, null, 2));
+
+  // Console report.
+  const promoted = summary.filter((s) => s.polygonExtracted).length;
+  const markerUpdates = summary.filter((s) => s.markerExtracted).length;
+  console.log(`\nResult: ${promoted}/${summary.length} polygons extracted, ${markerUpdates} markers detected`);
+  for (const s of summary) {
+    if (s.polygonExtracted) {
+      console.log(
+        `  ✓ ${s.partId} (${s.hueName}): ${s.polygonVertices}pt, bbox ${s.bbox.w}×${s.bbox.h}, marker → (${s.markerExtracted?.x ?? "?"}, ${s.markerExtracted?.y ?? "?"})`,
+      );
+    } else {
+      console.log(`  ! ${s.partId} (${s.hueName ?? "?"}): ${s.reason}`);
+    }
+  }
+  console.log(`\n✓ wrote ${OUT}`);
+  console.log(`✓ wrote ${SUMMARY}`);
 }
 
 main().catch((err) => {
