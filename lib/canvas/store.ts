@@ -18,6 +18,8 @@ type CanvasState = {
   activeScene: Scene | null;
   parts: Part[];
   finishOptions: FinishOption[];
+  /** Cache-bust hash for option textureUrls; bumped when finish-options.json changes. */
+  finishOptionsRev: string;
   selectedPartId: PartId | null;
   partFinishSelections: PartFinishSelections;
   activeOptionSheet: SheetName;
@@ -30,6 +32,7 @@ type CanvasState = {
     parts: Part[],
     finishOptions: FinishOption[],
     defaultSheet: SheetName,
+    finishOptionsRev: string,
   ) => void;
   selectPart: (partId: PartId | null) => void;
   clearSelection: () => void;
@@ -47,6 +50,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   activeScene: null,
   parts: [],
   finishOptions: [],
+  finishOptionsRev: "",
   selectedPartId: null,
   partFinishSelections: {},
   activeOptionSheet: "",
@@ -54,11 +58,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   exportRequestedAt: 0,
   notification: null,
 
-  loadScene: (scene, parts, finishOptions, defaultSheet) =>
+  loadScene: (scene, parts, finishOptions, defaultSheet, finishOptionsRev) =>
     set({
       activeScene: scene,
       parts,
       finishOptions,
+      finishOptionsRev,
       selectedPartId: null,
       partFinishSelections: {},
       activeOptionSheet: defaultSheet,

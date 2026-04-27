@@ -45,11 +45,11 @@ export default function Page() {
         const def = pickDefaultScene(index);
         const scene = await loadScene(def.manifestUrl);
         const parts = await loadPartsForScene(scene);
-        const options = await loadFinishOptions();
+        const { options, _rev: optionsRev } = await loadFinishOptions();
         crossValidateAgainstParts(options, parts);
         if (!alive) return;
         const sheets = availableSheets(options);
-        loadSceneAction(scene, parts, options, sheets[0] ?? "");
+        loadSceneAction(scene, parts, options, sheets[0] ?? "", optionsRev);
       } catch (err: unknown) {
         if (!alive) return;
         const msg =

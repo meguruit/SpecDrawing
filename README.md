@@ -22,10 +22,11 @@ for the prior model.
 ## Run it
 
 ```bash
-git lfs install                  # one-time per clone (the workbook is in LFS)
+git lfs install                  # one-time per clone (workbook + base perspectives in LFS)
 npm install
-npm run seed:masks               # generate placeholder mask + shading PNGs
 npm run seed:parts               # extract finish options from the workbook
+npm run seed:masks               # generate mask + shading PNGs from parts.json polygons
+npm run seed:variants            # crop per-(part, variant) textures from base variants
 npm run dev                      # http://localhost:3000
 ```
 

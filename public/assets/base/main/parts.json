@@ -523,9 +523,8 @@
           1561
         ]
       ],
-      "renderMode": "color",
-      "mask": "mask_12.png",
-      "shading": "shading_12.png"
+      "renderMode": "texture",
+      "mask": "mask_12.png"
     },
     {
       "id": "13",
