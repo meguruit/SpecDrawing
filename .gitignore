@@ -42,3 +42,11 @@ next-env.d.ts
 # transient test artifacts
 .playwright-mcp/
 smoke-*.png
+
+# /dev/trace rolling backup of parts.json (kept locally, never committed)
+public/assets/base/main/parts.json.bak
+public/assets/base/main/parts.json.tmp
+
+# /dev/trace per-part regenerated-mask hash sidecar (local state only)
+public/assets/base/main/parts.json.regen.json
+public/assets/base/main/parts.json.regen.json.tmp
