@@ -722,7 +722,7 @@ export default function TraceTool() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex flex-col items-end leading-tight">
+          <div className="flex w-[200px] flex-col items-end whitespace-nowrap leading-tight">
             <SaveBadge status={saveStatus} />
             <RegenBadge status={regenStatus} />
           </div>
@@ -919,6 +919,12 @@ export default function TraceTool() {
                   stroke={CATEGORY_COLOR[editingPart.category] ?? "#0F172A"}
                   strokeWidth={6}
                   fill="rgba(59,130,246,0.10)"
+                  // Visual outline only. Without listening=false the
+                  // semi-transparent fill swallows clicks inside the
+                  // polygon, breaking click-to-add-vertex and even
+                  // right-click-on-vertex (when the vertex circle is
+                  // small relative to the polygon area).
+                  listening={false}
                 />
                 {editingPart.polygon.map((v, i) => (
                   <Circle
@@ -993,6 +999,9 @@ export default function TraceTool() {
 }
 
 function RegenBadge({ status }: { status: RegenStatus }) {
+  // All variants are constrained to a single line via the parent's
+  // `whitespace-nowrap` so the header height never shifts and the canvas
+  // beneath stays put.
   switch (status.kind) {
     case "idle":
       return null;
@@ -1006,9 +1015,11 @@ function RegenBadge({ status }: { status: RegenStatus }) {
       );
     case "done":
       return (
-        <span className="text-[10px] text-emerald-700">
-          マスク更新済み {status.count}件 {formatTime(status.at)} —
-          メイン画面はリロードで反映
+        <span
+          className="text-[10px] text-emerald-700"
+          title="メイン画面 (/) はリロードで反映されます"
+        >
+          マスク更新 {status.count}件 {formatTime(status.at)}
         </span>
       );
     case "failed":
