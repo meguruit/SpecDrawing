@@ -1,0 +1,3 @@
+# redesign-numbered-part-finish-picker
+
+ベースパース画像と部材対応番号PDFの番号付き箇所に対し、部材リストの仕上げ仕様を選択して画像に反映するUIへ仕様を再設計する

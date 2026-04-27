@@ -1,111 +1,160 @@
 import { create } from "zustand";
 import type { Scene } from "@/lib/scenes/types";
+import type { Part, PartId } from "@/lib/parts/types";
+import type {
+  FinishOption,
+  FinishOptionId,
+  SheetName,
+} from "@/lib/finishes/schema";
 
-export type PlacedMaterial = {
-  instanceId: string;
-  entryId: string;
-  x: number;
-  y: number;
-  // creation order doubles as z-order (later = on top)
-  createdAt: number;
+export type PartFinishSelections = Record<PartId, FinishOptionId>;
+
+type Notification = {
+  id: number;
+  message: string;
 };
-
-export type ColorOverrides = Record<string, string | undefined>; // partId -> hex
 
 type CanvasState = {
   activeScene: Scene | null;
-  placedMaterials: PlacedMaterial[];
-  colorOverrides: ColorOverrides;
-  selectionId: string | null;
+  parts: Part[];
+  finishOptions: FinishOption[];
+  selectedPartId: PartId | null;
+  partFinishSelections: PartFinishSelections;
+  activeOptionSheet: SheetName;
+  markersVisible: boolean;
   exportRequestedAt: number;
+  notification: Notification | null;
 
-  loadScene: (scene: Scene | null) => void;
-  addMaterial: (entryId: string) => void;
-  moveMaterial: (instanceId: string, x: number, y: number) => void;
-  deleteMaterial: (instanceId: string) => void;
-  select: (instanceId: string | null) => void;
+  loadScene: (
+    scene: Scene,
+    parts: Part[],
+    finishOptions: FinishOption[],
+    defaultSheet: SheetName,
+  ) => void;
+  selectPart: (partId: PartId | null) => void;
   clearSelection: () => void;
-  setPartColor: (partId: string, hex: string) => void;
-  clearPartColor: (partId: string) => void;
+  setFinish: (partId: PartId, optionId: FinishOptionId) => void;
+  clearFinish: (partId: PartId) => void;
+  setActiveSheet: (sheet: SheetName) => void;
+  toggleMarkers: () => void;
   requestExport: () => void;
+  dismissNotification: () => void;
 };
 
-let nextSeq = 0;
-const nextInstanceId = () => `m_${Date.now().toString(36)}_${(nextSeq++).toString(36)}`;
-
-const DEFAULT_PLACEMENT = { x: 380, y: 220 };
-const PLACEMENT_OFFSET = 32;
+let nextNoteId = 1;
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   activeScene: null,
-  placedMaterials: [],
-  colorOverrides: {},
-  selectionId: null,
+  parts: [],
+  finishOptions: [],
+  selectedPartId: null,
+  partFinishSelections: {},
+  activeOptionSheet: "",
+  markersVisible: true,
   exportRequestedAt: 0,
+  notification: null,
 
-  loadScene: (scene) =>
+  loadScene: (scene, parts, finishOptions, defaultSheet) =>
     set({
       activeScene: scene,
-      placedMaterials: [],
-      colorOverrides: {},
-      selectionId: null,
+      parts,
+      finishOptions,
+      selectedPartId: null,
+      partFinishSelections: {},
+      activeOptionSheet: defaultSheet,
+      notification: null,
     }),
 
-  addMaterial: (entryId) => {
-    const { placedMaterials } = get();
-    const offsetIndex = placedMaterials.length;
-    const placed: PlacedMaterial = {
-      instanceId: nextInstanceId(),
-      entryId,
-      x: DEFAULT_PLACEMENT.x + offsetIndex * PLACEMENT_OFFSET,
-      y: DEFAULT_PLACEMENT.y + offsetIndex * PLACEMENT_OFFSET,
-      createdAt: Date.now(),
-    };
-    set({
-      placedMaterials: [...placedMaterials, placed],
-      selectionId: placed.instanceId,
-    });
-  },
+  selectPart: (partId) => set({ selectedPartId: partId }),
+  clearSelection: () => set({ selectedPartId: null }),
 
-  moveMaterial: (instanceId, x, y) =>
-    set((s) => ({
-      placedMaterials: s.placedMaterials.map((m) =>
-        m.instanceId === instanceId ? { ...m, x, y } : m,
-      ),
-    })),
-
-  deleteMaterial: (instanceId) =>
-    set((s) => ({
-      placedMaterials: s.placedMaterials.filter(
-        (m) => m.instanceId !== instanceId,
-      ),
-      selectionId: s.selectionId === instanceId ? null : s.selectionId,
-    })),
-
-  select: (instanceId) => set({ selectionId: instanceId }),
-  clearSelection: () => set({ selectionId: null }),
-
-  setPartColor: (partId, hex) => {
-    const { activeScene } = get();
-    if (!activeScene) return;
-    const declared = activeScene.parts.some((p) => p.id === partId);
-    if (!declared) {
-      // spec: reject silently — do not corrupt store with undeclared parts
+  setFinish: (partId, optionId) => {
+    const { parts, finishOptions, partFinishSelections } = get();
+    const part = parts.find((p) => p.id === partId);
+    if (!part) {
       console.warn(
-        `[canvas store] rejecting setPartColor: part "${partId}" not declared by scene "${activeScene.id}"`,
+        `[canvas store] rejecting setFinish: part "${partId}" not declared by active scene`,
       );
       return;
     }
-    set((s) => ({ colorOverrides: { ...s.colorOverrides, [partId]: hex } }));
+    const option = finishOptions.find((o) => o.id === optionId);
+    if (!option) {
+      console.warn(
+        `[canvas store] rejecting setFinish: option "${optionId}" not in catalog`,
+      );
+      return;
+    }
+    if (option.partId !== partId) {
+      console.warn(
+        `[canvas store] rejecting setFinish: option "${optionId}" belongs to part "${option.partId}", not "${partId}"`,
+      );
+      return;
+    }
+    if (part.renderMode === "color" && !option.colorHex) {
+      console.warn(
+        `[canvas store] rejecting setFinish: part "${partId}" is color-mode but option "${optionId}" has no colorHex`,
+      );
+      return;
+    }
+    if (part.renderMode === "texture" && !option.textureUrl) {
+      console.warn(
+        `[canvas store] rejecting setFinish: part "${partId}" is texture-mode but option "${optionId}" has no textureUrl`,
+      );
+      return;
+    }
+    set({
+      partFinishSelections: { ...partFinishSelections, [partId]: optionId },
+    });
   },
 
-  clearPartColor: (partId) =>
+  clearFinish: (partId) =>
     set((s) => {
-      if (!(partId in s.colorOverrides)) return s;
-      const next = { ...s.colorOverrides };
+      if (!(partId in s.partFinishSelections)) return s;
+      const next = { ...s.partFinishSelections };
       delete next[partId];
-      return { colorOverrides: next };
+      return { partFinishSelections: next };
     }),
 
+  setActiveSheet: (sheet) => {
+    const { activeOptionSheet, finishOptions, partFinishSelections } = get();
+    if (sheet === activeOptionSheet) return;
+    // Preserve selections by (partId, label) match across sheets.
+    const optionById = new Map(finishOptions.map((o) => [o.id, o]));
+    const cleared: string[] = [];
+    const next: PartFinishSelections = {};
+    for (const [partId, optId] of Object.entries(partFinishSelections)) {
+      const prev = optionById.get(optId);
+      if (!prev) {
+        cleared.push(partId);
+        continue;
+      }
+      const match = finishOptions.find(
+        (o) => o.partId === partId && o.sheet === sheet && o.label === prev.label,
+      );
+      if (match) {
+        next[partId] = match.id;
+      } else {
+        cleared.push(partId);
+      }
+    }
+    const update: Partial<CanvasState> = {
+      activeOptionSheet: sheet,
+      partFinishSelections: next,
+    };
+    if (cleared.length) {
+      update.notification = {
+        id: nextNoteId++,
+        message: `シート切替で次の部材の選択が解除されました: ${cleared
+          .map((id) => `#${id}`)
+          .join(", ")}`,
+      };
+    }
+    set(update);
+  },
+
+  toggleMarkers: () => set((s) => ({ markersVisible: !s.markersVisible })),
+
   requestExport: () => set({ exportRequestedAt: Date.now() }),
+
+  dismissNotification: () => set({ notification: null }),
 }));

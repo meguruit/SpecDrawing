@@ -2,9 +2,10 @@
   "version": 1,
   "scenes": [
     {
-      "id": "living-room-01",
-      "name": "リビング #1 (seed)",
-      "manifestUrl": "/assets/base/living-room-01/scene.json"
+      "id": "main",
+      "name": "メイン パース",
+      "manifestUrl": "/assets/base/main/scene.json",
+      "default": true
     }
   ]
 }

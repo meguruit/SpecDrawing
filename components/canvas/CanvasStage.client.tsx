@@ -1,19 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Stage, Layer, Image as KonvaImage } from "react-konva";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useImage } from "@/lib/canvas/useImageCache";
-import type { MaterialCatalog } from "@/lib/catalog/schema";
-import { ColorCompositeLayer } from "./ColorCompositeLayer";
-import { MaterialsLayer } from "./MaterialsLayer";
+import { PartFinishLayer } from "@/components/parts/PartFinishLayer";
+import {
+  PartMarkerLayer,
+  isPointInsideAnyPart,
+} from "@/components/parts/PartMarkerLayer";
 
-type Props = {
-  catalog: MaterialCatalog | null;
-};
+const MAX_DISPLAY_WIDTH = 1100;
 
 function formatTimestamp(d = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -27,52 +27,41 @@ function formatTimestamp(d = new Date()): string {
   );
 }
 
-export default function CanvasStage({ catalog }: Props) {
+export default function CanvasStage() {
   const stageRef = useRef<Konva.Stage>(null);
   const scene = useCanvasStore((s) => s.activeScene);
+  const parts = useCanvasStore((s) => s.parts);
   const baseImage = useImage(scene?.baseImageUrl);
-  const selectionId = useCanvasStore((s) => s.selectionId);
   const clearSelection = useCanvasStore((s) => s.clearSelection);
-  const select = useCanvasStore((s) => s.select);
-  const deleteMaterial = useCanvasStore((s) => s.deleteMaterial);
+  const selectPart = useCanvasStore((s) => s.selectPart);
   const exportRequestedAt = useCanvasStore((s) => s.exportRequestedAt);
+  const [hover, setHover] = useState<{ partId: string } | null>(null);
 
-  // Delete / Backspace removes the selected material (only when nothing else has focus).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Delete" && e.key !== "Backspace") return;
-      const active = document.activeElement;
-      const tag = active?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      const id = useCanvasStore.getState().selectionId;
-      if (id) {
-        e.preventDefault();
-        deleteMaterial(id);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [deleteMaterial]);
+  // Display scale: keep wider scenes visible without horizontal scroll.
+  const displayScale = useMemo(() => {
+    if (!scene) return 1;
+    return Math.min(1, MAX_DISPLAY_WIDTH / scene.width);
+  }, [scene]);
 
-  // Export pipeline: when requestExport is dispatched, snapshot the stage at pixelRatio 2,
-  // exclude selection chrome by clearing the selection just for the duration of the snapshot.
   useEffect(() => {
     if (!exportRequestedAt) return;
     const stage = stageRef.current;
     const sceneNow = useCanvasStore.getState().activeScene;
     if (!stage || !sceneNow) return;
 
-    const previousSelection = useCanvasStore.getState().selectionId;
-    if (previousSelection) {
-      // Clear selection so handles/border don't render in the exported PNG.
-      useCanvasStore.getState().clearSelection();
+    const previousMarkersVisible =
+      useCanvasStore.getState().markersVisible;
+    if (previousMarkersVisible) {
+      // Hide markers in export by toggling off for the snapshot.
+      useCanvasStore.setState({ markersVisible: false });
     }
 
-    // Defer to next frame so the cleared-selection re-render lands before toDataURL.
     const handle = requestAnimationFrame(() => {
       try {
+        // pixelRatio compensates for the on-screen displayScale so the export
+        // is at native scene resolution.
         const dataUrl = stage.toDataURL({
-          pixelRatio: 2,
+          pixelRatio: 1 / displayScale,
           mimeType: "image/png",
         });
         const a = document.createElement("a");
@@ -82,28 +71,41 @@ export default function CanvasStage({ catalog }: Props) {
         a.click();
         document.body.removeChild(a);
       } finally {
-        if (previousSelection) {
-          useCanvasStore.getState().select(previousSelection);
+        if (previousMarkersVisible) {
+          useCanvasStore.setState({ markersVisible: true });
         }
       }
     });
     return () => cancelAnimationFrame(handle);
-  }, [exportRequestedAt]);
+  }, [exportRequestedAt, displayScale]);
 
   const handleStageMouseDown = useCallback(
     (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
-      // Click on the stage background (not on a child shape) clears the selection.
+      // If the click landed on the empty stage (no shape), test whether it falls
+      // inside any part polygon. If so, select that part; otherwise deselect.
       if (e.target === e.target.getStage()) {
+        const stage = e.target.getStage();
+        const pos = stage?.getPointerPosition();
+        if (pos && scene) {
+          // Convert from display coords back to scene coords.
+          const sx = pos.x / displayScale;
+          const sy = pos.y / displayScale;
+          const hit = isPointInsideAnyPart(sx, sy, parts);
+          if (hit) {
+            selectPart(hit);
+            return;
+          }
+        }
         clearSelection();
       }
     },
-    [clearSelection],
+    [scene, parts, displayScale, clearSelection, selectPart],
   );
 
   if (!scene) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-slate-400">
-        左のシーンピッカーからベースシーンを選択してください
+        パースを読み込み中…
       </div>
     );
   }
@@ -111,8 +113,10 @@ export default function CanvasStage({ catalog }: Props) {
   return (
     <Stage
       ref={stageRef}
-      width={scene.width}
-      height={scene.height}
+      width={Math.round(scene.width * displayScale)}
+      height={Math.round(scene.height * displayScale)}
+      scaleX={displayScale}
+      scaleY={displayScale}
       onMouseDown={handleStageMouseDown}
       onTouchStart={handleStageMouseDown}
       style={{
@@ -131,8 +135,8 @@ export default function CanvasStage({ catalog }: Props) {
           />
         )}
       </Layer>
-      <ColorCompositeLayer />
-      <MaterialsLayer catalog={catalog} />
+      <PartFinishLayer />
+      <PartMarkerLayer hover={hover} setHover={setHover} />
     </Stage>
   );
 }

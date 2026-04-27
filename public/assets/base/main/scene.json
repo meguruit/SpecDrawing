@@ -1,0 +1,8 @@
+{
+  "id": "main",
+  "name": "メイン パース",
+  "baseImageUrl": "/assets/base/main/base.jpg",
+  "width": 3000,
+  "height": 2142,
+  "partsManifestUrl": "/assets/base/main/parts.json"
+}

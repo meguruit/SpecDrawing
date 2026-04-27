@@ -1,0 +1,6 @@
+resources/catalog/*.xlsx filter=lfs diff=lfs merge=lfs -text
+resources/reference/*.pdf filter=lfs diff=lfs merge=lfs -text
+public/assets/base/main/base.jpg filter=lfs diff=lfs merge=lfs -text
+public/assets/finishes/**/*.png filter=lfs diff=lfs merge=lfs -text
+*.xlsx filter=lfs diff=lfs merge=lfs -text
+resources/base/*.jpg filter=lfs diff=lfs merge=lfs -text

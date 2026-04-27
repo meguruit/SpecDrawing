@@ -2,6 +2,7 @@ import {
   sceneSchema,
   scenesIndexSchema,
   type Scene,
+  type SceneIndexEntry,
   type ScenesIndex,
 } from "./types";
 
@@ -43,6 +44,15 @@ export async function loadScenesIndex(
   return result.data;
 }
 
+export function pickDefaultScene(index: ScenesIndex): SceneIndexEntry {
+  const def = index.scenes.find((s) => s.default === true);
+  if (!def) {
+    // Schema refinement should have caught this, but keep a defensive throw.
+    throw new SceneLoadError("Scenes index has no default scene");
+  }
+  return def;
+}
+
 export async function loadScene(manifestUrl: string): Promise<Scene> {
   const raw = await fetchJson(manifestUrl);
   const result = sceneSchema.safeParse(raw);
@@ -54,28 +64,18 @@ export async function loadScene(manifestUrl: string): Promise<Scene> {
   }
   const scene = result.data;
 
-  // Verify each declared part has its mask + shading file present.
-  for (const part of scene.parts) {
-    const [maskOk, shadingOk] = await Promise.all([
-      probeAsset(part.maskUrl),
-      probeAsset(part.shadingUrl),
-    ]);
-    if (!maskOk) {
-      throw new SceneLoadError(
-        `Scene "${scene.id}" part "${part.id}" mask not found at ${part.maskUrl}`,
-      );
-    }
-    if (!shadingOk) {
-      throw new SceneLoadError(
-        `Scene "${scene.id}" part "${part.id}" shading not found at ${part.shadingUrl}`,
-      );
-    }
-  }
-
-  // Probe base too so we fail loudly instead of silently rendering nothing.
-  if (!(await probeAsset(scene.baseImageUrl))) {
+  const [baseOk, partsOk] = await Promise.all([
+    probeAsset(scene.baseImageUrl),
+    probeAsset(scene.partsManifestUrl),
+  ]);
+  if (!baseOk) {
     throw new SceneLoadError(
       `Scene "${scene.id}" base image not found at ${scene.baseImageUrl}`,
+    );
+  }
+  if (!partsOk) {
+    throw new SceneLoadError(
+      `Scene "${scene.id}" parts manifest not found at ${scene.partsManifestUrl}`,
     );
   }
 

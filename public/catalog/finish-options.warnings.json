@@ -1,0 +1,38 @@
+[
+  {
+    "kind": "missing-swatch",
+    "sheet": "アーバンシー",
+    "partId": "02",
+    "optionId": "02-urb-0-opt0",
+    "label": "有",
+    "cellRef": "D5",
+    "message": "no embedded swatch image for アーバンシー part 02 option 有"
+  },
+  {
+    "kind": "missing-swatch",
+    "sheet": "アーバンシー",
+    "partId": "02",
+    "optionId": "02-urb-1-opt1",
+    "label": "無",
+    "cellRef": "E5",
+    "message": "no embedded swatch image for アーバンシー part 02 option 無"
+  },
+  {
+    "kind": "missing-swatch",
+    "sheet": "レコリード",
+    "partId": "02",
+    "optionId": "02-rec-0-opt0",
+    "label": "有",
+    "cellRef": "D5",
+    "message": "no embedded swatch image for レコリード part 02 option 有"
+  },
+  {
+    "kind": "missing-swatch",
+    "sheet": "レコリード",
+    "partId": "02",
+    "optionId": "02-rec-1-opt1",
+    "label": "無",
+    "cellRef": "E5",
+    "message": "no embedded swatch image for レコリード part 02 option 無"
+  }
+]

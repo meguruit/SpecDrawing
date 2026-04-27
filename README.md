@@ -1,169 +1,190 @@
-# SpecDrawing — Material Presenter (MVP)
+# SpecDrawing — Numbered-Part Finish Picker
 
-Interactive presentation board: pick a base perspective image, drop building
-materials onto it from a multi-axis catalog, optionally recolor parts of the
-base image (wall, floor, …) with arbitrary HEX colors using a mask + shading
-composition pipeline, and export the result as a PNG.
+Interactive presentation board for a registered base perspective image. The
+user selects a numbered part on the perspective (① – ⑰, annotated on the
+supplied `部材対応番号-{1,2,3}.pdf` reference PDFs), picks one of that part's
+finish options sourced from `部材リスト.xlsx`, and the perspective updates
+immediately to reflect the choice. Supports two render modes per part:
 
-This is the MVP. See [`openspec/changes/add-material-presenter-mvp/proposal.md`](openspec/changes/add-material-presenter-mvp/proposal.md)
-for the change record and explicit non-goals.
+- **color** — flat colorways (paint, wallpaper, sash frame) composited as
+  `mask × shading × color`.
+- **texture** — material/grain swaps (door veneers, kitchen panels) overlayed
+  as a pre-rendered texture image clipped by the part's mask.
+
+Export the result as a PNG at native scene resolution.
+
+This is the redesign that supersedes the original MVP (free-drop catalog).
+See [`openspec/changes/redesign-numbered-part-finish-picker/proposal.md`](openspec/changes/redesign-numbered-part-finish-picker/proposal.md)
+for the change record and explicit non-goals, and the archived
+[`openspec/changes/archive/2026-04-27-add-material-presenter-mvp/`](openspec/changes/archive/2026-04-27-add-material-presenter-mvp/)
+for the prior model.
 
 ## Run it
 
 ```bash
+git lfs install                  # one-time per clone (the workbook is in LFS)
 npm install
-npm run seed:assets   # generate placeholder base scene + material thumbnails
-npm run dev           # http://localhost:3000
+npm run seed:masks               # generate placeholder mask + shading PNGs
+npm run seed:parts               # extract finish options from the workbook
+npm run dev                      # http://localhost:3000
 ```
 
 Other scripts:
 
 ```bash
-npm run typecheck     # tsc --noEmit
-npm run lint          # next lint
-npm run build         # production build
+npm run typecheck                # tsc --noEmit
+npm run lint                     # next lint
+npm run build                    # production build
 ```
-
-> **Package manager note.** The original task list referenced `pnpm`. This
-> repo currently does not have pnpm installed; every script works identically
-> with `npm run`. Switch to pnpm later by running `volta install pnpm` and
-> using `pnpm <script>` in place of `npm run <script>`.
 
 ## Tech stack
 
-- **Next.js 14** (App Router, TypeScript) — single-tier app, no separate backend
-  (see `design.md` D10 for the rationale).
+- **Next.js 14** (App Router, TypeScript) — single-tier app, no separate
+  backend (see the change's `design.md` D10 for the rationale).
 - **React 18** + **Tailwind CSS**.
 - **Konva 9** + **react-konva** for the canvas. Loaded only on the client via
   `next/dynamic({ ssr: false })`.
 - **Zustand** for canvas state.
-- **Zod** for catalog and scene-manifest validation.
-- **sharp** (devDep) for the seed-asset generator script.
+- **Zod** for scene-manifest, parts-manifest, and finish-options validation.
+- **sharp**, **xlsx**, **adm-zip** (devDeps) for the seed scripts.
 
 ## Asset conventions
 
-### Scenes
-
 ```
-public/assets/base/
-  scenes.json                      # index of available scenes
-  <scene-id>/
-    scene.json                     # manifest: id, dimensions, parts list
-    base.jpg                       # bottom-layer perspective image
-    mask_<part>.png                # alpha mask for each color-mutable part
-    shading_<part>.png             # grayscale luminance map for each part
-```
+resources/                                designer source-of-truth (commit, do not serve)
+  base/main/ベースパース.jpg                raw perspective JPG (3000×2142, native res)
+  reference/部材対応番号-{1,2,3}.pdf         annotated reference PDFs
+  reference/AUTHORING.md                  designer guide for parts & finishes
+  catalog/部材リスト.xlsx                   option workbook (Git LFS)
 
-`scene.json` declares which `parts` exist for that scene. The loader probes
-each declared part's mask and shading file at scene-load time and throws a
-loud, named error if any required asset is missing.
-
-The MVP ships one seed scene at `living-room-01` with two parts: `wall` and
-`floor`. The scene assets are produced from a procedural script
-(`scripts/generate-seed-assets.mjs`) — run `npm run seed:assets` to
-regenerate.
-
-### Materials catalog
-
-```
-public/catalog/materials.json      # the catalog (Zod-validated at load)
-public/assets/materials/<id>/
-  thumb.png                        # catalog grid thumbnail
-  placement.png                    # image drawn on canvas when placed
+public/                                   runtime, served by Next.js
+  assets/base/scenes.json                 registry index (one entry "main", default)
+  assets/base/main/scene.json             id, name, dimensions, partsManifestUrl
+  assets/base/main/base.jpg               native-resolution copy of the source perspective
+  assets/base/main/parts.json             numbered-part manifest (① – ⑰)
+  assets/base/main/mask_<NN>.png          alpha mask per part
+  assets/base/main/shading_<NN>.png       luminance map per color-mode part
+  assets/finishes/<part-id>/<option-id>.png   per-option swatch / texture
+  catalog/finish-options.json             generated from the workbook
+  catalog/finish-options.warnings.json    color-extraction / missing-swatch warnings
 ```
 
-Each entry has an `axes` map. Known axis keys (`series`, `design`, `color`,
-`width`, `height`, `openingType`, `mirror`, `type`) get their own filter
-group; any unknown axis (e.g. `finish`) is permitted and surfaces under the
-"その他の軸" (other axes) group.
+The `parts.json` manifest declares for each part: id, label, category,
+sourcePdf reference, marker centroid, polygon (for hit-testing), `renderMode`,
+and the mask / shading filenames. The loader probes every declared mask and
+shading file at scene-load time and throws a named error on missing assets.
+
+The `finish-options.json` catalog is derived from `部材リスト.xlsx` by
+`scripts/extract-finish-options.mjs`. Each option entry sets exactly one of
+`colorHex` (color-mode parts) or `textureUrl` (texture-mode parts), and the
+loader cross-validates the shape against the part's `renderMode`.
+
+> **Placeholder warning.** The shipped `parts.json`, `mask_<NN>.png`, and
+> `shading_<NN>.png` are placeholders authored to make the architecture run
+> end-to-end (rough rectangular polygons, alpha-only masks, uniform-gray
+> shading). A designer must replace them with traced polygons, anti-aliased
+> production masks, and real luminance maps before shipping. Per-option
+> texture renders for texture-mode parts also need designer authoring (the
+> seed currently re-uses workbook swatches as placeholders). See
+> [`resources/reference/AUTHORING.md`](resources/reference/AUTHORING.md).
 
 ## Color composition pipeline
 
-For each scene part with an active color override, the canvas renders a
-**dedicated Konva `Layer`** containing the following draw order:
+For each part with an active finish selection, the canvas renders a
+**dedicated Konva `Layer`** whose draw order depends on the part's
+`renderMode`:
 
-1. `shading_<part>.png` at full scene size — destination becomes the grayscale
-   shading map.
-2. A solid color `Rect` at full scene size with `globalCompositeOperation="multiply"`
-   — destination becomes (shading × color) RGB everywhere.
-3. `mask_<part>.png` at full scene size with `globalCompositeOperation="destination-in"`
-   — clips the (shading × color) result to the mask alpha; everything else
-   becomes fully transparent.
+**color** mode:
 
-Two invariants kept this from going sideways during the build:
+1. `shading_<NN>.png` at full scene size (no compositing operator).
+2. Solid color `Rect` at full scene size with
+   `globalCompositeOperation="multiply"`.
+3. `mask_<NN>.png` at full scene size with
+   `globalCompositeOperation="destination-in"`.
+
+**texture** mode:
+
+1. The option's texture image at full scene size (no compositing operator).
+2. `mask_<NN>.png` at full scene size with
+   `globalCompositeOperation="destination-in"`.
+
+Two invariants:
 
 - **Mask is applied last.** If the multiply runs after the mask, Canvas2D's
   `multiply` against alpha-0 destination paints opaque source pixels — the
   shading image bleeds onto unmasked regions as gray smears.
-- **One Layer per part.** Putting two parts as groups on a single shared Layer
-  fails because each part's first draw step (the full-scene shading image)
-  overwrites the previous part's already-masked content.
+- **One Layer per part.** Putting two parts as groups on a single shared
+  Layer fails because each part's first draw step (the full-scene shading or
+  texture image) overwrites the previous part's already-masked content.
 
 CSS `filter: hue-rotate` is **not** used and would be incorrect here — it
-shifts hue without preserving luminance/saturation fidelity.
+shifts hue without preserving luminance / saturation fidelity.
 
 ## Project structure
 
 ```
-app/                  Next.js App Router pages
+app/
   layout.tsx
-  page.tsx            top-level UI shell (server component shell, client islands)
-  globals.css         Tailwind base
+  page.tsx                              top-level UI shell
+  globals.css                           Tailwind base
 components/
   Toast.tsx
-  catalog/
-    CatalogPanel.tsx  axis filters + thumbnail grid
   canvas/
-    CanvasStage.client.tsx     Konva Stage (the only ssr:false boundary)
-    ColorCompositeLayer.tsx    one Layer per overridden part
-    MaterialsLayer.tsx         placed materials, drag/select
-  color/
-    PartColorPicker.tsx        per-part HEX color input
-  scenes/
-    ScenePicker.tsx            scene index + load action
+    CanvasStage.client.tsx              Konva Stage (the only ssr:false boundary)
+  parts/
+    PartMarkerLayer.tsx                 numbered markers + hover outlines + hit-testing
+    PartFinishLayer.tsx                 one Layer per active part finish (color / texture)
+    PartList.tsx                        grouped side list of parts with selection summary
+  finishes/
+    FinishOptionPanel.tsx               option chips for the selected part on the active sheet
+    SheetSwitcher.tsx                   workbook sheet switcher
+    MarkerToggle.tsx                    show/hide numbered markers on canvas
 lib/
   canvas/
-    store.ts          Zustand store
-    useImageCache.ts  HTMLImageElement cache for Konva
-  catalog/
-    schema.ts         Zod schemas
-    load.ts           fetch + validate
-    filter.ts         pure filtering by axis selections
+    store.ts                            Zustand store (selectedPartId, partFinishSelections, …)
+    useImageCache.ts                    HTMLImageElement cache for Konva
   scenes/
-    types.ts          scene + scenes-index Zod schemas
-    load.ts           fetch + asset probing
-public/               static assets (catalog + scenes)
+    types.ts                            scene + registry Zod schemas
+    load.ts                             registry index + per-scene loader with asset probes
+  parts/
+    types.ts                            parts.json Zod schema
+    load.ts                             parts loader + asset probing + url resolution
+  finishes/
+    schema.ts                           finish-options.json Zod schema
+    load.ts                             finishes loader + cross-validation against parts
+public/                                 static runtime assets (see "Asset conventions")
+resources/                              designer source-of-truth (see "Asset conventions")
 scripts/
-  generate-seed-assets.mjs     procedural seed image generator
-openspec/             OpenSpec change records
+  generate-placeholder-masks.mjs        npm run seed:masks
+  extract-finish-options.mjs            npm run seed:parts
+openspec/                               OpenSpec change records
 ```
 
-## What's deferred (not in this MVP)
+## What's deferred (not in this change)
 
-Listed in the change proposal's non-goals — repeated here for visibility:
-
-- No frontend/backend separation (single Next.js app; see design.md D10).
+- No frontend/backend separation (single Next.js app).
 - No server-side persistence, auth, or multi-user support.
-- No server-side high-resolution PDF / 2840×2000 print rendering.
-- No rich editor affordances (text, shapes, lines, undo/redo, align, rotate,
-  copy/paste, zoom, layer order).
-- No CMS / admin UI for catalog management.
-- No real catalog ingestion — the seed catalog has 6 procedural entries.
-- No mobile/touch-optimized layout.
+- No server-side high-resolution PDF rendering.
+- No rich editor affordances (text, shapes, lines, undo/redo, …).
+- No CMS / admin UI.
+- No multi-perspective gallery (registry supports it; only `main` ships).
+- No `/dev/trace` designer tool yet (deferred follow-up).
 
 ## Smoke test
 
 After `npm run dev`:
 
-1. Click "リビング #1 (seed)" in the left panel — base scene loads on canvas.
-2. Pick any axis filter (e.g. `series = "K"`) — catalog grid narrows.
-3. Click two thumbnails — two material instances appear on canvas, second is
-   selected (blue outline).
-4. Drag the selected material — position updates.
-5. Press Delete — selected material is removed.
-6. In the right panel under "色の上書き", set a wall color and a floor color —
-   each region recolors with shading preserved; the window stays untouched.
-7. Click "クリア" on the wall — wall reverts to its base image.
-8. Click "Export PNG" in the top bar — a file
-   `specdrawing-living-room-01-<timestamp>.png` downloads at 2048×1536
-   (pixelRatio 2 of the 1024×768 stage).
+1. App opens at <http://localhost:3000> and the default perspective
+   auto-loads with all 17 numbered markers visible.
+2. Click marker ⑦ (or "キッチンアクセントクロス" in the left list) — the
+   right panel shows option chips for アーバンシー sheet.
+3. Pick "サンドベージュ" — the kitchen accent area tints sand-beige.
+4. Click marker ⑩ — pick "ｺｺﾅｯﾂﾁｪﾘｰ" — the entry door area swaps to the
+   wood-grain texture.
+5. Switch the sheet to "レコリード" — ⑦ サンドベージュ is preserved
+   (label match across sheets); selections that don't match get cleared with
+   a toast notification.
+6. Toggle "番号オーバーレイ" off — markers and outlines hide; selections
+   stay applied.
+7. Click "Export PNG" — a file `specdrawing-main-<timestamp>.png` downloads
+   at native scene resolution (3000×2142). Markers are hidden in the export.
