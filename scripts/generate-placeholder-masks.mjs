@@ -1,13 +1,18 @@
-// Generates PLACEHOLDER alpha masks and shading maps for every part in
-// public/assets/base/main/parts.json. Each mask is a scene-resolution PNG
-// where the part's polygon (treated as a closed rectangle for placeholders)
-// is filled with alpha 255 and everything else is alpha 0. Color-mode parts
-// also get a uniform mid-gray shading PNG.
+// Generates alpha masks for every part in public/assets/base/main/parts.json,
+// and real grayscale shading maps for color-mode parts derived from base.jpg.
 //
-// IMPORTANT: these are placeholders so the app boots end-to-end. A designer
-// must replace each mask with a properly-traced, anti-aliased version and
-// each shading map with the part's real luminance from the base perspective
-// before shipping. See resources/reference/AUTHORING.md.
+// Mask: scene-resolution PNG, alpha 255 inside the part polygon, 0 outside,
+// with a 2-pixel Gaussian feather on the edges to avoid stair-step artifacts.
+//
+// Shading (color-mode parts only): scene-resolution PNG. The part region's
+// luminance is sampled from base.jpg (Rec.709 grayscale of the masked pixels).
+// Outside the mask the pixel stays mid-gray (irrelevant since the runtime
+// clips by the same mask).
+//
+// IMPORTANT: polygons in parts.json are PLACEHOLDER rectangles authored from
+// visual reference of the 部材対応番号 PDFs. Designer must trace the real
+// outlines (use the /dev/trace tool). Once polygons are accurate, re-running
+// this script will produce production-quality masks and shading.
 //
 // Run with: npm run seed:masks
 
@@ -20,6 +25,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCENE_DIR = resolve(ROOT, "public/assets/base/main");
 const PARTS_PATH = resolve(SCENE_DIR, "parts.json");
 const SCENE_JSON = resolve(SCENE_DIR, "scene.json");
+const BASE_JPG = resolve(SCENE_DIR, "base.jpg");
+
+const MASK_FEATHER_RADIUS = 2; // pixels — Gaussian sigma for edge anti-aliasing
 
 async function ensureDir(path) {
   await mkdir(dirname(path), { recursive: true });
@@ -50,20 +58,21 @@ function polygonBounds(polygon, width, height) {
     if (y > maxY) maxY = y;
   }
   return {
-    x0: Math.max(0, Math.floor(minX)),
-    y0: Math.max(0, Math.floor(minY)),
-    x1: Math.min(width, Math.ceil(maxX)),
-    y1: Math.min(height, Math.ceil(maxY)),
+    x0: Math.max(0, Math.floor(minX) - MASK_FEATHER_RADIUS * 2),
+    y0: Math.max(0, Math.floor(minY) - MASK_FEATHER_RADIUS * 2),
+    x1: Math.min(width, Math.ceil(maxX) + MASK_FEATHER_RADIUS * 2),
+    y1: Math.min(height, Math.ceil(maxY) + MASK_FEATHER_RADIUS * 2),
   };
 }
 
-async function writeMask(part, width, height) {
+// Build a hard alpha mask from the polygon, then feather with Gaussian blur.
+// Returns the rasterized RGBA buffer (alpha-only) at scene resolution.
+function rasterizePolygonMask(polygon, width, height) {
   const buf = Buffer.alloc(width * height * 4);
-  // Default alpha 0; only fill inside the polygon's bounding scan.
-  const { x0, y0, x1, y1 } = polygonBounds(part.polygon, width, height);
+  const { x0, y0, x1, y1 } = polygonBounds(polygon, width, height);
   for (let y = y0; y < y1; y++) {
     for (let x = x0; x < x1; x++) {
-      if (pointInPolygon(x + 0.5, y + 0.5, part.polygon)) {
+      if (pointInPolygon(x + 0.5, y + 0.5, polygon)) {
         const i = (y * width + x) * 4;
         buf[i] = 255;
         buf[i + 1] = 255;
@@ -72,44 +81,84 @@ async function writeMask(part, width, height) {
       }
     }
   }
+  return buf;
+}
+
+async function writeMask(part, width, height) {
+  const raw = rasterizePolygonMask(part.polygon, width, height);
   const path = resolve(SCENE_DIR, part.mask);
   await ensureDir(path);
-  await sharp(buf, { raw: { width, height, channels: 4 } })
+  // Apply Gaussian blur to feather the alpha edge.
+  await sharp(raw, { raw: { width, height, channels: 4 } })
+    .blur(MASK_FEATHER_RADIUS)
     .png({ compressionLevel: 9 })
     .toFile(path);
   console.log(`  ✓ ${part.mask}`);
 }
 
-async function writeShading(part, width, height) {
+// Compute a shading map for a color-mode part from base.jpg:
+// for every pixel inside the polygon, write the pixel's Rec.709 luminance
+// (grayscale of the base perspective at that point). Outside the polygon
+// stays mid-gray (180) — the runtime clips by the mask anyway.
+async function writeShading(part, baseRgb, width, height) {
   if (!part.shading) return;
-  // PLACEHOLDER: uniform mid-gray. A real shading map encodes the part region's
-  // luminance from the base perspective.
-  const buf = Buffer.alloc(width * height * 4);
-  for (let i = 0; i < buf.length; i += 4) {
-    buf[i] = 180;
-    buf[i + 1] = 180;
-    buf[i + 2] = 180;
-    buf[i + 3] = 255;
+  const out = Buffer.alloc(width * height * 4);
+  // Mid-gray default outside the polygon.
+  for (let i = 0; i < out.length; i += 4) {
+    out[i] = 180;
+    out[i + 1] = 180;
+    out[i + 2] = 180;
+    out[i + 3] = 255;
+  }
+  const { x0, y0, x1, y1 } = polygonBounds(part.polygon, width, height);
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      if (pointInPolygon(x + 0.5, y + 0.5, part.polygon)) {
+        const j = (y * width + x) * 3;
+        const r = baseRgb[j];
+        const g = baseRgb[j + 1];
+        const b = baseRgb[j + 2];
+        // Rec.709 luminance.
+        const lum = Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b);
+        const i = (y * width + x) * 4;
+        out[i] = lum;
+        out[i + 1] = lum;
+        out[i + 2] = lum;
+        out[i + 3] = 255;
+      }
+    }
   }
   const path = resolve(SCENE_DIR, part.shading);
   await ensureDir(path);
-  await sharp(buf, { raw: { width, height, channels: 4 } })
+  await sharp(out, { raw: { width, height, channels: 4 } })
     .png({ compressionLevel: 9 })
     .toFile(path);
-  console.log(`  ✓ ${part.shading}`);
+  console.log(`  ✓ ${part.shading} (real luminance)`);
 }
 
 async function main() {
   const scene = JSON.parse(await readFile(SCENE_JSON, "utf-8"));
   const manifest = JSON.parse(await readFile(PARTS_PATH, "utf-8"));
   const { width, height } = scene;
+
+  // Load base.jpg as raw RGB once for shading extraction.
+  const { data: baseRgb, info: baseInfo } = await sharp(BASE_JPG)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  if (baseInfo.width !== width || baseInfo.height !== height) {
+    throw new Error(
+      `base.jpg dimensions (${baseInfo.width}x${baseInfo.height}) do not match scene.json (${width}x${height})`,
+    );
+  }
+
   console.log(
-    `Generating placeholders at ${width}x${height} for ${manifest.parts.length} parts…`,
+    `Generating masks (feather=${MASK_FEATHER_RADIUS}px) and shading at ${width}x${height} for ${manifest.parts.length} parts…`,
   );
   for (const part of manifest.parts) {
     console.log(`Part ${part.id} (${part.label}) [${part.renderMode}]`);
     await writeMask(part, width, height);
-    await writeShading(part, width, height);
+    await writeShading(part, baseRgb, width, height);
   }
   console.log("done.");
 }

@@ -34,6 +34,12 @@ const OUT_WARN = resolve(ROOT, "public/catalog/finish-options.warnings.json");
 const FINISHES_DIR = resolve(ROOT, "public/assets/finishes");
 const SCENE_W = 3000;
 const SCENE_H = 2142;
+// Downsample workbook swatches to keep public/ small. Texture-mode parts use
+// the same image for both thumbnail and (placeholder) texture, so we want a
+// size that's reasonable for a chip but still recognizable when stretched
+// across a part's mask. Designer-authored scene-resolution finish renders
+// can replace these later (see resources/reference/AUTHORING.md).
+const SWATCH_MAX_EDGE = 512;
 
 // Map sheet display name → URL-safe slug used in option ids.
 const SHEET_SLUGS = {
@@ -378,7 +384,17 @@ async function main() {
         await ensureDir(thumbPath);
 
         if (imgBuf) {
-          await writeFile(thumbPath, imgBuf);
+          // Downsample large workbook swatches to SWATCH_MAX_EDGE on the
+          // long side. Smaller-than-target swatches pass through unchanged.
+          await sharp(imgBuf)
+            .resize({
+              width: SWATCH_MAX_EDGE,
+              height: SWATCH_MAX_EDGE,
+              fit: "inside",
+              withoutEnlargement: true,
+            })
+            .png({ compressionLevel: 9 })
+            .toFile(thumbPath);
           thumbnailUrl = `/assets/finishes/${part.partId}/${optionId}.png`;
         } else {
           // No swatch in workbook; emit a 1x1 transparent so the URL resolves.
