@@ -60,7 +60,26 @@ export async function GET(request: Request) {
       readFile(LIVE, "utf-8"),
       stat(LIVE),
     ]);
-    const manifest = JSON.parse(raw);
+    const json = JSON.parse(raw);
+    // Normalize legacy `polygon` to `polygons: [{ outer }]` so the client
+    // (TraceTool) always sees the runtime shape regardless of whether
+    // migration has been run on disk yet.
+    const parsed = partsManifestSchema.safeParse(json);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return NextResponse.json(
+        {
+          error: "invalid-on-disk",
+          field: first.path.join("."),
+          message: first.message,
+        },
+        { status: 500 },
+      );
+    }
+    const manifest = {
+      version: parsed.data.version,
+      parts: parsed.data.parts.map((p) => normalizePart(p)),
+    };
     return NextResponse.json({ manifest, mtime: st.mtime.toISOString() });
   } catch (err) {
     return NextResponse.json(
