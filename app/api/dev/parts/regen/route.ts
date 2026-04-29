@@ -30,12 +30,12 @@ import {
 import { sceneSchema } from "@/lib/scenes/types";
 import { regenPartsAssets } from "@/lib/dev/regenAssets";
 
+const PUBLIC_DIR = resolve(process.cwd(), "public");
 const SCENE_DIR = resolve(process.cwd(), "public/assets/base/main");
 const LIVE = resolve(SCENE_DIR, "parts.json");
 const REGEN_STATE = resolve(SCENE_DIR, "parts.json.regen.json");
 const REGEN_STATE_TMP = resolve(SCENE_DIR, "parts.json.regen.json.tmp");
 const SCENE_JSON = resolve(SCENE_DIR, "scene.json");
-const BASE_JPG = resolve(SCENE_DIR, "base.jpg");
 
 function devOnly(): NextResponse | null {
   if (process.env.NODE_ENV !== "development") {
@@ -138,7 +138,11 @@ export async function POST(request: Request) {
 
     const sceneRaw = await readFile(SCENE_JSON, "utf-8");
     const scene = sceneSchema.parse(JSON.parse(sceneRaw));
-    const { data: baseRgb, info } = await sharp(BASE_JPG)
+    const baseJpgPath = resolve(
+      PUBLIC_DIR,
+      scene.baseImageUrl.replace(/^\//, ""),
+    );
+    const { data: baseRgb, info } = await sharp(baseJpgPath)
       .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
@@ -146,7 +150,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "dimension-mismatch",
-          message: `base.jpg (${info.width}×${info.height}) does not match scene.json (${scene.width}×${scene.height})`,
+          message: `base image (${info.width}×${info.height}) does not match scene.json (${scene.width}×${scene.height})`,
         },
         { status: 500 },
       );

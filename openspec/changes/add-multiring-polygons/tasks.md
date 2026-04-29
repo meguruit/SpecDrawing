@@ -25,13 +25,13 @@
 
 ## 5. /dev/trace UI — sub-polygons + holes
 
-- [ ] 5.1 Add "ポリゴンを追加" button to the editing-part side panel; clicking it appends `{ outer: [], holes: [] }`, sets active sub-polygon, pushes one undo entry
-- [ ] 5.2 Add "穴を追加" toggle; while active, canvas clicks build a new ring under `polygons[active].holes`; toggle off via Esc, click "穴を完了", or right-click context-end
-- [ ] 5.3 Side panel: render foldable groups per `polygons[i]` and per ring (outer + each hole); show vertex count, active highlight, and (poly, ring kind, vertex index) per row
-- [ ] 5.4 Extend edge-midpoint insertion (`nearestEdge`) to scan every ring of every polygon entry of the active part; insert into the closest ring
-- [ ] 5.5 Render every ring of the editing part as its own `<Line>` in `TraceTool.client.tsx` (each with `listening={false}` per existing invariant); hole rings get a distinguishable dash pattern from outer rings
-- [ ] 5.6 Update hover affordance in `PartMarkerLayer.tsx` — when hovering any outer ring, render every outer + every hole of that part with the category color; holes use a shorter dash to distinguish from outers
-- [ ] 5.7 Push undo entries for: addPolygon, removePolygon, addHole, removeHole (1 entry each); existing vertex add/drag-end/delete continue to push 1 each
+- [x] 5.1 Add "ポリゴンを追加" button to the editing-part side panel; clicking it appends `{ outer: [], holes: [] }`, sets active sub-polygon, pushes one undo entry
+- [x] 5.2 Add "穴を追加" toggle; while active, canvas clicks build a new ring under `polygons[active].holes`; toggle off via Esc, click "穴を完了", or right-click context-end
+- [x] 5.3 Side panel: render foldable groups per `polygons[i]` and per ring (outer + each hole); show vertex count, active highlight, and (poly, ring kind, vertex index) per row
+- [x] 5.4 Extend edge-midpoint insertion (`nearestEdge`) to scan every ring of every polygon entry of the active part; insert into the closest ring
+- [x] 5.5 Render every ring of the editing part as its own `<Line>` in `TraceTool.client.tsx` (each with `listening={false}` per existing invariant); hole rings get a distinguishable dash pattern from outer rings
+- [x] 5.6 Update hover affordance in `PartMarkerLayer.tsx` — when hovering any outer ring, render every outer + every hole of that part with the category color; holes use a shorter dash to distinguish from outers
+- [x] 5.7 Push undo entries for: addPolygon, removePolygon, addHole, removeHole (1 entry each); existing vertex add/drag-end/delete continue to push 1 each
 
 ## 6. Server-side validation
 
@@ -40,19 +40,19 @@
 
 ## 7. Apply migration to the repo
 
-- [ ] 7.1 Run `node scripts/migrate-parts-multiring.mjs` against `public/assets/base/main/parts.json` and commit the result
-- [ ] 7.2 Run `npm run seed:masks` to regenerate every `mask_<NN>.png` and `shading_<NN>.png` under the new sidecar hash; commit the regenerated PNGs and the updated `parts.json.regen.json`
-- [ ] 7.3 Verify mask parity test (3.3) passes — every existing part's mask is byte-identical to pre-migration
+- [x] 7.1 Run `node scripts/migrate-parts-multiring.mjs` against `public/assets/base/main/parts.json` and commit the result
+- [x] 7.2 Run `npm run seed:masks` to regenerate every `mask_<NN>.png` and `shading_<NN>.png` under the new sidecar hash; commit the regenerated PNGs and the updated `parts.json.regen.json`
+- [x] 7.3 Verify mask parity test (3.3) passes — every existing part's mask is byte-identical to pre-migration
 
 ## 8. Smoke + docs
 
-- [ ] 8.1 Smoke `/`: load with all 17 parts, no visual diff vs pre-migration; click each part's marker — selection works
-- [ ] 8.2 Smoke `/dev/trace`: every part shows a single outer ring; "ポリゴンを追加" appends a new outer and canvas drawing builds it; "穴を追加" inside an existing outer cuts a transparent hole that appears in the runtime composite after `seed:masks`
-- [ ] 8.3 Smoke hit-test: a hole inside ⑰ (sash frame) — clicking inside the hole does NOT select ⑰; clicking the surrounding ring does
-- [ ] 8.4 Update `README.md` "Asset conventions" section to describe the `polygons` shape (replace single-polygon description); add a note that legacy `polygon` is accepted for one release with deprecation warning
-- [ ] 8.5 Update `resources/reference/AUTHORING.md` with the "ポリゴンを追加" / "穴を追加" workflow and a worked example (e.g., authoring ⑬ as 2 outer rings, ⑰ as 1 outer + 1 hole)
+- [ ] 8.1 Smoke `/`: load with all 17 parts, no visual diff vs pre-migration; click each part's marker — selection works *(needs interactive `npm run dev`; parity script confirms masks are byte-identical)*
+- [ ] 8.2 Smoke `/dev/trace`: every part shows a single outer ring; "ポリゴンを追加" appends a new outer and canvas drawing builds it; "穴を追加" inside an existing outer cuts a transparent hole that appears in the runtime composite after `seed:masks` *(needs interactive `npm run dev`)*
+- [ ] 8.3 Smoke hit-test: a hole inside ⑰ (sash frame) — clicking inside the hole does NOT select ⑰; clicking the surrounding ring does *(needs interactive `npm run dev`)*
+- [x] 8.4 Update `README.md` "Asset conventions" section to describe the `polygons` shape (replace single-polygon description); add a note that legacy `polygon` is accepted for one release with deprecation warning
+- [x] 8.5 Update `resources/reference/AUTHORING.md` with the "ポリゴンを追加" / "穴を追加" workflow and a worked example (e.g., authoring ⑬ as 2 outer rings, ⑰ as 1 outer + 1 hole)
 
 ## 9. Closure
 
-- [ ] 9.1 Mark `improve-finish-fidelity` task 2.1 as done in its `tasks.md` once this change is archived
-- [ ] 9.2 Open a follow-up issue / change to remove the legacy `polygon` loader path one release after this ships
+- [x] 9.1 Mark `improve-finish-fidelity` task 2.1 as done in its `tasks.md` once this change is archived
+- [ ] 9.2 Open a follow-up issue / change to remove the legacy `polygon` loader path one release after this ships *(deferred — open after this ships)*

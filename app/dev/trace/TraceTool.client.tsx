@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import {
   Stage,
@@ -26,7 +27,16 @@ import {
 } from "@/lib/scenes/load";
 import type { Scene } from "@/lib/scenes/types";
 import type { Part, PartsManifest, Vertex } from "@/lib/parts/types";
-import { firstOuter, withFirstOuter } from "@/lib/parts/polygonOps";
+import {
+  firstOuter,
+  getRingVertices,
+  withRingVertices,
+  appendPolygon,
+  removePolygonAt,
+  appendHole,
+  removeHoleAt,
+  type ActiveRing,
+} from "@/lib/parts/polygonOps";
 import {
   loadDraft,
   saveDraft,
@@ -111,6 +121,16 @@ export default function TraceTool() {
     extracted: ExtractedManifest;
   } | null>(null);
   const [historyRev, setHistoryRev] = useState(0); // bump to re-render undo/redo buttons
+
+  // Active ring being edited within `editingPart.polygons`. Defaults to the
+  // first outer when a part is selected; reset whenever editingId changes.
+  const [activeRing, setActiveRing] = useState<ActiveRing>({
+    kind: "outer",
+    polygonIndex: 0,
+  });
+  // While true, stage clicks build a new hole ring under the active outer.
+  // Toggled off via Esc, the "穴を完了" button, or right-click on canvas.
+  const [holeBuildMode, setHoleBuildMode] = useState(false);
 
   const stageRef = useRef<Konva.Stage>(null);
   const historyRef = useRef(new History());
@@ -211,6 +231,12 @@ export default function TraceTool() {
     () => manifest?.parts.find((p) => p.id === editingId),
     [manifest, editingId],
   );
+
+  // Reset ring focus + hole-build mode whenever the editing part changes.
+  useEffect(() => {
+    setActiveRing({ kind: "outer", polygonIndex: 0 });
+    setHoleBuildMode(false);
+  }, [editingId]);
 
   const displayScale = useMemo(
     () => (scene ? Math.min(1, MAX_DISPLAY_WIDTH / scene.width) : 1),
@@ -397,52 +423,52 @@ export default function TraceTool() {
   // ----- editing actions -----
 
   const handleAddVertex = useCallback(
-    (x: number, y: number) => {
+    (x: number, y: number, target: ActiveRing = activeRing) => {
       if (!editingPart) return;
       const before = snapshotCurrent();
       updatePart(
         editingPart.id,
         (p) =>
-          withFirstOuter(p, [
-            ...firstOuter(p),
+          withRingVertices(p, target, [
+            ...getRingVertices(p, target),
             [Math.round(x), Math.round(y)],
           ]),
         before,
       );
     },
-    [editingPart, snapshotCurrent, updatePart],
+    [editingPart, activeRing, snapshotCurrent, updatePart],
   );
 
   const handleInsertVertexAt = useCallback(
-    (edgeIndex: number, foot: Point) => {
+    (edgeIndex: number, foot: Point, target: ActiveRing = activeRing) => {
       if (!editingPart) return;
       const before = snapshotCurrent();
       updatePart(
         editingPart.id,
         (p) => {
-          const next = firstOuter(p).slice();
+          const next = getRingVertices(p, target).slice();
           next.splice(edgeIndex + 1, 0, [
             Math.round(foot[0]),
             Math.round(foot[1]),
           ]);
-          return withFirstOuter(p, next);
+          return withRingVertices(p, target, next);
         },
         before,
       );
     },
-    [editingPart, snapshotCurrent, updatePart],
+    [editingPart, activeRing, snapshotCurrent, updatePart],
   );
 
   const handleMoveVertexLive = useCallback(
-    (idx: number, x: number, y: number) => {
+    (target: ActiveRing, idx: number, x: number, y: number) => {
       if (!editingPart) return;
       // Live drag — no history push, just state update + draft mirror.
       updatePart(
         editingPart.id,
         (p) => {
-          const next = firstOuter(p).slice();
+          const next = getRingVertices(p, target).slice();
           next[idx] = [Math.round(x), Math.round(y)];
-          return withFirstOuter(p, next);
+          return withRingVertices(p, target, next);
         },
         null,
       );
@@ -464,12 +490,17 @@ export default function TraceTool() {
   }, []);
 
   const handleDeleteVertex = useCallback(
-    (idx: number) => {
+    (target: ActiveRing, idx: number) => {
       if (!editingPart) return;
       const before = snapshotCurrent();
       updatePart(
         editingPart.id,
-        (p) => withFirstOuter(p, firstOuter(p).filter((_, i) => i !== idx)),
+        (p) =>
+          withRingVertices(
+            p,
+            target,
+            getRingVertices(p, target).filter((_, i) => i !== idx),
+          ),
         before,
       );
     },
@@ -491,11 +522,76 @@ export default function TraceTool() {
     [editingPart, updatePart],
   );
 
-  const handleClearPolygon = useCallback(() => {
+  const handleClearActiveRing = useCallback(() => {
     if (!editingPart) return;
     const before = snapshotCurrent();
-    updatePart(editingPart.id, (p) => withFirstOuter(p, []), before);
+    updatePart(editingPart.id, (p) => withRingVertices(p, activeRing, []), before);
+  }, [editingPart, activeRing, snapshotCurrent, updatePart]);
+
+  // Append a new outer (sub-polygon) and focus it for editing.
+  const handleAddPolygon = useCallback(() => {
+    if (!editingPart) return;
+    const before = snapshotCurrent();
+    const nextIndex = editingPart.polygons.length;
+    updatePart(editingPart.id, (p) => appendPolygon(p), before);
+    setActiveRing({ kind: "outer", polygonIndex: nextIndex });
+    setHoleBuildMode(false);
   }, [editingPart, snapshotCurrent, updatePart]);
+
+  // Remove the polygon entry the active ring lives in. Refuses to remove
+  // the last remaining polygon — every part must have ≥ 1 outer.
+  const handleRemoveActivePolygon = useCallback(() => {
+    if (!editingPart) return;
+    if (editingPart.polygons.length <= 1) return;
+    const before = snapshotCurrent();
+    const idx = activeRing.polygonIndex;
+    updatePart(editingPart.id, (p) => removePolygonAt(p, idx), before);
+    setActiveRing({ kind: "outer", polygonIndex: 0 });
+    setHoleBuildMode(false);
+  }, [editingPart, activeRing.polygonIndex, snapshotCurrent, updatePart]);
+
+  // Start building a hole inside the active polygon's outer.
+  const handleAddHole = useCallback(() => {
+    if (!editingPart) return;
+    const before = snapshotCurrent();
+    const polygonIndex = activeRing.polygonIndex;
+    const poly = editingPart.polygons[polygonIndex];
+    const nextHoleIndex = poly?.holes?.length ?? 0;
+    updatePart(editingPart.id, (p) => appendHole(p, polygonIndex), before);
+    setActiveRing({ kind: "hole", polygonIndex, holeIndex: nextHoleIndex });
+    setHoleBuildMode(true);
+  }, [editingPart, activeRing.polygonIndex, snapshotCurrent, updatePart]);
+
+  // End hole-build mode without removing the in-progress hole. Falls back
+  // to editing the parent outer.
+  const handleEndHole = useCallback(() => {
+    setHoleBuildMode(false);
+    if (activeRing.kind === "hole") {
+      setActiveRing({ kind: "outer", polygonIndex: activeRing.polygonIndex });
+    }
+  }, [activeRing]);
+
+  // Remove a specific hole. Pushes one undo entry.
+  const handleRemoveHole = useCallback(
+    (polygonIndex: number, holeIndex: number) => {
+      if (!editingPart) return;
+      const before = snapshotCurrent();
+      updatePart(
+        editingPart.id,
+        (p) => removeHoleAt(p, polygonIndex, holeIndex),
+        before,
+      );
+      if (
+        activeRing.kind === "hole" &&
+        activeRing.polygonIndex === polygonIndex &&
+        activeRing.holeIndex === holeIndex
+      ) {
+        setActiveRing({ kind: "outer", polygonIndex });
+        setHoleBuildMode(false);
+      }
+    },
+    [editingPart, activeRing, snapshotCurrent, updatePart],
+  );
 
   const handleStageClick = useCallback(
     (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -505,18 +601,67 @@ export default function TraceTool() {
       if (!pos || !editingPart) return;
       const sx = pos.x / displayScale;
       const sy = pos.y / displayScale;
-      const hit = nearestEdge(
-        firstOuter(editingPart) as ReadonlyArray<Point>,
-        [sx, sy],
-        EDGE_INSERT_TOLERANCE_PX / displayScale,
-      );
-      if (hit) {
-        handleInsertVertexAt(hit.edgeIndex, hit.foot);
+      const tol = EDGE_INSERT_TOLERANCE_PX / displayScale;
+
+      // Hole-build mode: clicks always go to the in-progress hole. Edge-
+      // midpoint insertion only considers that hole's edges.
+      if (holeBuildMode && activeRing.kind === "hole") {
+        const ringVerts = getRingVertices(editingPart, activeRing);
+        const hit = nearestEdge(ringVerts as ReadonlyArray<Point>, [sx, sy], tol);
+        if (hit) handleInsertVertexAt(hit.edgeIndex, hit.foot, activeRing);
+        else handleAddVertex(sx, sy, activeRing);
+        return;
+      }
+
+      // Normal mode: scan every ring of the editing part; the nearest edge
+      // wins regardless of which sub-polygon is currently active. The
+      // matched ring also becomes the new active ring so subsequent
+      // clicks build coherently.
+      let best: { active: ActiveRing; edgeIndex: number; foot: Point; distance: number } | null = null;
+      editingPart.polygons.forEach((poly, pi) => {
+        const outer = nearestEdge(poly.outer as ReadonlyArray<Point>, [sx, sy], tol);
+        if (outer && (!best || outer.distance < best.distance)) {
+          best = {
+            active: { kind: "outer", polygonIndex: pi },
+            edgeIndex: outer.edgeIndex,
+            foot: outer.foot,
+            distance: outer.distance,
+          };
+        }
+        poly.holes?.forEach((h, hi) => {
+          const inner = nearestEdge(h as ReadonlyArray<Point>, [sx, sy], tol);
+          if (inner && (!best || inner.distance < best.distance)) {
+            best = {
+              active: { kind: "hole", polygonIndex: pi, holeIndex: hi },
+              edgeIndex: inner.edgeIndex,
+              foot: inner.foot,
+              distance: inner.distance,
+            };
+          }
+        });
+      });
+
+      if (best) {
+        const hit = best as {
+          active: ActiveRing;
+          edgeIndex: number;
+          foot: Point;
+        };
+        handleInsertVertexAt(hit.edgeIndex, hit.foot, hit.active);
+        setActiveRing(hit.active);
       } else {
-        handleAddVertex(sx, sy);
+        // Fall through: append to the active ring (default = active outer).
+        handleAddVertex(sx, sy, activeRing);
       }
     },
-    [editingPart, displayScale, handleInsertVertexAt, handleAddVertex],
+    [
+      editingPart,
+      displayScale,
+      activeRing,
+      holeBuildMode,
+      handleInsertVertexAt,
+      handleAddVertex,
+    ],
   );
 
   // ----- editing-part switch (history checkpoint) -----
@@ -591,6 +736,12 @@ export default function TraceTool() {
     const onKey = (e: KeyboardEvent) => {
       const tag = (document.activeElement as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      // Esc ends hole-build mode without removing the in-progress hole.
+      if (e.key === "Escape" && holeBuildMode) {
+        e.preventDefault();
+        handleEndHole();
+        return;
+      }
       const meta = e.metaKey || e.ctrlKey;
       if (!meta) return;
       if (e.key === "z" || e.key === "Z") {
@@ -601,7 +752,7 @@ export default function TraceTool() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undo, redo]);
+  }, [undo, redo, holeBuildMode, handleEndHole]);
 
   // ----- extractor import -----
 
@@ -861,30 +1012,43 @@ export default function TraceTool() {
                   #{editingPart.id} · {editingPart.category} · {editingPart.renderMode}
                 </div>
               </div>
-              <div>
-                <div className="font-semibold text-slate-700">頂点</div>
-                <div className="text-[10px] text-slate-500">
-                  {firstOuter(editingPart).length} 頂点
-                </div>
-                <ul className="mt-1 max-h-64 overflow-y-auto rounded border border-slate-200 bg-white">
-                  {firstOuter(editingPart).map((v, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center justify-between gap-2 border-b border-slate-100 px-2 py-1 last:border-b-0"
-                    >
-                      <span className="font-mono text-[11px]">
-                        {i}: {v[0]}, {v[1]}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteVertex(i)}
-                        className="text-[11px] text-red-600 hover:underline"
-                      >
-                        削除
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+              <RingGroups
+                part={editingPart}
+                activeRing={activeRing}
+                onSelectRing={(target) => {
+                  setActiveRing(target);
+                  if (target.kind !== "hole") setHoleBuildMode(false);
+                }}
+                onDeleteVertex={(target, i) => handleDeleteVertex(target, i)}
+                onRemovePolygon={handleRemoveActivePolygon}
+                onRemoveHole={handleRemoveHole}
+                canRemovePolygon={editingPart.polygons.length > 1}
+              />
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={handleAddPolygon}
+                  className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:border-slate-400"
+                >
+                  ＋ ポリゴンを追加
+                </button>
+                {!holeBuildMode ? (
+                  <button
+                    type="button"
+                    onClick={handleAddHole}
+                    className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:border-slate-400"
+                  >
+                    ＋ 穴を追加
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleEndHole}
+                    className="rounded border border-rose-400 bg-rose-50 px-2 py-1 text-xs text-rose-700 hover:border-rose-500"
+                  >
+                    穴を完了 (Esc)
+                  </button>
+                )}
               </div>
               <div>
                 <div className="font-semibold text-slate-700">マーカー</div>
@@ -897,10 +1061,10 @@ export default function TraceTool() {
               </div>
               <button
                 type="button"
-                onClick={handleClearPolygon}
+                onClick={handleClearActiveRing}
                 className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:border-slate-400"
               >
-                ポリゴンをクリア
+                編集中のリングをクリア
               </button>
             </div>
           )}
@@ -952,42 +1116,134 @@ export default function TraceTool() {
             )}
             {editingPart && (
               <Layer>
-                <Line
-                  points={firstOuter(editingPart).flatMap(([x, y]) => [x, y])}
-                  closed
-                  stroke={CATEGORY_COLOR[editingPart.category] ?? "#0F172A"}
-                  strokeWidth={6}
-                  fill="rgba(59,130,246,0.10)"
-                  // Visual outline only. Without listening=false the
-                  // semi-transparent fill swallows clicks inside the
-                  // polygon, breaking click-to-add-vertex and even
-                  // right-click-on-vertex (when the vertex circle is
-                  // small relative to the polygon area).
-                  listening={false}
-                />
-                {firstOuter(editingPart).map((v, i) => (
-                  <Circle
-                    key={i}
-                    x={v[0]}
-                    y={v[1]}
-                    radius={14}
-                    fill="#ffffff"
-                    stroke={
-                      CATEGORY_COLOR[editingPart.category] ?? "#0F172A"
-                    }
-                    strokeWidth={3}
-                    draggable
-                    onDragStart={beginDrag}
-                    onDragMove={(ev) =>
-                      handleMoveVertexLive(i, ev.target.x(), ev.target.y())
-                    }
-                    onDragEnd={endDrag}
-                    onContextMenu={(ev) => {
-                      ev.evt.preventDefault();
-                      handleDeleteVertex(i);
-                    }}
-                  />
-                ))}
+                {/* One <Line> per ring. Outer rings get the part's category
+                    color and a translucent fill (subdued for inactive
+                    sub-polygons); hole rings get a contrasting accent
+                    color and a shorter dash to distinguish them visually.
+                    All lines stay non-listening so click events fall
+                    through to the Stage's onClick handler. */}
+                {editingPart.polygons.flatMap((poly, pi) => {
+                  const lines: ReactNode[] = [];
+                  const isActiveOuter =
+                    activeRing.kind === "outer" &&
+                    activeRing.polygonIndex === pi;
+                  const outerStroke =
+                    CATEGORY_COLOR[editingPart.category] ?? "#0F172A";
+                  lines.push(
+                    <Line
+                      key={`p${pi}-outer`}
+                      points={poly.outer.flatMap(([x, y]) => [x, y])}
+                      closed
+                      stroke={outerStroke}
+                      strokeWidth={isActiveOuter ? 6 : 3}
+                      opacity={isActiveOuter ? 1 : 0.45}
+                      fill={
+                        isActiveOuter
+                          ? "rgba(59,130,246,0.10)"
+                          : "rgba(59,130,246,0.04)"
+                      }
+                      listening={false}
+                    />,
+                  );
+                  poly.holes?.forEach((hole, hi) => {
+                    const isActiveHole =
+                      activeRing.kind === "hole" &&
+                      activeRing.polygonIndex === pi &&
+                      activeRing.holeIndex === hi;
+                    lines.push(
+                      <Line
+                        key={`p${pi}-hole-${hi}`}
+                        points={hole.flatMap(([x, y]) => [x, y])}
+                        closed
+                        stroke="#DC2626"
+                        strokeWidth={isActiveHole ? 5 : 3}
+                        dash={[8, 6]}
+                        opacity={isActiveHole ? 1 : 0.5}
+                        listening={false}
+                      />,
+                    );
+                  });
+                  return lines;
+                })}
+                {/* Vertex handles for every ring of the editing part. The
+                    handlers take an explicit `target` so the active ring
+                    state isn't read inside the closure (which would stale-
+                    close over the previous render's value during a burst). */}
+                {editingPart.polygons.flatMap((poly, pi) => {
+                  const handles: ReactNode[] = [];
+                  const outerTarget: ActiveRing = {
+                    kind: "outer",
+                    polygonIndex: pi,
+                  };
+                  poly.outer.forEach((v, i) => {
+                    handles.push(
+                      <Circle
+                        key={`p${pi}-outer-v${i}`}
+                        x={v[0]}
+                        y={v[1]}
+                        radius={14}
+                        fill="#ffffff"
+                        stroke={
+                          CATEGORY_COLOR[editingPart.category] ?? "#0F172A"
+                        }
+                        strokeWidth={3}
+                        draggable
+                        onMouseDown={() => setActiveRing(outerTarget)}
+                        onDragStart={beginDrag}
+                        onDragMove={(ev) =>
+                          handleMoveVertexLive(
+                            outerTarget,
+                            i,
+                            ev.target.x(),
+                            ev.target.y(),
+                          )
+                        }
+                        onDragEnd={endDrag}
+                        onContextMenu={(ev) => {
+                          ev.evt.preventDefault();
+                          handleDeleteVertex(outerTarget, i);
+                        }}
+                      />,
+                    );
+                  });
+                  poly.holes?.forEach((hole, hi) => {
+                    const holeTarget: ActiveRing = {
+                      kind: "hole",
+                      polygonIndex: pi,
+                      holeIndex: hi,
+                    };
+                    hole.forEach((v, i) => {
+                      handles.push(
+                        <Circle
+                          key={`p${pi}-hole-${hi}-v${i}`}
+                          x={v[0]}
+                          y={v[1]}
+                          radius={12}
+                          fill="#FEE2E2"
+                          stroke="#DC2626"
+                          strokeWidth={3}
+                          draggable
+                          onMouseDown={() => setActiveRing(holeTarget)}
+                          onDragStart={beginDrag}
+                          onDragMove={(ev) =>
+                            handleMoveVertexLive(
+                              holeTarget,
+                              i,
+                              ev.target.x(),
+                              ev.target.y(),
+                            )
+                          }
+                          onDragEnd={endDrag}
+                          onContextMenu={(ev) => {
+                            ev.evt.preventDefault();
+                            handleDeleteVertex(holeTarget, i);
+                          }}
+                        />,
+                      );
+                    });
+                  });
+                  return handles;
+                })}
                 {visibility !== "hidden" && (
                   <>
                     <Circle
@@ -1099,4 +1355,181 @@ function SaveBadge({ status }: { status: SaveStatus }) {
         </span>
       );
   }
+}
+
+// Side-panel grouping: one foldable section per polygon entry; outer first,
+// then each hole. Clicking a heading focuses that ring; the active ring is
+// highlighted with a colored border. Vertex rows show their (poly, ring kind,
+// vertex index) and offer a delete affordance.
+function RingGroups({
+  part,
+  activeRing,
+  onSelectRing,
+  onDeleteVertex,
+  onRemovePolygon,
+  onRemoveHole,
+  canRemovePolygon,
+}: {
+  part: Part;
+  activeRing: ActiveRing;
+  onSelectRing: (target: ActiveRing) => void;
+  onDeleteVertex: (target: ActiveRing, vertexIndex: number) => void;
+  onRemovePolygon: () => void;
+  onRemoveHole: (polygonIndex: number, holeIndex: number) => void;
+  canRemovePolygon: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="font-semibold text-slate-700">
+          ポリゴン ({part.polygons.length})
+        </div>
+        {canRemovePolygon && activeRing.kind === "outer" && (
+          <button
+            type="button"
+            onClick={onRemovePolygon}
+            className="text-[11px] text-red-600 hover:underline"
+          >
+            この sub-polygon を削除
+          </button>
+        )}
+      </div>
+      {part.polygons.map((poly, pi) => {
+        const outerActive =
+          activeRing.kind === "outer" && activeRing.polygonIndex === pi;
+        return (
+          <div
+            key={pi}
+            className="overflow-hidden rounded border border-slate-200 bg-white"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                onSelectRing({ kind: "outer", polygonIndex: pi })
+              }
+              className={`flex w-full items-center justify-between px-2 py-1 text-left text-[11px] ${
+                outerActive
+                  ? "bg-blue-50 font-semibold text-blue-900"
+                  : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+              }`}
+            >
+              <span>
+                ポリゴン {pi + 1} / outer ({poly.outer.length} 頂点)
+              </span>
+              {outerActive && (
+                <span className="text-[9px] uppercase tracking-wide text-blue-700">
+                  編集中
+                </span>
+              )}
+            </button>
+            {outerActive && (
+              <ul className="max-h-48 overflow-y-auto border-t border-slate-200">
+                {poly.outer.map((v, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-2 border-b border-slate-100 px-2 py-1 last:border-b-0"
+                  >
+                    <span className="font-mono text-[11px]">
+                      {i}: {v[0]}, {v[1]}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onDeleteVertex(
+                          { kind: "outer", polygonIndex: pi },
+                          i,
+                        )
+                      }
+                      className="text-[11px] text-red-600 hover:underline"
+                    >
+                      削除
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {poly.holes?.map((hole, hi) => {
+              const holeActive =
+                activeRing.kind === "hole" &&
+                activeRing.polygonIndex === pi &&
+                activeRing.holeIndex === hi;
+              return (
+                <div
+                  key={`hole-${hi}`}
+                  className="border-t border-slate-200"
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSelectRing({
+                        kind: "hole",
+                        polygonIndex: pi,
+                        holeIndex: hi,
+                      })
+                    }
+                    className={`flex w-full items-center justify-between px-2 py-1 pl-4 text-left text-[11px] ${
+                      holeActive
+                        ? "bg-rose-50 font-semibold text-rose-900"
+                        : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    <span>
+                      └ hole {hi + 1} ({hole.length} 頂点)
+                    </span>
+                    <span className="flex items-center gap-2">
+                      {holeActive && (
+                        <span className="text-[9px] uppercase tracking-wide text-rose-700">
+                          編集中
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveHole(pi, hi);
+                        }}
+                        className="text-[11px] text-red-600 hover:underline"
+                      >
+                        削除
+                      </button>
+                    </span>
+                  </button>
+                  {holeActive && (
+                    <ul className="max-h-40 overflow-y-auto border-t border-slate-200">
+                      {hole.map((v, i) => (
+                        <li
+                          key={i}
+                          className="flex items-center justify-between gap-2 border-b border-slate-100 px-2 py-1 pl-4 last:border-b-0"
+                        >
+                          <span className="font-mono text-[11px]">
+                            {i}: {v[0]}, {v[1]}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onDeleteVertex(
+                                {
+                                  kind: "hole",
+                                  polygonIndex: pi,
+                                  holeIndex: hi,
+                                },
+                                i,
+                              )
+                            }
+                            className="text-[11px] text-red-600 hover:underline"
+                          >
+                            削除
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
 }

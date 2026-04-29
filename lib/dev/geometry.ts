@@ -33,14 +33,15 @@ function projectOnSegment(
 /**
  * Find the polygon edge nearest to `point`, within `tolerancePx`. Returns
  * the index of the edge's first endpoint (so the new vertex inserts at
- * `polygon[edgeIndex + 1]`) and the perpendicular foot to use as the new
- * vertex coords. Returns null if no edge is within tolerance.
+ * `polygon[edgeIndex + 1]`), the perpendicular foot to use as the new
+ * vertex coords, and the distance to that foot. Returns null if no edge
+ * is within tolerance.
  */
 export function nearestEdge(
   polygon: ReadonlyArray<Point>,
   point: Point,
   tolerancePx: number,
-): { edgeIndex: number; foot: Point } | null {
+): { edgeIndex: number; foot: Point; distance: number } | null {
   if (polygon.length < 2) return null;
   let bestIndex = -1;
   let bestDistance = Infinity;
@@ -58,5 +59,5 @@ export function nearestEdge(
     }
   }
   if (bestDistance > tolerancePx) return null;
-  return { edgeIndex: bestIndex, foot: bestFoot };
+  return { edgeIndex: bestIndex, foot: bestFoot, distance: bestDistance };
 }

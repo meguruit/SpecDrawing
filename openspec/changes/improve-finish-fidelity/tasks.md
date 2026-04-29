@@ -7,7 +7,7 @@
 
 ## 2. Per-item follow-up changes (NOT in this change; tracked here for visibility)
 
-- [ ] 2.1 `add-multiring-polygons` (Items 1 + 2 bundled) — schema, mask rasterizer, hit-test, `/dev/trace` UI for sub-polygons + holes, parts.json migration
+- [x] 2.1 `add-multiring-polygons` (Items 1 + 2 bundled) — schema, mask rasterizer, hit-test, `/dev/trace` UI for sub-polygons + holes, parts.json migration
 - [ ] 2.2 `add-per-option-finish-renders` (Item 3) — `customTextureUrl` field, `seed:custom-textures` step, AUTHORING.md docs, seed:parts preservation
 - [ ] 2.3 `spike-ai-asset-generation` (Item 4) — 1-week research spike; output: 5 sample door-panel finishes + a go/no-go memo. Not a runtime change.
 - [ ] 2.4 (Item 5) — customer asks: re-render with corrected color profile. Fallback: 1-line sharp `.modulate()` call in `cut-base-variants.mjs`. Not a runtime spec change.

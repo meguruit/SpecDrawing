@@ -27,6 +27,7 @@ npm install
 npm run seed:parts               # extract finish options from the workbook
 npm run seed:masks               # generate mask + shading PNGs from parts.json polygons
 npm run seed:variants            # crop per-(part, variant) textures from base variants
+npm run migrate:multiring        # one-shot: legacy `polygon` field → `polygons: [{ outer }]`
 npm run dev                      # http://localhost:3000
 ```
 
@@ -71,9 +72,17 @@ public/                                   runtime, served by Next.js
 ```
 
 The `parts.json` manifest declares for each part: id, label, category,
-sourcePdf reference, marker centroid, polygon (for hit-testing), `renderMode`,
-and the mask / shading filenames. The loader probes every declared mask and
-shading file at scene-load time and throws a named error on missing assets.
+sourcePdf reference, marker centroid, `polygons` (one or more
+`{ outer, holes? }` entries describing disjoint regions and interior
+cuts; used for both rasterizing the mask and hit-testing), `renderMode`,
+and the mask / shading filenames. The loader probes every declared mask
+and shading file at scene-load time and throws a named error on missing
+assets.
+
+> The legacy single `polygon: Vertex[]` field is still accepted on read
+> for one release with a dev-mode deprecation warning. Run
+> `npm run migrate:multiring` once on an older `parts.json` to convert it
+> to `polygons: [{ outer: <existing> }]`, then re-run `npm run seed:masks`.
 
 The `finish-options.json` catalog is derived from `部材リスト.xlsx` by
 `scripts/extract-finish-options.mjs`. Each option entry sets exactly one of

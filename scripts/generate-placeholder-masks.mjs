@@ -22,10 +22,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const PUBLIC_DIR = resolve(ROOT, "public");
 const SCENE_DIR = resolve(ROOT, "public/assets/base/main");
 const PARTS_PATH = resolve(SCENE_DIR, "parts.json");
 const SCENE_JSON = resolve(SCENE_DIR, "scene.json");
-const BASE_JPG = resolve(SCENE_DIR, "base.jpg");
 
 const MASK_FEATHER_RADIUS = 2; // pixels — Gaussian sigma for edge anti-aliasing
 
@@ -168,14 +168,21 @@ async function main() {
   const manifest = JSON.parse(await readFile(PARTS_PATH, "utf-8"));
   const { width, height } = scene;
 
-  // Load base.jpg as raw RGB once for shading extraction.
-  const { data: baseRgb, info: baseInfo } = await sharp(BASE_JPG)
+  // The base image filename is sourced from scene.json (`baseImageUrl`),
+  // not hardcoded — follows the natural/sharp/flat variant rename.
+  const baseImageUrl = scene.baseImageUrl;
+  if (typeof baseImageUrl !== "string") {
+    throw new Error("scene.json is missing a string `baseImageUrl`");
+  }
+  const baseJpgPath = resolve(PUBLIC_DIR, baseImageUrl.replace(/^\//, ""));
+
+  const { data: baseRgb, info: baseInfo } = await sharp(baseJpgPath)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
   if (baseInfo.width !== width || baseInfo.height !== height) {
     throw new Error(
-      `base.jpg dimensions (${baseInfo.width}x${baseInfo.height}) do not match scene.json (${width}x${height})`,
+      `base image dimensions (${baseInfo.width}x${baseInfo.height}) do not match scene.json (${width}x${height})`,
     );
   }
 
