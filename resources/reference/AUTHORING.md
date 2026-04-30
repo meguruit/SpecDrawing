@@ -171,31 +171,62 @@ All variant base files MUST share the same dimensions and camera as the
 default. The seed script `resize`s on dimension mismatch with a warning,
 but a slight mismatch leads to bleeding edges in the cropped piece.
 
-**Override config**
+**Override config — when to add an entry**
 
 `resources/catalog/finish-base-overrides.json` maps `(partId, optionLabel)`
-to a variant key:
+to a variant key. **As of the variant-keyed workbook (2026-04-30), the
+override config is only required for collapsed-label cases** — when the
+same option label appears in MORE THAN ONE Natural / Flat / Sharp column.
+Single-variant labels are auto-derived by `seed:variants` (no entry
+needed).
+
+Auto-derivation rule (in `cut-base-variants.mjs`):
+- For every texture-mode option on a variant-enabled sheet, if
+  `defaultForVariants.length === 1` AND the option has no manual
+  override entry, the seed step automatically points the option's
+  `textureUrl` at `_v_<defaultForVariants[0]>.png`.
+
+When to add an override entry:
+- The option's label appears in 2+ variant columns (collapsed). The
+  manual entry tells the seed step which variant base to crop for the
+  option's static `textureUrl` — this is the fallback used by the
+  runtime when the active variant is NOT in the option's
+  `defaultForVariants` set.
+
+Example — current config (post-cleanup):
 
 ```json
 {
   "version": 1,
   "overrides": {
-    "01": {
-      "ﾁｬｲﾅ大理石(黒)": "sharp",
-      "ﾁｬｲﾅ大理石(白)": "natural"
-    },
-    "12": {
-      "ｸﾚﾏﾌﾞﾛｯｸ": "flat",
-      "ｵﾝﾌﾀﾞｶﾞﾀﾗｲﾄ": "natural",
-      "ﾜｲﾄﾞﾓﾙﾀﾙ": "sharp"
-    }
+    "01": { "ﾁｬｲﾅ大理石(白)": "natural" },     // 白 collapses [natural,flat]; on Sharp use natural cut
+    "05": { "ブラック": "sharp" },              // ブラック collapses [flat,sharp]; on Natural use sharp cut
+    "06": { "ブラック": "sharp" },
+    "08": { "ｼｬﾝﾊﾟﾝﾎﾜｲﾄ": "natural" },        // collapses [natural,flat]; on Sharp use natural cut
+    "09": { "ブラック": "sharp" }
   }
 }
 ```
 
+Notice that ⑫ has NO entry even though it has 3 distinct variant
+labels — each label is single-variant (length 1) and auto-derived
+from `defaultForVariants`. Same for ④, ⑩, ⑬, ⑮.
+
 The same `(partId, optionLabel)` resolves to the same variant on every
-sheet (`アーバンシー`, `レコリード`, …). Options with no entry keep
-their previous behavior (workbook swatch).
+sheet. Options without an entry AND with `defaultForVariants` length
+zero (alternatives in column G+) keep their previous behavior
+(workbook swatch).
+
+**Runtime variant-following rule**: when an option has
+`defaultForVariants` that includes the active variant key (e.g. ⑭
+シルバー collapses across all 3 variants → defaults=[natural,flat,sharp]),
+the canvas uses `option.textureUrlByVariant[activeVariantKey]` so the
+part follows the active variant's base on every switch. Otherwise the
+canvas uses the static `option.textureUrl` (set by override config or
+auto-derive). This decouples "name = appearance" options (e.g. ﾁｬｲﾅ
+大理石(黒) always paints the sharp-base black-marble crop) from
+"variant-driven" options (e.g. ⑭ シルバー hardware naturally follows
+the active room mood).
 
 **Pipeline order**
 

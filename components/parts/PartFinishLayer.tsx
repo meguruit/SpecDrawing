@@ -23,19 +23,22 @@ export function PartFinishLayer() {
   const selections = useCanvasStore((s) => s.partFinishSelections);
   const finishOptions = useCanvasStore((s) => s.finishOptions);
   const optionsRev = useCanvasStore((s) => s.finishOptionsRev);
+  const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
 
   if (!scene) return null;
 
   // One Konva Layer per part with an active selection: Layers are isolated offscreen
   // canvases so the multiply / destination-in chain in one part can't leak to another.
   //
-  // Note: the active base variant (Natural/Flat/Sharp) only swaps the canvas
-  // backdrop (see CanvasStage). Selected options keep their assigned texture
-  // regardless of the active variant — `option.textureUrl` is set by the
-  // seed pipeline from `finish-base-overrides.json`, so an option labelled
-  // "ﾁｬｲﾅ大理石(黒)" always paints the sharp-base crop even on the natural
-  // backdrop. Per-variant lookup (`textureUrlByVariant`) is intentionally
-  // unused here.
+  // Texture resolution rule:
+  //   - When `option.defaultForVariants` includes the active variant key,
+  //     use `option.textureUrlByVariant[active]` so the part follows the
+  //     active variant's base (e.g. ⑭ シルバー spans all 3 variants → render
+  //     the active variant's hardware crop; ⑤ ブラック on Flat → render the
+  //     flat-base black hood).
+  //   - Otherwise use the static `option.textureUrl` so the option's
+  //     assigned appearance is preserved (e.g. picking ﾁｬｲﾅ大理石(黒) on
+  //     Natural still paints the sharp-base black-marble crop).
   return (
     <Fragment>
       {parts.map((part) => {
@@ -44,11 +47,24 @@ export function PartFinishLayer() {
         const option = finishOptions.find((o) => o.id === optionId);
         if (!option) return null;
         const rev = (part as Part & { _rev?: string })._rev;
+
+        let resolvedTextureUrl: string | undefined = option.textureUrl;
+        let resolvedTextureBox = option.textureBox;
+        if (
+          part.renderMode === "texture" &&
+          activeVariantKey &&
+          option.defaultForVariants?.includes(activeVariantKey) &&
+          option.textureUrlByVariant?.[activeVariantKey]
+        ) {
+          const entry = option.textureUrlByVariant[activeVariantKey];
+          resolvedTextureUrl = entry.url;
+          resolvedTextureBox = entry.textureBox ?? option.textureBox;
+        }
         // Texture URLs cache-bust on the catalog revision (changes when
         // seed:variants rewrites textureUrl PNG content). Mask + shading
         // cache-bust on the per-part `_rev` (changes when polygon does).
-        const textureUrl = option.textureUrl
-          ? bust(option.textureUrl, optionsRev)
+        const bustedTexture = resolvedTextureUrl
+          ? bust(resolvedTextureUrl, optionsRev)
           : undefined;
         return (
           <Layer key={part.id} listening={false}>
@@ -63,8 +79,8 @@ export function PartFinishLayer() {
                   ? bust(resolveAssetUrl(scene, part.shading), rev)
                   : undefined
               }
-              textureUrl={textureUrl}
-              textureBox={option.textureBox}
+              textureUrl={bustedTexture}
+              textureBox={resolvedTextureBox}
             />
           </Layer>
         );

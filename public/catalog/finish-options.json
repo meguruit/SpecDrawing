@@ -60,12 +60,6 @@
         "sharp"
       ],
       "textureUrl": "/assets/finishes/01/_v_sharp.png",
-      "textureBox": {
-        "x": 1467,
-        "y": 1233,
-        "width": 793,
-        "height": 103
-      },
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/01/_v_natural.png",
@@ -94,6 +88,12 @@
             "height": 103
           }
         }
+      },
+      "textureBox": {
+        "x": 1467,
+        "y": 1233,
+        "width": 793,
+        "height": 103
       }
     },
     {
@@ -460,12 +460,6 @@
         "natural"
       ],
       "textureUrl": "/assets/finishes/05/_v_natural.png",
-      "textureBox": {
-        "x": 1510,
-        "y": 726,
-        "width": 246,
-        "height": 278
-      },
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/05/_v_natural.png",
@@ -494,6 +488,12 @@
             "height": 278
           }
         }
+      },
+      "textureBox": {
+        "x": 1510,
+        "y": 726,
+        "width": 246,
+        "height": 278
       }
     },
     {
@@ -557,12 +557,6 @@
         "natural"
       ],
       "textureUrl": "/assets/finishes/06/_v_natural.png",
-      "textureBox": {
-        "x": 1768,
-        "y": 682,
-        "width": 479,
-        "height": 343
-      },
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/06/_v_natural.png",
@@ -591,6 +585,12 @@
             "height": 343
           }
         }
+      },
+      "textureBox": {
+        "x": 1768,
+        "y": 682,
+        "width": 479,
+        "height": 343
       }
     },
     {
@@ -762,12 +762,6 @@
         "sharp"
       ],
       "textureUrl": "/assets/finishes/08/_v_sharp.png",
-      "textureBox": {
-        "x": 1517,
-        "y": 1304,
-        "width": 724,
-        "height": 390
-      },
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/08/_v_natural.png",
@@ -796,6 +790,12 @@
             "height": 390
           }
         }
+      },
+      "textureBox": {
+        "x": 1517,
+        "y": 1304,
+        "width": 724,
+        "height": 390
       }
     },
     {
@@ -809,12 +809,6 @@
         "natural"
       ],
       "textureUrl": "/assets/finishes/09/_v_natural.png",
-      "textureBox": {
-        "x": 403,
-        "y": 0,
-        "width": 2010,
-        "height": 732
-      },
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/09/_v_natural.png",
@@ -843,6 +837,12 @@
             "height": 732
           }
         }
+      },
+      "textureBox": {
+        "x": 403,
+        "y": 0,
+        "width": 2010,
+        "height": 732
       }
     },
     {
@@ -2229,13 +2229,7 @@
       "defaultForVariants": [
         "natural"
       ],
-      "textureUrl": "/assets/finishes/12/_v_flat.png",
-      "textureBox": {
-        "x": 2239,
-        "y": 1498,
-        "width": 297,
-        "height": 120
-      },
+      "textureUrl": "/assets/finishes/12/_v_natural.png",
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/12/_v_natural.png",
@@ -2264,6 +2258,12 @@
             "height": 120
           }
         }
+      },
+      "textureBox": {
+        "x": 2239,
+        "y": 1498,
+        "width": 297,
+        "height": 120
       }
     },
     {
@@ -2277,13 +2277,7 @@
       "defaultForVariants": [
         "flat"
       ],
-      "textureUrl": "/assets/finishes/12/_v_natural.png",
-      "textureBox": {
-        "x": 2239,
-        "y": 1498,
-        "width": 297,
-        "height": 120
-      },
+      "textureUrl": "/assets/finishes/12/_v_flat.png",
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/12/_v_natural.png",
@@ -2312,6 +2306,12 @@
             "height": 120
           }
         }
+      },
+      "textureBox": {
+        "x": 2239,
+        "y": 1498,
+        "width": 297,
+        "height": 120
       }
     },
     {
@@ -2326,12 +2326,6 @@
         "sharp"
       ],
       "textureUrl": "/assets/finishes/12/_v_sharp.png",
-      "textureBox": {
-        "x": 2239,
-        "y": 1498,
-        "width": 297,
-        "height": 120
-      },
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/12/_v_natural.png",
@@ -2360,6 +2354,12 @@
             "height": 120
           }
         }
+      },
+      "textureBox": {
+        "x": 2239,
+        "y": 1498,
+        "width": 297,
+        "height": 120
       }
     },
     {
@@ -2920,7 +2920,42 @@
       "defaultForVariants": [
         "natural"
       ],
-      "colorHex": "#E5D3BC"
+      "textureUrl": "/assets/finishes/15/_v_natural.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/15/_v_natural.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/15/_v_flat.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/15/_v_sharp.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        }
+      },
+      "textureBox": {
+        "x": 226,
+        "y": 1519,
+        "width": 2646,
+        "height": 623
+      }
     },
     {
       "id": "15-urb-1-opt1",
@@ -2933,7 +2968,42 @@
       "defaultForVariants": [
         "flat"
       ],
-      "colorHex": "#D4B38B"
+      "textureUrl": "/assets/finishes/15/_v_flat.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/15/_v_natural.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/15/_v_flat.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/15/_v_sharp.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        }
+      },
+      "textureBox": {
+        "x": 226,
+        "y": 1519,
+        "width": 2646,
+        "height": 623
+      }
     },
     {
       "id": "15-urb-2-opt2",
@@ -2946,7 +3016,42 @@
       "defaultForVariants": [
         "sharp"
       ],
-      "colorHex": "#9F7752"
+      "textureUrl": "/assets/finishes/15/_v_sharp.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/15/_v_natural.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/15/_v_flat.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/15/_v_sharp.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        }
+      },
+      "textureBox": {
+        "x": 226,
+        "y": 1519,
+        "width": 2646,
+        "height": 623
+      }
     },
     {
       "id": "15-urb-3-opt3",
@@ -2957,7 +3062,36 @@
       "thumbnailUrl": "/assets/finishes/15/15-urb-3-opt3.png",
       "iconUrl": "/catalog/icons/15-urb-3-opt3.png",
       "defaultForVariants": [],
-      "colorHex": "#A86C41"
+      "textureUrl": "/assets/finishes/15/15-urb-3-opt3.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/15/_v_natural.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/15/_v_flat.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/15/_v_sharp.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        }
+      }
     },
     {
       "id": "15-urb-4-opt4",
@@ -2968,7 +3102,36 @@
       "thumbnailUrl": "/assets/finishes/15/15-urb-4-opt4.png",
       "iconUrl": "/catalog/icons/15-urb-4-opt4.png",
       "defaultForVariants": [],
-      "colorHex": "#9D7765"
+      "textureUrl": "/assets/finishes/15/15-urb-4-opt4.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/15/_v_natural.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/15/_v_flat.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/15/_v_sharp.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        }
+      }
     },
     {
       "id": "15-urb-5-opt5",
@@ -2979,7 +3142,36 @@
       "thumbnailUrl": "/assets/finishes/15/15-urb-5-opt5.png",
       "iconUrl": "/catalog/icons/15-urb-5-opt5.png",
       "defaultForVariants": [],
-      "colorHex": "#CBA27D"
+      "textureUrl": "/assets/finishes/15/15-urb-5-opt5.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/15/_v_natural.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/15/_v_flat.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/15/_v_sharp.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        }
+      }
     },
     {
       "id": "15-urb-6-opt6",
@@ -2990,7 +3182,36 @@
       "thumbnailUrl": "/assets/finishes/15/15-urb-6-opt6.png",
       "iconUrl": "/catalog/icons/15-urb-6-opt6.png",
       "defaultForVariants": [],
-      "colorHex": "#C09B7C"
+      "textureUrl": "/assets/finishes/15/15-urb-6-opt6.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/15/_v_natural.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/15/_v_flat.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/15/_v_sharp.png",
+          "textureBox": {
+            "x": 226,
+            "y": 1519,
+            "width": 2646,
+            "height": 623
+          }
+        }
+      }
     },
     {
       "id": "16-urb-0-opt0",
@@ -3127,13 +3348,7 @@
       "thumbnailUrl": "/assets/finishes/01/01-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/01-rec-0-opt0.png",
       "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/01/_v_sharp.png",
-      "textureBox": {
-        "x": 1467,
-        "y": 1233,
-        "width": 793,
-        "height": 103
-      }
+      "textureUrl": "/assets/finishes/01/01-rec-0-opt0.png"
     },
     {
       "id": "01-rec-1-opt1",
@@ -3265,13 +3480,7 @@
       "thumbnailUrl": "/assets/finishes/05/05-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/05-rec-1-opt1.png",
       "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/05/_v_natural.png",
-      "textureBox": {
-        "x": 1510,
-        "y": 726,
-        "width": 246,
-        "height": 278
-      }
+      "textureUrl": "/assets/finishes/05/05-rec-1-opt1.png"
     },
     {
       "id": "06-rec-0-opt0",
@@ -3299,13 +3508,7 @@
       "thumbnailUrl": "/assets/finishes/06/06-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/06-rec-1-opt1.png",
       "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/06/_v_natural.png",
-      "textureBox": {
-        "x": 1768,
-        "y": 682,
-        "width": 479,
-        "height": 343
-      }
+      "textureUrl": "/assets/finishes/06/06-rec-1-opt1.png"
     },
     {
       "id": "07-rec-0-opt0",
@@ -3388,13 +3591,7 @@
       "thumbnailUrl": "/assets/finishes/08/08-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/08-rec-1-opt1.png",
       "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/08/_v_sharp.png",
-      "textureBox": {
-        "x": 1517,
-        "y": 1304,
-        "width": 724,
-        "height": 390
-      }
+      "textureUrl": "/assets/finishes/08/08-rec-1-opt1.png"
     },
     {
       "id": "09-rec-0-opt0",
@@ -3420,13 +3617,7 @@
       "thumbnailUrl": "/assets/finishes/09/09-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/09-rec-1-opt1.png",
       "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/09/_v_natural.png",
-      "textureBox": {
-        "x": 403,
-        "y": 0,
-        "width": 2010,
-        "height": 732
-      }
+      "textureUrl": "/assets/finishes/09/09-rec-1-opt1.png"
     },
     {
       "id": "10-rec-0-opt0",
@@ -3775,13 +3966,7 @@
       "thumbnailUrl": "/assets/finishes/12/12-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/12-rec-0-opt0.png",
       "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/12/_v_flat.png",
-      "textureBox": {
-        "x": 2239,
-        "y": 1498,
-        "width": 297,
-        "height": 120
-      }
+      "textureUrl": "/assets/finishes/12/12-rec-0-opt0.png"
     },
     {
       "id": "12-rec-1-opt1",
@@ -3792,13 +3977,7 @@
       "thumbnailUrl": "/assets/finishes/12/12-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/12-rec-1-opt1.png",
       "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/12/_v_natural.png",
-      "textureBox": {
-        "x": 2239,
-        "y": 1498,
-        "width": 297,
-        "height": 120
-      }
+      "textureUrl": "/assets/finishes/12/12-rec-1-opt1.png"
     },
     {
       "id": "12-rec-2-opt2",
@@ -3809,13 +3988,7 @@
       "thumbnailUrl": "/assets/finishes/12/12-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/12-rec-2-opt2.png",
       "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/12/_v_sharp.png",
-      "textureBox": {
-        "x": 2239,
-        "y": 1498,
-        "width": 297,
-        "height": 120
-      }
+      "textureUrl": "/assets/finishes/12/12-rec-2-opt2.png"
     },
     {
       "id": "13-rec-0-opt0",
@@ -3978,7 +4151,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/15-rec-0-opt0.png",
       "defaultForVariants": [],
-      "colorHex": "#A86C41"
+      "textureUrl": "/assets/finishes/15/15-rec-0-opt0.png"
     },
     {
       "id": "15-rec-1-opt1",
@@ -3989,7 +4162,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/15-rec-1-opt1.png",
       "defaultForVariants": [],
-      "colorHex": "#9F7752"
+      "textureUrl": "/assets/finishes/15/15-rec-1-opt1.png"
     },
     {
       "id": "15-rec-2-opt2",
@@ -4000,7 +4173,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/15-rec-2-opt2.png",
       "defaultForVariants": [],
-      "colorHex": "#9D7765"
+      "textureUrl": "/assets/finishes/15/15-rec-2-opt2.png"
     },
     {
       "id": "15-rec-3-opt3",
@@ -4011,7 +4184,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-3-opt3.png",
       "iconUrl": "/catalog/icons/15-rec-3-opt3.png",
       "defaultForVariants": [],
-      "colorHex": "#CBA27D"
+      "textureUrl": "/assets/finishes/15/15-rec-3-opt3.png"
     },
     {
       "id": "15-rec-4-opt4",
@@ -4022,7 +4195,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-4-opt4.png",
       "iconUrl": "/catalog/icons/15-rec-4-opt4.png",
       "defaultForVariants": [],
-      "colorHex": "#D4B38B"
+      "textureUrl": "/assets/finishes/15/15-rec-4-opt4.png"
     },
     {
       "id": "15-rec-5-opt5",
@@ -4033,7 +4206,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-5-opt5.png",
       "iconUrl": "/catalog/icons/15-rec-5-opt5.png",
       "defaultForVariants": [],
-      "colorHex": "#C09B7C"
+      "textureUrl": "/assets/finishes/15/15-rec-5-opt5.png"
     },
     {
       "id": "15-rec-6-opt6",
@@ -4044,7 +4217,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-6-opt6.png",
       "iconUrl": "/catalog/icons/15-rec-6-opt6.png",
       "defaultForVariants": [],
-      "colorHex": "#E5D3BC"
+      "textureUrl": "/assets/finishes/15/15-rec-6-opt6.png"
     },
     {
       "id": "15-rec-7-opt7",
@@ -4055,7 +4228,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-7-opt7.png",
       "iconUrl": "/catalog/icons/15-rec-7-opt7.png",
       "defaultForVariants": [],
-      "colorHex": "#E3E2E0"
+      "textureUrl": "/assets/finishes/15/15-rec-7-opt7.png"
     },
     {
       "id": "15-rec-8-opt8",
@@ -4066,7 +4239,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-8-opt8.png",
       "iconUrl": "/catalog/icons/15-rec-8-opt8.png",
       "defaultForVariants": [],
-      "colorHex": "#FAEEDE"
+      "textureUrl": "/assets/finishes/15/15-rec-8-opt8.png"
     },
     {
       "id": "15-rec-9-opt9",
@@ -4077,7 +4250,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-9-opt9.png",
       "iconUrl": "/catalog/icons/15-rec-9-opt9.png",
       "defaultForVariants": [],
-      "colorHex": "#F6F3E8"
+      "textureUrl": "/assets/finishes/15/15-rec-9-opt9.png"
     },
     {
       "id": "15-rec-10-opt10",
@@ -4088,7 +4261,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-10-opt10.png",
       "iconUrl": "/catalog/icons/15-rec-10-opt10.png",
       "defaultForVariants": [],
-      "colorHex": "#D1C3AC"
+      "textureUrl": "/assets/finishes/15/15-rec-10-opt10.png"
     },
     {
       "id": "15-rec-11-opt11",
@@ -4099,7 +4272,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-11-opt11.png",
       "iconUrl": "/catalog/icons/15-rec-11-opt11.png",
       "defaultForVariants": [],
-      "colorHex": "#E8E2D9"
+      "textureUrl": "/assets/finishes/15/15-rec-11-opt11.png"
     },
     {
       "id": "15-rec-12-opt12",
@@ -4110,7 +4283,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-12-opt12.png",
       "iconUrl": "/catalog/icons/15-rec-12-opt12.png",
       "defaultForVariants": [],
-      "colorHex": "#C1B7A9"
+      "textureUrl": "/assets/finishes/15/15-rec-12-opt12.png"
     },
     {
       "id": "15-rec-13-opt13",
@@ -4121,7 +4294,7 @@
       "thumbnailUrl": "/assets/finishes/15/15-rec-13-opt13.png",
       "iconUrl": "/catalog/icons/15-rec-13-opt13.png",
       "defaultForVariants": [],
-      "colorHex": "#6D6668"
+      "textureUrl": "/assets/finishes/15/15-rec-13-opt13.png"
     },
     {
       "id": "16-rec-0-opt0",
