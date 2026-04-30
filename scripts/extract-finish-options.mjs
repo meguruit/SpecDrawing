@@ -19,7 +19,7 @@
 //
 // Run with: npm run seed:parts
 
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -27,11 +27,49 @@ import AdmZip from "adm-zip";
 import * as XLSX from "xlsx";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const XLSX_PATH = resolve(ROOT, "resources/catalog/部材リスト.xlsx");
+const CATALOG_DIR = resolve(ROOT, "resources/catalog");
+
+// Resolve the workbook path. The script honours an explicit
+// SPECDRAWING_WORKBOOK env var first, then prefers the canonical
+// `部材リスト.xlsx`, then falls back to the most recent date-suffixed
+// `部材リスト_<YYYYMMDD>.xlsx` in the catalog directory. Subdirectories
+// (e.g. `old/`) are ignored.
+async function resolveWorkbookPath() {
+  if (process.env.SPECDRAWING_WORKBOOK) {
+    return resolve(process.env.SPECDRAWING_WORKBOOK);
+  }
+  const canonical = resolve(CATALOG_DIR, "部材リスト.xlsx");
+  const entries = await readdir(CATALOG_DIR, { withFileTypes: true });
+  const hasCanonical = entries.some(
+    (e) => e.isFile() && e.name === "部材リスト.xlsx",
+  );
+  if (hasCanonical) return canonical;
+  const dated = entries
+    .filter((e) => e.isFile() && /^部材リスト.*\.xlsx$/.test(e.name))
+    .map((e) => e.name)
+    .sort();
+  if (dated.length === 0) {
+    throw new Error(`No 部材リスト*.xlsx found under ${CATALOG_DIR}`);
+  }
+  return resolve(CATALOG_DIR, dated[dated.length - 1]);
+}
 const PARTS_JSON = resolve(ROOT, "public/assets/base/main/parts.json");
 const OUT_JSON = resolve(ROOT, "public/catalog/finish-options.json");
 const OUT_WARN = resolve(ROOT, "public/catalog/finish-options.warnings.json");
+const OUT_SHEETS = resolve(ROOT, "public/catalog/sheets.json");
+const ICONS_DIR = resolve(ROOT, "public/catalog/icons");
 const FINISHES_DIR = resolve(ROOT, "public/assets/finishes");
+
+// Sheets that opt into the runtime variant switcher. Keep in lockstep with
+// scene.json's `variants[]`. アーバンシー's defaultVariantKey here MUST match
+// a variant key registered on the scene.
+const VARIANT_ENABLED_SHEETS = {
+  "アーバンシー": { defaultVariantKey: "natural" },
+};
+// Icon size used for the Excel spec-sheet export. The seed step copies each
+// option's swatch into public/catalog/icons/<optionId>.png at this resolution
+// until the customer-prepared 部材リスト.xlsx ships dedicated icon assets.
+const ICON_EDGE = 96;
 const SCENE_W = 3000;
 const SCENE_H = 2142;
 // Downsample workbook swatches to keep public/ small. Texture-mode parts use
@@ -311,11 +349,13 @@ function slugifyLabel(label, fallbackIndex) {
 }
 
 async function main() {
-  const buf = await readFile(XLSX_PATH);
+  const xlsxPath = await resolveWorkbookPath();
+  console.log(`✓ workbook: ${xlsxPath}`);
+  const buf = await readFile(xlsxPath);
   // LFS pointer guard
   if (buf.slice(0, 60).toString("utf-8").startsWith("version https://git-lfs.github.com/spec/v1")) {
     throw new Error(
-      `${XLSX_PATH} is an unresolved Git LFS pointer file.\n` +
+      `${xlsxPath} is an unresolved Git LFS pointer file.\n` +
         `Run \`git lfs install && git lfs pull\` and retry.`,
     );
   }
@@ -330,8 +370,9 @@ async function main() {
   );
   const knownPartIds = new Set(partsManifest.parts.map((p) => p.id));
 
-  // Wipe finishes dir for a clean idempotent run.
+  // Wipe finishes and icons dirs for a clean idempotent run.
   await rm(FINISHES_DIR, { recursive: true, force: true });
+  await rm(ICONS_DIR, { recursive: true, force: true });
 
   const outOptions = [];
   const warnings = [];
@@ -469,6 +510,32 @@ async function main() {
           }
         }
 
+        // Icon for the Excel spec-sheet export. Until the customer-prepared
+        // 部材リスト.xlsx ships dedicated icon assets, copy the swatch as a
+        // 96×96 PNG. Same image bytes as `thumbnailUrl` would be wasteful;
+        // emit a separate file so the customer can later swap them
+        // independently without retouching swatch chips.
+        const iconPath = resolve(ICONS_DIR, `${optionId}.png`);
+        await ensureDir(iconPath);
+        if (imgBuf) {
+          await sharp(imgBuf)
+            .resize({ width: ICON_EDGE, height: ICON_EDGE, fit: "cover" })
+            .png({ compressionLevel: 9 })
+            .toFile(iconPath);
+        } else {
+          await sharp({
+            create: {
+              width: ICON_EDGE,
+              height: ICON_EDGE,
+              channels: 4,
+              background: { r: 220, g: 220, b: 220, alpha: 1 },
+            },
+          })
+            .png()
+            .toFile(iconPath);
+        }
+        const iconUrl = `/catalog/icons/${optionId}.png`;
+
         outOptions.push({
           id: optionId,
           partId: part.partId,
@@ -476,6 +543,7 @@ async function main() {
           label: opt.label,
           ...(opt.productCode ? { productCode: opt.productCode } : {}),
           thumbnailUrl,
+          iconUrl,
           ...(colorHex ? { colorHex } : {}),
           ...(textureUrl ? { textureUrl } : {}),
         });
@@ -490,8 +558,31 @@ async function main() {
   );
   await writeFile(OUT_WARN, JSON.stringify(warnings, null, 2));
 
+  // Emit the sheets manifest. Every distinct sheet in the workbook becomes
+  // an entry; sheets in VARIANT_ENABLED_SHEETS get variantsEnabled=true and
+  // their declared defaultVariantKey.
+  const sheetsSeen = Array.from(new Set(outOptions.map((o) => o.sheet)));
+  const sheetsManifest = {
+    version: 1,
+    sheets: sheetsSeen.map((key) => {
+      const cfg = VARIANT_ENABLED_SHEETS[key];
+      if (cfg) {
+        return {
+          key,
+          label: key,
+          variantsEnabled: true,
+          defaultVariantKey: cfg.defaultVariantKey,
+        };
+      }
+      return { key, label: key, variantsEnabled: false };
+    }),
+  };
+  await ensureDir(OUT_SHEETS);
+  await writeFile(OUT_SHEETS, JSON.stringify(sheetsManifest, null, 2));
+
   console.log(`✓ wrote ${outOptions.length} options to ${OUT_JSON}`);
   console.log(`✓ wrote ${warnings.length} warnings to ${OUT_WARN}`);
+  console.log(`✓ wrote sheets manifest to ${OUT_SHEETS}`);
 }
 
 main().catch((err) => {

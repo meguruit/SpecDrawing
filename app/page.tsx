@@ -1,12 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { Toast } from "@/components/Toast";
 import { PartList } from "@/components/parts/PartList";
 import { FinishOptionPanel } from "@/components/finishes/FinishOptionPanel";
 import { SheetSwitcher } from "@/components/finishes/SheetSwitcher";
+import { VariantSwitcher } from "@/components/finishes/VariantSwitcher";
 import { MarkerToggle } from "@/components/finishes/MarkerToggle";
 import { useCanvasStore } from "@/lib/canvas/store";
 import {
@@ -18,7 +19,11 @@ import {
 import { loadPartsForScene, PartsLoadError } from "@/lib/parts/load";
 import {
   loadFinishOptions,
+  loadSheetsManifest,
   crossValidateAgainstParts,
+  crossValidateOptionsAgainstSheets,
+  crossValidatePartsAgainstSheets,
+  crossValidateSheetsAgainstScene,
   availableSheets,
   FinishesLoadError,
 } from "@/lib/finishes/load";
@@ -32,9 +37,11 @@ const CanvasStage = dynamic(
 export default function Page() {
   const activeScene = useCanvasStore((s) => s.activeScene);
   const requestExport = useCanvasStore((s) => s.requestExport);
+  const exportRequestedAt = useCanvasStore((s) => s.exportRequestedAt);
   const notification = useCanvasStore((s) => s.notification);
   const dismissNotification = useCanvasStore((s) => s.dismissNotification);
   const loadSceneAction = useCanvasStore((s) => s.loadScene);
+  const lastExcelExportAt = useRef(0);
 
   // Auto-load default registered perspective on app start.
   useEffect(() => {
@@ -46,10 +53,31 @@ export default function Page() {
         const scene = await loadScene(def.manifestUrl);
         const parts = await loadPartsForScene(scene);
         const { options, _rev: optionsRev } = await loadFinishOptions();
+        const sheetsManifest = await loadSheetsManifest();
         crossValidateAgainstParts(options, parts);
+        crossValidateSheetsAgainstScene(sheetsManifest, scene);
+        // The variant-policy validators are warn-mode while the customer's
+        // updated 部材リスト.xlsx (with texture options for parts 15/17 and
+        // textureUrlByVariant on every アーバンシー option) is in flight.
+        // Flip both to "strict" once the seed pipeline emits the full shape.
+        crossValidatePartsAgainstSheets(parts, sheetsManifest, scene, "warn");
+        crossValidateOptionsAgainstSheets(
+          options,
+          parts,
+          sheetsManifest,
+          scene,
+          "warn",
+        );
         if (!alive) return;
         const sheets = availableSheets(options);
-        loadSceneAction(scene, parts, options, sheets[0] ?? "", optionsRev);
+        loadSceneAction(
+          scene,
+          parts,
+          options,
+          sheets[0] ?? "",
+          optionsRev,
+          sheetsManifest,
+        );
       } catch (err: unknown) {
         if (!alive) return;
         const msg =
@@ -70,6 +98,45 @@ export default function Page() {
 
   const onExport = useCallback(() => requestExport(), [requestExport]);
 
+  // Excel spec-sheet export: triggered by the same `requestExport` action
+  // as the PNG. Dynamic-imported so `exceljs` lands only on first click.
+  useEffect(() => {
+    if (!exportRequestedAt) return;
+    if (lastExcelExportAt.current === exportRequestedAt) return;
+    lastExcelExportAt.current = exportRequestedAt;
+    const state = useCanvasStore.getState();
+    if (!state.activeScene) return;
+    (async () => {
+      const [{ downloadSpecSheet }, { buildExportFilename }] = await Promise.all([
+        import("@/lib/export/spec-sheet"),
+        import("@/lib/export/filename"),
+      ]);
+      const ts = state.exportTimestamp ?? "";
+      const filename = buildExportFilename(
+        state.activeScene!.id,
+        state.activeVariantKey,
+        ts,
+        "xlsx",
+      );
+      try {
+        await downloadSpecSheet({
+          parts: state.parts,
+          finishOptions: state.finishOptions,
+          selections: state.partFinishSelections,
+          activeSheet: state.activeOptionSheet,
+          filename,
+        });
+      } catch (err) {
+        useCanvasStore.setState({
+          notification: {
+            id: Date.now(),
+            message: `Excel エクスポートに失敗しました: ${(err as Error).message}`,
+          },
+        });
+      }
+    })();
+  }, [exportRequestedAt]);
+
   return (
     <div className="flex h-screen flex-col">
       <Toast
@@ -85,6 +152,7 @@ export default function Page() {
         </div>
         <div className="flex items-center gap-4">
           <SheetSwitcher />
+          <VariantSwitcher />
           <MarkerToggle />
           <button
             type="button"
@@ -92,7 +160,7 @@ export default function Page() {
             disabled={!activeScene}
             className="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Export PNG
+            選択部材エクスポート
           </button>
         </div>
       </header>

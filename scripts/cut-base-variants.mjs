@@ -26,6 +26,7 @@ const SCENE_JSON = resolve(SCENE_DIR, "scene.json");
 const PARTS_JSON = resolve(SCENE_DIR, "parts.json");
 const FINISHES_DIR = resolve(ROOT, "public/assets/finishes");
 const OPTIONS_JSON = resolve(ROOT, "public/catalog/finish-options.json");
+const SHEETS_JSON = resolve(ROOT, "public/catalog/sheets.json");
 const WARNINGS_JSON = resolve(ROOT, "public/catalog/finish-options.warnings.json");
 const OVERRIDES = resolve(ROOT, "resources/catalog/finish-base-overrides.json");
 const RESOURCES_BASE = resolve(ROOT, "resources/base");
@@ -140,11 +141,32 @@ async function main() {
   const optionsFile = JSON.parse(await readFile(OPTIONS_JSON, "utf-8"));
   const options = optionsFile.options;
 
-  // Pre-load every referenced variant base.
+  // Optional sheets manifest — when present, every texture-mode option on a
+  // variant-enabled sheet gets a `textureUrlByVariant` map populated for
+  // every variant key declared on the scene (independent of the per-option
+  // overrides).
+  let sheetsManifest = null;
+  try {
+    const raw = await readFile(SHEETS_JSON, "utf-8");
+    sheetsManifest = JSON.parse(raw);
+  } catch {
+    // optional
+  }
+  const variantEnabledSheets = new Set(
+    (sheetsManifest?.sheets ?? [])
+      .filter((s) => s.variantsEnabled)
+      .map((s) => s.key),
+  );
+  const sceneVariantKeys = (scene.variants ?? []).map((v) => v.key);
+
+  // Pre-load every variant referenced by the per-option override config AND
+  // every variant declared on the scene (so we can populate textureUrlByVariant
+  // for variant-enabled sheets).
   const variantsToLoad = new Set();
   for (const partOv of Object.values(overrides)) {
     for (const variant of Object.values(partOv)) variantsToLoad.add(variant);
   }
+  for (const k of sceneVariantKeys) variantsToLoad.add(k);
   const variantCache = new Map();
   for (const v of variantsToLoad) {
     const loaded = await loadVariantBase(v, scene.width, scene.height);
@@ -154,6 +176,9 @@ async function main() {
   const warnings = [];
   let cutFiles = 0;
   let optionsRewritten = 0;
+  // Cache per-(partId, variant) shared crop info so we can populate
+  // `textureUrlByVariant` later without re-cutting.
+  const sharedCropByPartVariant = new Map(); // key: `${partId}|${variantKey}` → { url, textureBox }
 
   for (const [partId, ovByLabel] of Object.entries(overrides)) {
     const part = partById.get(partId);
@@ -205,10 +230,69 @@ async function main() {
         box,
       });
       cutFiles++;
+      const sharedBox = { x: box.x, y: box.y, width: box.width, height: box.height };
+      sharedCropByPartVariant.set(`${partId}|${variantKey}`, {
+        url: sharedRel,
+        textureBox: sharedBox,
+      });
       for (const opt of matching) {
         opt.textureUrl = sharedRel;
-        opt.textureBox = { x: box.x, y: box.y, width: box.width, height: box.height };
+        opt.textureBox = sharedBox;
         optionsRewritten++;
+      }
+    }
+  }
+
+  // Populate `textureUrlByVariant` for every texture-mode option on a
+  // variant-enabled sheet. For each scene variant key, ensure a shared
+  // (partId, variant) cut exists; reuse it across every option (different
+  // labels on the same partId all map to the same crop). When a variant
+  // base is missing on disk, append a `variant-missing` warning naming
+  // every affected option.
+  if (variantEnabledSheets.size > 0 && sceneVariantKeys.length > 0) {
+    for (const opt of options) {
+      if (opt.colorHex && !opt.textureUrl) continue;
+      if (!variantEnabledSheets.has(opt.sheet)) continue;
+      const part = partById.get(opt.partId);
+      if (!part) continue;
+      const map = {};
+      for (const variantKey of sceneVariantKeys) {
+        const cacheKey = `${opt.partId}|${variantKey}`;
+        let entry = sharedCropByPartVariant.get(cacheKey);
+        if (!entry) {
+          const variant = variantCache.get(variantKey);
+          if (!variant) {
+            warnings.push({
+              kind: "variant-missing",
+              partId: opt.partId,
+              optionId: opt.id,
+              variantKey,
+              message: `resources/base/ベースパース_${variantKey}.jpg missing; option ${opt.id} skipped for variant ${variantKey}`,
+            });
+            continue;
+          }
+          const maskInfo = await loadMaskAlpha(part.mask, scene.width, scene.height);
+          const box = polygonBbox(partOuterVertices(part), scene.width, scene.height);
+          const sharedRel = `/assets/finishes/${opt.partId}/_v_${variantKey}.png`;
+          const sharedAbs = resolve(ROOT, "public", sharedRel.replace(/^\//, ""));
+          await writeCroppedPng(sharedAbs, {
+            variantRgb: variant.data,
+            maskAlpha: maskInfo.data,
+            maskChannels: maskInfo.channels,
+            sceneW: scene.width,
+            box,
+          });
+          cutFiles++;
+          entry = {
+            url: sharedRel,
+            textureBox: { x: box.x, y: box.y, width: box.width, height: box.height },
+          };
+          sharedCropByPartVariant.set(cacheKey, entry);
+        }
+        map[variantKey] = entry;
+      }
+      if (Object.keys(map).length > 0) {
+        opt.textureUrlByVariant = map;
       }
     }
   }
@@ -246,6 +330,16 @@ async function main() {
     console.log(`  ! ${w.kind}: ${w.message}`);
   }
   if (warnings.length > 10) console.log(`  … (${warnings.length - 10} more)`);
+
+  // Exit non-zero on variant-missing so the runtime does not attempt to
+  // load with a partial catalog.
+  const variantMissing = warnings.filter((w) => w.kind === "variant-missing");
+  if (variantMissing.length > 0) {
+    console.error(
+      `✗ ${variantMissing.length} variant-missing warning(s); resolve before booting the runtime.`,
+    );
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {

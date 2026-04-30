@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "sheets": [
+    {
+      "key": "アーバンシー",
+      "label": "アーバンシー",
+      "variantsEnabled": true,
+      "defaultVariantKey": "natural"
+    },
+    {
+      "key": "レコリード",
+      "label": "レコリード",
+      "variantsEnabled": false
+    }
+  ]
+}
