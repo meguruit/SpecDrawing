@@ -19,6 +19,15 @@
   },
   {
     "kind": "missing-swatch",
+    "sheet": "アーバンシー",
+    "partId": "10",
+    "optionId": "10-urb-18-opt18",
+    "label": "ｱｲﾎﾞﾘｰ",
+    "cellRef": "V27",
+    "message": "no embedded swatch image for アーバンシー part 10 option ｱｲﾎﾞﾘｰ"
+  },
+  {
+    "kind": "missing-swatch",
     "sheet": "レコリード",
     "partId": "02",
     "optionId": "02-rec-0-opt0",
@@ -34,5 +43,12 @@
     "label": "無",
     "cellRef": "E5",
     "message": "no embedded swatch image for レコリード part 02 option 無"
+  },
+  {
+    "kind": "tint-color-low-confidence",
+    "partId": "13",
+    "optionId": "13-urb-7-opt7",
+    "confidence": 0,
+    "message": "alternative 13-urb-7-opt7 icon has <5% non-white pixels (confidence=0.000); tint may be unreliable"
   }
 ]

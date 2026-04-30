@@ -257,6 +257,29 @@ export function crossValidateDefaultsAgainstScene(
 }
 
 /**
+ * Cross-validate that every key in any option's `colorHexByVariant`
+ * resolves to a `key` declared on the active scene's `variants[]`. Skipped
+ * for options that don't declare the field. Texture-mode rejection lives in
+ * the schema's `.refine`.
+ */
+export function crossValidateColorHexByVariantAgainstScene(
+  options: FinishOption[],
+  scene: Scene,
+): void {
+  const known = new Set(scene.variants.map((v) => v.key));
+  for (const opt of options) {
+    if (!opt.colorHexByVariant) continue;
+    for (const key of Object.keys(opt.colorHexByVariant)) {
+      if (!known.has(key)) {
+        throw new FinishesLoadError(
+          `Option "${opt.id}" colorHexByVariant references unknown variant key "${key}"`,
+        );
+      }
+    }
+  }
+}
+
+/**
  * Cross-validate parts manifest against the active scene's primary sheet
  * config: when `variantsEnabled === true`, every non-accent-cloth part on
  * that scene MUST be `renderMode: "texture"`. Accent-cloth parts (`07`

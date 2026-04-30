@@ -81,6 +81,7 @@ export function PartFinishLayer() {
               }
               textureUrl={bustedTexture}
               textureBox={resolvedTextureBox}
+              activeVariantKey={activeVariantKey}
             />
           </Layer>
         );
@@ -98,6 +99,7 @@ type PartFinishProps = {
   shadingUrl: string | undefined;
   textureUrl: string | undefined;
   textureBox: TextureBox | undefined;
+  activeVariantKey: string | null;
 };
 
 function PartFinish({
@@ -109,6 +111,7 @@ function PartFinish({
   shadingUrl,
   textureUrl,
   textureBox,
+  activeVariantKey,
 }: PartFinishProps) {
   const mask = useImage(maskUrl);
   const shading = useImage(part.renderMode === "color" ? shadingUrl : undefined);
@@ -120,6 +123,14 @@ function PartFinish({
 
   if (part.renderMode === "color") {
     if (!shading || !option.colorHex) return null;
+    // Per-variant override: when the option declares colorHexByVariant
+    // and the active variant has an entry, use it; else fall back to the
+    // static colorHex. Lets ⑰ サッシ枠 carry per-variant palettes that
+    // harmonize with each base perspective without changing the layered
+    // composition order (shading → fill → mask).
+    const resolvedColorHex =
+      (activeVariantKey && option.colorHexByVariant?.[activeVariantKey]) ||
+      option.colorHex;
     // Order: shading → color rect (multiply) → mask (destination-in)
     return (
       <Fragment>
@@ -136,9 +147,10 @@ function PartFinish({
           y={0}
           width={sceneWidth}
           height={sceneHeight}
-          fill={option.colorHex}
+          fill={resolvedColorHex}
           globalCompositeOperation="multiply"
         />
+
         <KonvaImage
           image={mask}
           x={0}

@@ -21,6 +21,7 @@ import {
   loadFinishOptions,
   loadSheetsManifest,
   crossValidateAgainstParts,
+  crossValidateColorHexByVariantAgainstScene,
   crossValidateDefaultsAgainstScene,
   crossValidateOptionsAgainstSheets,
   crossValidatePartsAgainstSheets,
@@ -58,6 +59,7 @@ export default function Page() {
         crossValidateAgainstParts(options, parts);
         crossValidateSheetsAgainstScene(sheetsManifest, scene);
         crossValidateDefaultsAgainstScene(options, scene);
+        crossValidateColorHexByVariantAgainstScene(options, scene);
         // The variant-policy validators are warn-mode while the customer's
         // updated 部材リスト.xlsx (with texture options for parts 15/17 and
         // textureUrlByVariant on every アーバンシー option) is in flight.
@@ -126,6 +128,7 @@ export default function Page() {
           finishOptions: state.finishOptions,
           selections: state.partFinishSelections,
           activeSheet: state.activeOptionSheet,
+          activeVariantKey: state.activeVariantKey,
           filename,
           optionsRev: state.finishOptionsRev,
         });

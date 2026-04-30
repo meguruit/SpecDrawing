@@ -21,9 +21,10 @@ export function buildSpecSheetRows(args: {
   finishOptions: FinishOption[];
   selections: Record<PartId, string>;
   activeSheet: SheetName;
+  activeVariantKey?: string | null;
   optionsRev?: string;
 }): SpecSheetRow[] {
-  const { parts, finishOptions, selections, activeSheet, optionsRev } = args;
+  const { parts, finishOptions, selections, activeSheet, activeVariantKey, optionsRev } = args;
   const bust = (url: string | null | undefined) => {
     if (!url) return null;
     if (!optionsRev) return url;
@@ -38,7 +39,17 @@ export function buildSpecSheetRows(args: {
     let pickedOptionId: string | undefined = selections[part.id];
     let state: SelectionState = "選択";
     if (!pickedOptionId) {
-      pickedOptionId = sheetOptions[0]?.id;
+      // No explicit selection — pick the option whose `defaultForVariants`
+      // includes the active variant (matches what the canvas renders).
+      // Falls back to the workbook-first option when no variant default
+      // applies (non-variant sheet, or the sheet has no default for this
+      // variant).
+      const variantDefault = activeVariantKey
+        ? sheetOptions.find((o) =>
+            (o.defaultForVariants ?? []).includes(activeVariantKey),
+          )
+        : undefined;
+      pickedOptionId = variantDefault?.id ?? sheetOptions[0]?.id;
       state = pickedOptionId ? "既定" : "対象外";
     }
     if (state === "対象外" || !pickedOptionId) {
@@ -100,6 +111,7 @@ export async function buildSpecSheetWorkbook(args: {
   finishOptions: FinishOption[];
   selections: Record<PartId, string>;
   activeSheet: SheetName;
+  activeVariantKey?: string | null;
   optionsRev?: string;
 }): Promise<{ workbook: import("exceljs").Workbook; rows: SpecSheetRow[] }> {
   const { default: ExcelJS } = await import("exceljs");
@@ -160,6 +172,7 @@ export async function downloadSpecSheet(args: {
   finishOptions: FinishOption[];
   selections: Record<PartId, string>;
   activeSheet: SheetName;
+  activeVariantKey?: string | null;
   filename: string;
   optionsRev?: string;
 }): Promise<void> {

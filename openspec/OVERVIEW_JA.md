@@ -142,7 +142,7 @@ OpenSpec で管理する capability は 8 つあります。
 |---|---|
 | `npm run seed:parts` | `部材リスト.xlsx` → `finish-options.json`（色抽出 + downsample + 警告書き出し）|
 | `npm run seed:masks` | `parts.json` のポリゴン → `mask_<NN>.png` + `shading_<NN>.png` |
-| `npm run seed:variants` | `finish-base-overrides.json` を読み、各 variant base から part mask で切り出した PNG を `public/assets/finishes/<partId>/<optionId>.png` に書き、`finish-options.json` の textureUrl を書き換え |
+| `npm run seed:variants` | `finish-base-overrides.json` を読み、各 variant base から part mask で切り出した PNG を `public/assets/finishes/<partId>/<optionId>.png` に書き、`finish-options.json` の textureUrl を書き換え。さらに `finish-variant-mapping.json` の `overrides`（variant 再割当 + クロスシート合成）／`tintBase`（代替オプションを base 質感で着色）／`noEffect`（②「無」の周辺色フィル）／`colorHexByVariant`（color-mode の per-variant `#RRGGBB`）を適用する |
 
 ---
 
@@ -172,31 +172,37 @@ OpenSpec で管理する capability は 8 つあります。
 
 ## 6. 進行中の変更提案
 
-### 6.1 `improve-finish-fidelity` — 仕上げ忠実度改善のスコープメモ
+### 6.1 `improve-finish-fidelity` — variant ↔ ラベルの不整合修正 + tint-base 仕上げ + 特殊ケース対応
 
-**Purpose / Context**: `add-base-variant-finishes` 出荷後の現実シーン使用で出てきた 5 項目（多領域ポリゴン・ポリゴン穴・per-option scene-resolution テクスチャ・AI アセット生成・背景色補正）を 1 か所に集約。コードは伴わず、各項目を独立 change として size & 優先付けできるようにする。
+**Purpose / Context**: `add-urban-sea-variants-and-parts-export` 出荷後のデモ歩きで判明した 3 系統の忠実度ギャップ（① workbook の Natural/Flat/Sharp 列割当ミス、② 代替オプションが平面色で描画されて木目が消える、③ ② キッチン間接照明「無」が消えていない / ⑰ サッシ枠の color パレットがバリアント背景と合わない）を、ランタイムを変えずに seed 層 + config 層で解消する。
 
 **Goals / Non-Goals**
-- (G) 5 項目をチャットで散逸させず集約。各項目の実装プロファイル（schema / pipeline / UI）を明文化。各項目の工数を全体見積に反映。
-- (NG) この change ではコード変更しない。すべての項目を必ず実装するとは約束しない。Item 4 (AI) の go/no-go はこの change では決めない。
+- (G) ⑩ ⑪ ⑬ ⑭ の variant ↔ ラベル割当を designer-owned config で上書き（workbook 修正サイクルを待たない）。⑩ ⑬ ⑮ の代替オプションを **tint-base**（既定オプションの輝度パターン × アイコン色）で着色描画。② 「無」を周辺色フィルで erase。⑰ に `colorHexByVariant` を導入して per-variant パレット。
+- (NG) ランタイムレンダラの構造変更（`textureUrlByVariant` の既存契約に乗る）。テストフレームワーク導入は別 change。`レコリード` シートは別 change（合成は今 change 内、本格対応は別）。
 
 **Decisions**
-- **D1**: Item 1（多領域ポリゴン）と Item 2（ポリゴン穴）は schema・rasterizer・`/dev/trace` UI を共有 → **`add-multiring-polygons` として 1 change にバンドル**（〜7 h 削減）。
-- **D2**: 多リング schema は **GeoJSON 形式 `{ outer, holes? }[]`** を採用（フラット ring + even-odd ではなく）。デザイナーの認知コスト低、移行は 1 パスで完了。
-- **D3**: Item 3 はパイプライン（`customTextureUrl` + `seed:custom-textures`）、Item 4 (AI) はその content source の 1 つ。**Item 3 を先行実装**、AI 出力は同じ `resources/finishes/<partId>/<optionId>.jpg` に流せばパイプライン変更不要。
-- **D4**: Item 5 背景色補正は **顧客側で正しい color profile を当てた再レンダー** が第一選択（下流補正は二重当て事故リスク）。代替で `cut-base-variants.mjs` に sharp `.modulate()` 1 行（〜2 h）。
+- **D1**: workbook ではなく **designer-owned `finish-variant-mapping.json`** で variant 割当を上書き（顧客往復なし）。`overrides` ブロック適用は seed 内で workbook 解析後・`textureUrlByVariant` 生成前。
+- **D2**: ⑭ ブラックなど primary シートに無いラベルは **クロスシート合成**：`レコリード` から同 `(partId, label)` をコピーし `synthesized: true` を付与。次回 workbook に追加されれば workbook 側を優先。
+- **D3**: tint = 線形 sRGB 輝度（Rec.709 重み）× 非白アイコン平均色の **multiply blend**。`tintBase` は `finish-base-overrides.json` 内に追加（既存の `overrides` と同居）。alt PNG は `<partId>/<optionId>__<v>.png` × 3、cache-bust 契約のため variant ごとに別ファイル。
+- **D4**: ② 「無」は part mask を 16px 外側に dilate した「近傍リング」の平均 RGB を solid-fill。**linear inpainting / blur 系は導入しない**（依存追加に対して効果薄）。
+- **D5**: `colorHexByVariant` は色オプションの `colorHex` に対する optional override（partial 可、未指定キーは静的 `colorHex` にフォールバック）。ランタイムは `option.colorHexByVariant?.[activeVariantKey] ?? option.colorHex`。
+- **D6**: ⑰ パレット初期値は `scripts/suggest-sash-palette.mjs` が variant base 周辺の壁色平均 × blend-weight 0.3 で出力（curate 前提）。
 
 **Risks / Trade-offs**
-- schema 移行が atomic でないと既存 `parts.json` が壊れる → 同 change 内で migration、ローダーは 1 リリース両形式受理。
-- Item 3 で資産点数増（⑩ 30 色 × 1 = 30 PNG）→ bbox crop + LFS で〜3 MB/部材に収まり許容。
-- Item 4 spike が viable でない可能性 → 1 週間タイムボックス、デザイナー手描き fallback。
-- Item 1+2 のバンドルは速いが PR が膨らむ → 同じファイル群を触るので合算が妥当。
+- Override drift（顧客が後で workbook を直しても override が黙って上書きを続ける）→ seed 開始時に override 件数 + 対象 partId を一覧ログ出力（人がレビュー）。
+- 合成 ⑭ ブラック が `レコリード` 側の修正に追従する → 合成元シートをログに記録、固定したくなったら override に明示コピーする運用。
+- tint の dominant color 抽出はスウォッチが薄い場合に低信頼 → `tint-color-low-confidence` 警告（>5% 非白ピクセル要件）。
+- 資産増（⑩ 28 alts × 3 variants = 84 PNG / 部材）→ bbox crop で 〜30 KB/PNG、LFS 容量内。
 
 **Migration Plan**
-- このメモ自体は移行物なし。
-- `add-multiring-polygons`: `parts.json` を `polygons: [{ outer: <既存> }]` に 1 パス書き換え、ローダー 1 リリース両形式。
-- `add-per-option-finish-renders`: 純粋追加、`customTextureUrl` 未指定 option は不変。
-- Item 4 / 5: 移行物なし。
+1. schema 拡張（`colorHexByVariant`, `synthesized` 追加 / `variantMappingSchema` / `tintBaseSchema`）— 全て optional、後方互換。
+2. `finish-variant-mapping.json` 作成（⑩ ⑪ ⑬ ⑭ の overrides + ② noEffect + ⑰ colorHexByVariant）。
+3. `finish-base-overrides.json` に `tintBase` ブロック追加。
+4. `npm run seed:parts && npm run seed:variants` 再実行。
+5. ランタイム `PartFinishLayer.tsx` を `colorHexByVariant` 解決に対応（1 行）。
+6. `/` で variant 切替スモーク（Section 9）。
+
+**進行状況**: コードはマージ待ち。schema・seed pipeline・runtime はすべてランディング、`scripts/suggest-sash-palette.mjs` と `scripts/audit-finish-options.mjs` も整備済。⑰ パレットは初期値投入済（要 designer タッチ）。インタラクティブスモークが残タスク。
 
 ### 6.2 `add-urban-sea-variants-and-parts-export` — アーバンシー variant スイッチャー + 選択部材 Excel 出力
 

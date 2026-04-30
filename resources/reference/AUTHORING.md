@@ -356,6 +356,128 @@ option's `textureUrl` to the cropped piece. This lets a customer pick
 (the override config maps `黒 → sharp`, and the sharp-base crop is
 overlaid on the natural backdrop).
 
+### Tint-base for alternative options
+
+`finish-base-overrides.json` also accepts a `tintBase` block per part:
+
+```json
+"tintBase": {
+  "10": { "label": "ｺｺﾅｯﾂﾁｪﾘｰ", "lift": 0.35 },
+  "13": { "label": "ｸﾞﾚｰｼﾞｭ", "lift": 0.35 },
+  "15": { "label": "ﾅﾗ樫", "lift": 0.15 },
+  "17": { "lift": 0.5 }
+}
+```
+
+`label` is **omitted** for color-mode parts (e.g. ⑰ サッシ枠). When
+absent, the entry switches mode: `seed:variants` lifts the part's
+`shading_<id>.png` file in-place using the same `Y' = Y + (255 - Y) * lift`
+formula. This suppresses dark shading bands so `colorHex` values render
+closer to their nominal hue (especially helpful for white/light hex
+values that otherwise read as gray after the shading multiply). The
+original shading is preserved as `shading_<id>.orig.png` so re-runs are
+idempotent (never compound the lift).
+
+When set, every alternative option (`defaultForVariants: []`) on that
+part receives a per-variant **tinted** PNG: the named tint-base option's
+masked variant base is converted to monotone luminance, then multiplied
+by the alternative's icon color. The result preserves the wood-grain
+detail from the base finish while shifting hue toward each option's
+swatch. Output files: `<partId>/<optionId>__<variantKey>.png` × 3
+(byte-identical across variants — kept three so each entry in
+`textureUrlByVariant` has a unique URL for cache-bust).
+
+`lift` (0..1, default 0) **suppresses the dark grain bands before the
+multiply**. Pure multiply (`lift: 0`) crushes light icon colors —
+white / ivory swatches collapse toward gray because the dark bands of
+the wood grain dominate. The lift formula is `Y' = Y + (1 - Y) * lift`,
+which pulls the luminance map toward white while preserving relative
+contrast. Tuning notes:
+
+- **Wood-grain doors / panels (⑩, ⑬)**: 0.5–0.6 keeps grain visible while
+  letting light swatches read as light.
+- **Floors (⑮)**: 0.1–0.2 — the floor grain is subtler and benefits from
+  more contrast. Most floor alternatives are mid-tone, so the dark crush
+  is less noticeable.
+- **Sweep**: bump in 0.1 increments and re-run `npm run seed:variants`
+  until the lightest icon-color alternative reads correctly.
+
+The tint-base option MUST claim exactly one variant in its
+`defaultForVariants` so the seed step knows which variant base to use as
+the luminance source. If it claims multiple, the seed emits a
+`tint-base-ambiguous-variant` warning and skips the part.
+
+### Finish-variant-mapping config
+
+`resources/catalog/finish-variant-mapping.json` is a designer-owned
+override layer applied AFTER the workbook is parsed. It has three
+independent blocks:
+
+1. **`overrides`** — re-assign which option claims each
+   `(partId, variantKey)`. Use this when the customer-prepared workbook
+   has the wrong label in the Natural / Flat / Sharp column. Format:
+
+   ```json
+   "overrides": {
+     "10": { "natural": "ｺｺﾅｯﾂﾁｪﾘｰ", "flat": "ﾀﾞｰｼﾞﾘﾝｳｫﾙﾅｯﾄ", "sharp": "ｴｽﾌﾟﾚｯｿｳｯﾄﾞ" }
+   }
+   ```
+
+   Adds the variant to the named option's `defaultForVariants` and strips
+   it from any prior claimant on the same `(partId, sheet)`.
+
+   When the named label doesn't exist on the primary sheet (`アーバンシー`)
+   but exists on a sibling sheet (e.g. `レコリード`), the seed step
+   **synthesizes** a copy onto the primary sheet, preserving icon /
+   product code / sub-label, and tags it `synthesized: true`. This is how
+   ⑭ ブラック shows up on `アーバンシー` even though the workbook only lists
+   it on `レコリード`.
+
+2. **`noEffect`** — list of `(partId, optionLabel)` pairs that should
+   render as an **ambient-fill** texture: the seed step samples the mean
+   RGB of a 16-px ring just outside the part mask in each variant base
+   and emits a solid-fill PNG. The part region visually erases by adopting
+   its surroundings. Used for ② キッチン間接照明 *無* (turning off the
+   lighting bloom). Format:
+
+   ```json
+   "noEffect": [
+     { "partId": "02", "optionLabel": "無" }
+   ]
+   ```
+
+3. **`colorHexByVariant`** — per-variant `#RRGGBB` overrides for
+   color-mode options on a variant-enabled sheet. Materializes into
+   `option.colorHexByVariant`. The runtime resolves
+   `colorHexByVariant[activeVariantKey] ?? colorHex` so options can carry
+   a per-variant palette while keeping the static `colorHex` as the
+   fallback. Used for ⑰ サッシ枠 to harmonize the sash with each base
+   perspective. Format:
+
+   ```json
+   "colorHexByVariant": {
+     "17": {
+       "カームブラック": { "natural": "#484d4a", "flat": "#484d4b", "sharp": "#494e4c" }
+     }
+   }
+   ```
+
+   To bootstrap a starter palette, run
+   `node scripts/suggest-sash-palette.mjs [ringWidthPx] [blendWeight]` —
+   it samples the mean wall color around ⑰ in each variant base and
+   prints suggested per-variant hex values blended toward that wall.
+
+### Auditing finish-options consistency
+
+`node scripts/audit-finish-options.mjs [partIds...]` walks every option
+on the primary sheet for the listed parts (default: `02 10 11 13 14 15
+17`) and flags `(label, iconUrl, dominant texture color)` divergences.
+Useful before a customer demo to catch workbook-level mistakes that the
+override config didn't catch. The default distance threshold (80 in
+sRGB) is tuned conservatively — a tinted-alternative texture will appear
+darker than its icon (multiply blend), which the script flags but is
+intended behavior for `tintBase` parts.
+
 ## /dev/trace workflow
 
 The designer tool at <http://localhost:3000/dev/trace> edits
