@@ -21,6 +21,7 @@ import {
   loadFinishOptions,
   loadSheetsManifest,
   crossValidateAgainstParts,
+  crossValidateDefaultsAgainstScene,
   crossValidateOptionsAgainstSheets,
   crossValidatePartsAgainstSheets,
   crossValidateSheetsAgainstScene,
@@ -56,6 +57,7 @@ export default function Page() {
         const sheetsManifest = await loadSheetsManifest();
         crossValidateAgainstParts(options, parts);
         crossValidateSheetsAgainstScene(sheetsManifest, scene);
+        crossValidateDefaultsAgainstScene(options, scene);
         // The variant-policy validators are warn-mode while the customer's
         // updated 部材リスト.xlsx (with texture options for parts 15/17 and
         // textureUrlByVariant on every アーバンシー option) is in flight.

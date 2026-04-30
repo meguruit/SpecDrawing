@@ -5,10 +5,14 @@
       "id": "01-urb-0-opt0",
       "partId": "01",
       "sheet": "アーバンシー",
-      "label": "ﾁｬｲﾅ大理石(黒)",
+      "label": "ﾁｬｲﾅ大理石(白)",
       "thumbnailUrl": "/assets/finishes/01/01-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/01-urb-0-opt0.png",
-      "textureUrl": "/assets/finishes/01/_v_sharp.png",
+      "defaultForVariants": [
+        "natural",
+        "flat"
+      ],
+      "textureUrl": "/assets/finishes/01/_v_natural.png",
       "textureBox": {
         "x": 1467,
         "y": 1233,
@@ -49,10 +53,13 @@
       "id": "01-urb-1-opt1",
       "partId": "01",
       "sheet": "アーバンシー",
-      "label": "ﾁｬｲﾅ大理石(白)",
+      "label": "ﾁｬｲﾅ大理石(黒)",
       "thumbnailUrl": "/assets/finishes/01/01-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/01-urb-1-opt1.png",
-      "textureUrl": "/assets/finishes/01/_v_natural.png",
+      "defaultForVariants": [
+        "sharp"
+      ],
+      "textureUrl": "/assets/finishes/01/_v_sharp.png",
       "textureBox": {
         "x": 1467,
         "y": 1233,
@@ -94,8 +101,14 @@
       "partId": "02",
       "sheet": "アーバンシー",
       "label": "有",
+      "subLabel": "電球色",
       "thumbnailUrl": "/assets/finishes/02/02-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/02-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural",
+        "flat",
+        "sharp"
+      ],
       "textureUrl": "/assets/finishes/02/02-urb-0-opt0.png",
       "textureUrlByVariant": {
         "natural": {
@@ -132,8 +145,10 @@
       "partId": "02",
       "sheet": "アーバンシー",
       "label": "無",
+      "subLabel": "光無し",
       "thumbnailUrl": "/assets/finishes/02/02-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/02-urb-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/02/02-urb-1-opt1.texture.png",
       "textureUrlByVariant": {
         "natural": {
@@ -173,6 +188,11 @@
       "productCode": "RD322STSA",
       "thumbnailUrl": "/assets/finishes/03/03-urb-0-2.png",
       "iconUrl": "/catalog/icons/03-urb-0-2.png",
+      "defaultForVariants": [
+        "natural",
+        "flat",
+        "sharp"
+      ],
       "textureUrl": "/assets/finishes/03/03-urb-0-2.png",
       "textureUrlByVariant": {
         "natural": {
@@ -212,6 +232,7 @@
       "productCode": "RD323STSA",
       "thumbnailUrl": "/assets/finishes/03/03-urb-1-2.png",
       "iconUrl": "/catalog/icons/03-urb-1-2.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/03/03-urb-1-2.png",
       "textureUrlByVariant": {
         "natural": {
@@ -251,6 +272,7 @@
       "productCode": "RD641STSA",
       "thumbnailUrl": "/assets/finishes/03/03-urb-2-4.png",
       "iconUrl": "/catalog/icons/03-urb-2-4.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/03/03-urb-2-4.png",
       "textureUrlByVariant": {
         "natural": {
@@ -290,85 +312,10 @@
       "productCode": "FAN1983ZMN",
       "thumbnailUrl": "/assets/finishes/04/04-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/04-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural"
+      ],
       "textureUrl": "/assets/finishes/04/04-urb-0-opt0.png",
-      "textureUrlByVariant": {
-        "natural": {
-          "url": "/assets/finishes/04/_v_natural.png",
-          "textureBox": {
-            "x": 1470,
-            "y": 979,
-            "width": 133,
-            "height": 314
-          }
-        },
-        "flat": {
-          "url": "/assets/finishes/04/_v_flat.png",
-          "textureBox": {
-            "x": 1470,
-            "y": 979,
-            "width": 133,
-            "height": 314
-          }
-        },
-        "sharp": {
-          "url": "/assets/finishes/04/_v_sharp.png",
-          "textureBox": {
-            "x": 1470,
-            "y": 979,
-            "width": 133,
-            "height": 314
-          }
-        }
-      }
-    },
-    {
-      "id": "04-urb-1-opt1",
-      "partId": "04",
-      "sheet": "アーバンシー",
-      "label": "ｵｰﾛﾗﾏｰﾌﾞﾙ",
-      "productCode": "FJ-802ZN",
-      "thumbnailUrl": "/assets/finishes/04/04-urb-1-opt1.png",
-      "iconUrl": "/catalog/icons/04-urb-1-opt1.png",
-      "textureUrl": "/assets/finishes/04/04-urb-1-opt1.png",
-      "textureUrlByVariant": {
-        "natural": {
-          "url": "/assets/finishes/04/_v_natural.png",
-          "textureBox": {
-            "x": 1470,
-            "y": 979,
-            "width": 133,
-            "height": 314
-          }
-        },
-        "flat": {
-          "url": "/assets/finishes/04/_v_flat.png",
-          "textureBox": {
-            "x": 1470,
-            "y": 979,
-            "width": 133,
-            "height": 314
-          }
-        },
-        "sharp": {
-          "url": "/assets/finishes/04/_v_sharp.png",
-          "textureBox": {
-            "x": 1470,
-            "y": 979,
-            "width": 133,
-            "height": 314
-          }
-        }
-      }
-    },
-    {
-      "id": "04-urb-2-opt2",
-      "partId": "04",
-      "sheet": "アーバンシー",
-      "label": "ｼﾙﾊﾞｰｼｬﾄﾞｳ",
-      "productCode": "FJ-10125ZD",
-      "thumbnailUrl": "/assets/finishes/04/04-urb-2-opt2.png",
-      "iconUrl": "/catalog/icons/04-urb-2-opt2.png",
-      "textureUrl": "/assets/finishes/04/04-urb-2-opt2.png",
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/04/_v_natural.png",
@@ -403,11 +350,14 @@
       "id": "05-urb-0-opt0",
       "partId": "05",
       "sheet": "アーバンシー",
-      "label": "ブラック",
+      "label": "ホワイト",
       "productCode": "XAI-3A-4516",
       "thumbnailUrl": "/assets/finishes/05/05-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/05-urb-0-opt0.png",
-      "textureUrl": "/assets/finishes/05/_v_sharp.png",
+      "defaultForVariants": [
+        "natural"
+      ],
+      "textureUrl": "/assets/finishes/05/_v_natural.png",
       "textureBox": {
         "x": 1510,
         "y": 726,
@@ -448,11 +398,15 @@
       "id": "05-urb-1-opt1",
       "partId": "05",
       "sheet": "アーバンシー",
-      "label": "ホワイト",
+      "label": "ブラック",
       "productCode": "XAI-3A-4516",
       "thumbnailUrl": "/assets/finishes/05/05-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/05-urb-1-opt1.png",
-      "textureUrl": "/assets/finishes/05/_v_natural.png",
+      "defaultForVariants": [
+        "flat",
+        "sharp"
+      ],
+      "textureUrl": "/assets/finishes/05/_v_sharp.png",
       "textureBox": {
         "x": 1510,
         "y": 726,
@@ -493,10 +447,14 @@
       "id": "06-urb-0-opt0",
       "partId": "06",
       "sheet": "アーバンシー",
-      "label": "ブラック",
+      "label": "ホワイト",
+      "subLabel": "63504 ｼｰﾘﾝｸﾞｼｪﾙﾌS",
       "thumbnailUrl": "/assets/finishes/06/06-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/06-urb-0-opt0.png",
-      "textureUrl": "/assets/finishes/06/_v_sharp.png",
+      "defaultForVariants": [
+        "natural"
+      ],
+      "textureUrl": "/assets/finishes/06/_v_natural.png",
       "textureBox": {
         "x": 1768,
         "y": 682,
@@ -537,10 +495,15 @@
       "id": "06-urb-1-opt1",
       "partId": "06",
       "sheet": "アーバンシー",
-      "label": "ホワイト",
+      "label": "ブラック",
+      "subLabel": "63504 ｼｰﾘﾝｸﾞｼｪﾙﾌS",
       "thumbnailUrl": "/assets/finishes/06/06-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/06-urb-1-opt1.png",
-      "textureUrl": "/assets/finishes/06/_v_natural.png",
+      "defaultForVariants": [
+        "flat",
+        "sharp"
+      ],
+      "textureUrl": "/assets/finishes/06/_v_sharp.png",
       "textureBox": {
         "x": 1768,
         "y": 682,
@@ -585,6 +548,11 @@
       "productCode": "SP2544",
       "thumbnailUrl": "/assets/finishes/07/07-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/07-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural",
+        "flat",
+        "sharp"
+      ],
       "colorHex": "#CAB9AF"
     },
     {
@@ -595,6 +563,7 @@
       "productCode": "SP2545",
       "thumbnailUrl": "/assets/finishes/07/07-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/07-urb-1-opt1.png",
+      "defaultForVariants": [],
       "colorHex": "#B0A093"
     },
     {
@@ -605,6 +574,7 @@
       "productCode": "SP2540",
       "thumbnailUrl": "/assets/finishes/07/07-urb-2-opt2.png",
       "iconUrl": "/catalog/icons/07-urb-2-opt2.png",
+      "defaultForVariants": [],
       "colorHex": "#CECBC6"
     },
     {
@@ -615,6 +585,7 @@
       "productCode": "SP2541",
       "thumbnailUrl": "/assets/finishes/07/07-urb-3-opt3.png",
       "iconUrl": "/catalog/icons/07-urb-3-opt3.png",
+      "defaultForVariants": [],
       "colorHex": "#A5A19C"
     },
     {
@@ -625,6 +596,7 @@
       "productCode": "SP2537",
       "thumbnailUrl": "/assets/finishes/07/07-urb-4-opt4.png",
       "iconUrl": "/catalog/icons/07-urb-4-opt4.png",
+      "defaultForVariants": [],
       "colorHex": "#D4CEC2"
     },
     {
@@ -635,6 +607,10 @@
       "productCode": "ST17071",
       "thumbnailUrl": "/assets/finishes/08/08-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/08-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural",
+        "flat"
+      ],
       "textureUrl": "/assets/finishes/08/_v_natural.png",
       "textureBox": {
         "x": 1517,
@@ -680,6 +656,9 @@
       "productCode": "EARTH-6015/BLACK",
       "thumbnailUrl": "/assets/finishes/08/08-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/08-urb-1-opt1.png",
+      "defaultForVariants": [
+        "sharp"
+      ],
       "textureUrl": "/assets/finishes/08/_v_sharp.png",
       "textureBox": {
         "x": 1517,
@@ -721,10 +700,13 @@
       "id": "09-urb-0-opt0",
       "partId": "09",
       "sheet": "アーバンシー",
-      "label": "ブラック",
+      "label": "ホワイト",
       "thumbnailUrl": "/assets/finishes/09/09-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/09-urb-0-opt0.png",
-      "textureUrl": "/assets/finishes/09/_v_sharp.png",
+      "defaultForVariants": [
+        "natural"
+      ],
+      "textureUrl": "/assets/finishes/09/_v_natural.png",
       "textureBox": {
         "x": 403,
         "y": 0,
@@ -765,10 +747,14 @@
       "id": "09-urb-1-opt1",
       "partId": "09",
       "sheet": "アーバンシー",
-      "label": "ホワイト",
+      "label": "ブラック",
       "thumbnailUrl": "/assets/finishes/09/09-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/09-urb-1-opt1.png",
-      "textureUrl": "/assets/finishes/09/_v_natural.png",
+      "defaultForVariants": [
+        "flat",
+        "sharp"
+      ],
+      "textureUrl": "/assets/finishes/09/_v_sharp.png",
       "textureBox": {
         "x": 403,
         "y": 0,
@@ -809,10 +795,13 @@
       "id": "10-urb-0-opt0",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾍﾞｲｸﾄﾞｽﾄｰﾝ",
-      "productCode": "TE",
+      "label": "ﾍｱﾗｲﾝｼﾙﾊﾞｰ",
+      "productCode": "C1",
       "thumbnailUrl": "/assets/finishes/10/10-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/10-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural"
+      ],
       "textureUrl": "/assets/finishes/10/10-urb-0-opt0.png",
       "textureUrlByVariant": {
         "natural": {
@@ -848,10 +837,13 @@
       "id": "10-urb-1-opt1",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾃﾞﾐﾀｽｳｫｰﾙﾅｯﾄ",
-      "productCode": "TF",
+      "label": "ｱｲﾎﾞﾘｰ",
+      "productCode": "E01",
       "thumbnailUrl": "/assets/finishes/10/10-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/10-urb-1-opt1.png",
+      "defaultForVariants": [
+        "flat"
+      ],
       "textureUrl": "/assets/finishes/10/10-urb-1-opt1.png",
       "textureUrlByVariant": {
         "natural": {
@@ -891,6 +883,9 @@
       "productCode": "XP",
       "thumbnailUrl": "/assets/finishes/10/10-urb-2-opt2.png",
       "iconUrl": "/catalog/icons/10-urb-2-opt2.png",
+      "defaultForVariants": [
+        "sharp"
+      ],
       "textureUrl": "/assets/finishes/10/10-urb-2-opt2.png",
       "textureUrlByVariant": {
         "natural": {
@@ -926,10 +921,11 @@
       "id": "10-urb-3-opt3",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｶﾞﾅｯｼｭｳｫｰﾙﾅｯﾄ",
-      "productCode": "DP",
+      "label": "ﾍﾞｲｸﾄﾞｽﾄｰﾝ",
+      "productCode": "TE",
       "thumbnailUrl": "/assets/finishes/10/10-urb-3-opt3.png",
       "iconUrl": "/catalog/icons/10-urb-3-opt3.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-3-opt3.png",
       "textureUrlByVariant": {
         "natural": {
@@ -965,10 +961,11 @@
       "id": "10-urb-4-opt4",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾀﾞｰｼﾞﾘﾝｳｫﾙﾅｯﾄ",
-      "productCode": "AM",
+      "label": "ﾃﾞﾐﾀｽｳｫｰﾙﾅｯﾄ",
+      "productCode": "TF",
       "thumbnailUrl": "/assets/finishes/10/10-urb-4-opt4.png",
       "iconUrl": "/catalog/icons/10-urb-4-opt4.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-4-opt4.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1004,10 +1001,11 @@
       "id": "10-urb-5-opt5",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｽﾃｲﾝｳｫｰﾙﾅｯﾄ",
-      "productCode": "YA",
+      "label": "ｺｺﾅｯﾂﾁｪﾘｰ",
+      "productCode": "XP",
       "thumbnailUrl": "/assets/finishes/10/10-urb-5-opt5.png",
       "iconUrl": "/catalog/icons/10-urb-5-opt5.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-5-opt5.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1043,10 +1041,11 @@
       "id": "10-urb-6-opt6",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｽﾓｰｸｴﾙﾑ",
-      "productCode": "YD",
+      "label": "ｶﾞﾅｯｼｭｳｫｰﾙﾅｯﾄ",
+      "productCode": "DP",
       "thumbnailUrl": "/assets/finishes/10/10-urb-6-opt6.png",
       "iconUrl": "/catalog/icons/10-urb-6-opt6.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-6-opt6.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1082,10 +1081,11 @@
       "id": "10-urb-7-opt7",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｽﾓｰｸﾋｯｺﾘｰ",
-      "productCode": "C4",
+      "label": "ﾀﾞｰｼﾞﾘﾝｳｫﾙﾅｯﾄ",
+      "productCode": "AM",
       "thumbnailUrl": "/assets/finishes/10/10-urb-7-opt7.png",
       "iconUrl": "/catalog/icons/10-urb-7-opt7.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-7-opt7.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1121,10 +1121,11 @@
       "id": "10-urb-8-opt8",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｶﾞﾄｰｱｶｼｱ",
-      "productCode": "AF",
+      "label": "ｽﾃｲﾝｳｫｰﾙﾅｯﾄ",
+      "productCode": "YA",
       "thumbnailUrl": "/assets/finishes/10/10-urb-8-opt8.png",
       "iconUrl": "/catalog/icons/10-urb-8-opt8.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-8-opt8.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1160,10 +1161,11 @@
       "id": "10-urb-9-opt9",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｴｽﾌﾟﾚｯｿｳｯﾄﾞ",
-      "productCode": "C7",
+      "label": "ｽﾓｰｸｴﾙﾑ",
+      "productCode": "YD",
       "thumbnailUrl": "/assets/finishes/10/10-urb-9-opt9.png",
       "iconUrl": "/catalog/icons/10-urb-9-opt9.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-9-opt9.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1199,10 +1201,11 @@
       "id": "10-urb-10-opt10",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｸﾗﾌﾄﾞｳｯﾄﾞ",
-      "productCode": "B5",
+      "label": "ｽﾓｰｸﾋｯｺﾘｰ",
+      "productCode": "C4",
       "thumbnailUrl": "/assets/finishes/10/10-urb-10-opt10.png",
       "iconUrl": "/catalog/icons/10-urb-10-opt10.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-10-opt10.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1238,10 +1241,11 @@
       "id": "10-urb-11-opt11",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾋﾞﾀｰｽﾄｰﾝ",
-      "productCode": "JZ",
+      "label": "ｶﾞﾄｰｱｶｼｱ",
+      "productCode": "AF",
       "thumbnailUrl": "/assets/finishes/10/10-urb-11-opt11.png",
       "iconUrl": "/catalog/icons/10-urb-11-opt11.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-11-opt11.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1277,10 +1281,11 @@
       "id": "10-urb-12-opt12",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｴﾝﾍﾟﾗﾄﾞｰﾙﾀﾞｰｸ",
-      "productCode": "AU",
+      "label": "ｴｽﾌﾟﾚｯｿｳｯﾄﾞ",
+      "productCode": "C7",
       "thumbnailUrl": "/assets/finishes/10/10-urb-12-opt12.png",
       "iconUrl": "/catalog/icons/10-urb-12-opt12.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-12-opt12.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1316,10 +1321,11 @@
       "id": "10-urb-13-opt13",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾓｶﾚｻﾞｰ",
-      "productCode": "L2",
+      "label": "ｸﾗﾌﾄﾞｳｯﾄﾞ",
+      "productCode": "B5",
       "thumbnailUrl": "/assets/finishes/10/10-urb-13-opt13.png",
       "iconUrl": "/catalog/icons/10-urb-13-opt13.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-13-opt13.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1355,10 +1361,11 @@
       "id": "10-urb-14-opt14",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾍｱﾗｲﾝｼﾙﾊﾞｰ",
-      "productCode": "C1",
+      "label": "ﾋﾞﾀｰｽﾄｰﾝ",
+      "productCode": "JZ",
       "thumbnailUrl": "/assets/finishes/10/10-urb-14-opt14.png",
       "iconUrl": "/catalog/icons/10-urb-14-opt14.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-14-opt14.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1394,10 +1401,11 @@
       "id": "10-urb-15-opt15",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｽﾓｰｸﾒﾀﾙ",
-      "productCode": "L8",
+      "label": "ｴﾝﾍﾟﾗﾄﾞｰﾙﾀﾞｰｸ",
+      "productCode": "AU",
       "thumbnailUrl": "/assets/finishes/10/10-urb-15-opt15.png",
       "iconUrl": "/catalog/icons/10-urb-15-opt15.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-15-opt15.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1433,10 +1441,11 @@
       "id": "10-urb-16-opt16",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾍｱﾗｲﾝﾌﾞﾗｯｸ",
-      "productCode": "C2",
+      "label": "ﾓｶﾚｻﾞｰ",
+      "productCode": "L2",
       "thumbnailUrl": "/assets/finishes/10/10-urb-16-opt16.png",
       "iconUrl": "/catalog/icons/10-urb-16-opt16.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-16-opt16.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1472,10 +1481,11 @@
       "id": "10-urb-17-opt17",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾎﾜｲﾄﾊﾟｰﾙ",
-      "productCode": "A1",
+      "label": "ｽﾓｰｸﾒﾀﾙ",
+      "productCode": "L8",
       "thumbnailUrl": "/assets/finishes/10/10-urb-17-opt17.png",
       "iconUrl": "/catalog/icons/10-urb-17-opt17.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-17-opt17.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1511,10 +1521,11 @@
       "id": "10-urb-18-opt18",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｱｲﾎﾞﾘｰ",
-      "productCode": "E01",
+      "label": "ﾍｱﾗｲﾝﾌﾞﾗｯｸ",
+      "productCode": "C2",
       "thumbnailUrl": "/assets/finishes/10/10-urb-18-opt18.png",
       "iconUrl": "/catalog/icons/10-urb-18-opt18.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-18-opt18.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1550,10 +1561,11 @@
       "id": "10-urb-19-opt19",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾏｼﾞｪｽﾃｨｸﾞﾚｰ",
-      "productCode": "NT",
+      "label": "ﾎﾜｲﾄﾊﾟｰﾙ",
+      "productCode": "A1",
       "thumbnailUrl": "/assets/finishes/10/10-urb-19-opt19.png",
       "iconUrl": "/catalog/icons/10-urb-19-opt19.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-19-opt19.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1589,10 +1601,11 @@
       "id": "10-urb-20-opt20",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾀﾞｰｸｸﾞﾚｰ",
-      "productCode": "A4",
+      "label": "ﾏｼﾞｪｽﾃｨｸﾞﾚｰ",
+      "productCode": "NT",
       "thumbnailUrl": "/assets/finishes/10/10-urb-20-opt20.png",
       "iconUrl": "/catalog/icons/10-urb-20-opt20.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-20-opt20.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1628,10 +1641,11 @@
       "id": "10-urb-21-opt21",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾌﾞﾗｯｸ",
-      "productCode": "A2",
+      "label": "ﾀﾞｰｸｸﾞﾚｰ",
+      "productCode": "A4",
       "thumbnailUrl": "/assets/finishes/10/10-urb-21-opt21.png",
       "iconUrl": "/catalog/icons/10-urb-21-opt21.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-21-opt21.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1667,10 +1681,11 @@
       "id": "10-urb-22-opt22",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾏｼﾞｪｽﾃｨﾌﾞﾗｳﾝ",
-      "productCode": "NR",
+      "label": "ﾌﾞﾗｯｸ",
+      "productCode": "A2",
       "thumbnailUrl": "/assets/finishes/10/10-urb-22-opt22.png",
       "iconUrl": "/catalog/icons/10-urb-22-opt22.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-22-opt22.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1706,10 +1721,11 @@
       "id": "10-urb-23-opt23",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｸﾞﾗﾋﾞｱﾌﾞﾗｳﾝ",
-      "productCode": "A7",
+      "label": "ﾏｼﾞｪｽﾃｨﾌﾞﾗｳﾝ",
+      "productCode": "NR",
       "thumbnailUrl": "/assets/finishes/10/10-urb-23-opt23.png",
       "iconUrl": "/catalog/icons/10-urb-23-opt23.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-23-opt23.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1745,10 +1761,11 @@
       "id": "10-urb-24-opt24",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｸﾞﾗﾋﾞｱﾜｲﾝ",
-      "productCode": "A8",
+      "label": "ｸﾞﾗﾋﾞｱﾌﾞﾗｳﾝ",
+      "productCode": "A7",
       "thumbnailUrl": "/assets/finishes/10/10-urb-24-opt24.png",
       "iconUrl": "/catalog/icons/10-urb-24-opt24.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-24-opt24.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1784,10 +1801,11 @@
       "id": "10-urb-25-opt25",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｸﾞﾗﾋﾞｱｸﾞﾘｰﾝ",
-      "productCode": "AQ",
+      "label": "ｸﾞﾗﾋﾞｱﾜｲﾝ",
+      "productCode": "A8",
       "thumbnailUrl": "/assets/finishes/10/10-urb-25-opt25.png",
       "iconUrl": "/catalog/icons/10-urb-25-opt25.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-25-opt25.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1823,10 +1841,11 @@
       "id": "10-urb-26-opt26",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ｻﾌｧｲｱﾌﾞﾙｰ",
-      "productCode": "LU",
+      "label": "ｸﾞﾗﾋﾞｱｸﾞﾘｰﾝ",
+      "productCode": "AQ",
       "thumbnailUrl": "/assets/finishes/10/10-urb-26-opt26.png",
       "iconUrl": "/catalog/icons/10-urb-26-opt26.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-26-opt26.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1862,11 +1881,52 @@
       "id": "10-urb-27-opt27",
       "partId": "10",
       "sheet": "アーバンシー",
-      "label": "ﾀﾞｰｸﾌﾞﾙｰ",
-      "productCode": "A5",
+      "label": "ｻﾌｧｲｱﾌﾞﾙｰ",
+      "productCode": "LU",
       "thumbnailUrl": "/assets/finishes/10/10-urb-27-opt27.png",
       "iconUrl": "/catalog/icons/10-urb-27-opt27.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-urb-27-opt27.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/10/_v_natural.png",
+          "textureBox": {
+            "x": 2160,
+            "y": 831,
+            "width": 328,
+            "height": 708
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/10/_v_flat.png",
+          "textureBox": {
+            "x": 2160,
+            "y": 831,
+            "width": 328,
+            "height": 708
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/10/_v_sharp.png",
+          "textureBox": {
+            "x": 2160,
+            "y": 831,
+            "width": 328,
+            "height": 708
+          }
+        }
+      }
+    },
+    {
+      "id": "10-urb-28-opt28",
+      "partId": "10",
+      "sheet": "アーバンシー",
+      "label": "ﾀﾞｰｸﾌﾞﾙｰ",
+      "productCode": "A5",
+      "thumbnailUrl": "/assets/finishes/10/10-urb-28-opt28.png",
+      "iconUrl": "/catalog/icons/10-urb-28-opt28.png",
+      "defaultForVariants": [],
+      "textureUrl": "/assets/finishes/10/10-urb-28-opt28.png",
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/10/_v_natural.png",
@@ -1904,6 +1964,9 @@
       "label": "シルバー",
       "thumbnailUrl": "/assets/finishes/11/11-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/11-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural"
+      ],
       "textureUrl": "/assets/finishes/11/11-urb-0-opt0.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1942,6 +2005,9 @@
       "label": "ブラック",
       "thumbnailUrl": "/assets/finishes/11/11-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/11-urb-1-opt1.png",
+      "defaultForVariants": [
+        "flat"
+      ],
       "textureUrl": "/assets/finishes/11/11-urb-1-opt1.png",
       "textureUrlByVariant": {
         "natural": {
@@ -1980,6 +2046,9 @@
       "label": "ゴールド",
       "thumbnailUrl": "/assets/finishes/11/11-urb-2-opt2.png",
       "iconUrl": "/catalog/icons/11-urb-2-opt2.png",
+      "defaultForVariants": [
+        "sharp"
+      ],
       "textureUrl": "/assets/finishes/11/11-urb-2-opt2.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2019,6 +2088,9 @@
       "productCode": "CM-12250",
       "thumbnailUrl": "/assets/finishes/12/12-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/12-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural"
+      ],
       "textureUrl": "/assets/finishes/12/_v_flat.png",
       "textureBox": {
         "x": 2239,
@@ -2064,6 +2136,9 @@
       "productCode": "IS-2111",
       "thumbnailUrl": "/assets/finishes/12/12-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/12-urb-1-opt1.png",
+      "defaultForVariants": [
+        "flat"
+      ],
       "textureUrl": "/assets/finishes/12/_v_natural.png",
       "textureBox": {
         "x": 2239,
@@ -2109,6 +2184,9 @@
       "productCode": "IS-2071-C",
       "thumbnailUrl": "/assets/finishes/12/12-urb-2-opt2.png",
       "iconUrl": "/catalog/icons/12-urb-2-opt2.png",
+      "defaultForVariants": [
+        "sharp"
+      ],
       "textureUrl": "/assets/finishes/12/_v_sharp.png",
       "textureBox": {
         "x": 2239,
@@ -2150,10 +2228,13 @@
       "id": "13-urb-0-opt0",
       "partId": "13",
       "sheet": "アーバンシー",
-      "label": "木目ﾎﾜｲﾄ",
-      "productCode": "WH",
+      "label": "ﾅﾁｭﾗﾙｸﾘｱ",
+      "productCode": "CL",
       "thumbnailUrl": "/assets/finishes/13/13-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/13-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural"
+      ],
       "textureUrl": "/assets/finishes/13/13-urb-0-opt0.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2189,10 +2270,13 @@
       "id": "13-urb-1-opt1",
       "partId": "13",
       "sheet": "アーバンシー",
-      "label": "ﾍﾟｰﾙ",
-      "productCode": "PL",
+      "label": "ｸﾞﾚｰｼﾞｭ",
+      "productCode": "GE",
       "thumbnailUrl": "/assets/finishes/13/13-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/13-urb-1-opt1.png",
+      "defaultForVariants": [
+        "flat"
+      ],
       "textureUrl": "/assets/finishes/13/13-urb-1-opt1.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2228,10 +2312,13 @@
       "id": "13-urb-2-opt2",
       "partId": "13",
       "sheet": "アーバンシー",
-      "label": "ﾗｲﾄｸﾘｱ",
-      "productCode": "LC",
+      "label": "ｼｮｺﾗﾌﾞﾗｯｸ",
+      "productCode": "CH",
       "thumbnailUrl": "/assets/finishes/13/13-urb-2-opt2.png",
       "iconUrl": "/catalog/icons/13-urb-2-opt2.png",
+      "defaultForVariants": [
+        "sharp"
+      ],
       "textureUrl": "/assets/finishes/13/13-urb-2-opt2.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2267,10 +2354,11 @@
       "id": "13-urb-3-opt3",
       "partId": "13",
       "sheet": "アーバンシー",
-      "label": "ﾗｲﾄﾌﾞﾗｳﾝ",
-      "productCode": "LB",
+      "label": "木目ﾎﾜｲﾄ",
+      "productCode": "WH",
       "thumbnailUrl": "/assets/finishes/13/13-urb-3-opt3.png",
       "iconUrl": "/catalog/icons/13-urb-3-opt3.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-3-opt3.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2306,10 +2394,11 @@
       "id": "13-urb-4-opt4",
       "partId": "13",
       "sheet": "アーバンシー",
-      "label": "ﾀﾞｰｸﾌﾞﾗｳﾝ",
-      "productCode": "DK",
+      "label": "ﾍﾟｰﾙ",
+      "productCode": "PL",
       "thumbnailUrl": "/assets/finishes/13/13-urb-4-opt4.png",
       "iconUrl": "/catalog/icons/13-urb-4-opt4.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-4-opt4.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2345,10 +2434,11 @@
       "id": "13-urb-5-opt5",
       "partId": "13",
       "sheet": "アーバンシー",
-      "label": "ｼｮｺﾗﾌﾞﾗｯｸ",
-      "productCode": "CH",
+      "label": "ﾗｲﾄｸﾘｱ",
+      "productCode": "LC",
       "thumbnailUrl": "/assets/finishes/13/13-urb-5-opt5.png",
       "iconUrl": "/catalog/icons/13-urb-5-opt5.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-5-opt5.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2384,10 +2474,11 @@
       "id": "13-urb-6-opt6",
       "partId": "13",
       "sheet": "アーバンシー",
-      "label": "ｸﾞﾚｰｼﾞｭ",
-      "productCode": "GE",
+      "label": "ﾗｲﾄﾌﾞﾗｳﾝ",
+      "productCode": "LB",
       "thumbnailUrl": "/assets/finishes/13/13-urb-6-opt6.png",
       "iconUrl": "/catalog/icons/13-urb-6-opt6.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-6-opt6.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2423,10 +2514,11 @@
       "id": "13-urb-7-opt7",
       "partId": "13",
       "sheet": "アーバンシー",
-      "label": "ﾅﾁｭﾗﾙｸﾘｱ",
-      "productCode": "CL",
+      "label": "ﾀﾞｰｸﾌﾞﾗｳﾝ",
+      "productCode": "DK",
       "thumbnailUrl": "/assets/finishes/13/13-urb-7-opt7.png",
       "iconUrl": "/catalog/icons/13-urb-7-opt7.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-7-opt7.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2466,6 +2558,7 @@
       "productCode": "W1",
       "thumbnailUrl": "/assets/finishes/13/13-urb-8-opt8.png",
       "iconUrl": "/catalog/icons/13-urb-8-opt8.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-8-opt8.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2505,6 +2598,7 @@
       "productCode": "G3",
       "thumbnailUrl": "/assets/finishes/13/13-urb-9-opt9.png",
       "iconUrl": "/catalog/icons/13-urb-9-opt9.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-9-opt9.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2544,6 +2638,7 @@
       "productCode": "G9",
       "thumbnailUrl": "/assets/finishes/13/13-urb-10-opt10.png",
       "iconUrl": "/catalog/icons/13-urb-10-opt10.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-10-opt10.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2583,6 +2678,7 @@
       "productCode": "N2",
       "thumbnailUrl": "/assets/finishes/13/13-urb-11-opt11.png",
       "iconUrl": "/catalog/icons/13-urb-11-opt11.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-urb-11-opt11.png",
       "textureUrlByVariant": {
         "natural": {
@@ -2621,45 +2717,12 @@
       "label": "シルバー",
       "thumbnailUrl": "/assets/finishes/14/14-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/14-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural",
+        "flat",
+        "sharp"
+      ],
       "textureUrl": "/assets/finishes/14/14-urb-0-opt0.png",
-      "textureUrlByVariant": {
-        "natural": {
-          "url": "/assets/finishes/14/_v_natural.png",
-          "textureBox": {
-            "x": 2691,
-            "y": 1301,
-            "width": 58,
-            "height": 51
-          }
-        },
-        "flat": {
-          "url": "/assets/finishes/14/_v_flat.png",
-          "textureBox": {
-            "x": 2691,
-            "y": 1301,
-            "width": 58,
-            "height": 51
-          }
-        },
-        "sharp": {
-          "url": "/assets/finishes/14/_v_sharp.png",
-          "textureBox": {
-            "x": 2691,
-            "y": 1301,
-            "width": 58,
-            "height": 51
-          }
-        }
-      }
-    },
-    {
-      "id": "14-urb-1-opt1",
-      "partId": "14",
-      "sheet": "アーバンシー",
-      "label": "ブラック",
-      "thumbnailUrl": "/assets/finishes/14/14-urb-1-opt1.png",
-      "iconUrl": "/catalog/icons/14-urb-1-opt1.png",
-      "textureUrl": "/assets/finishes/14/14-urb-1-opt1.png",
       "textureUrlByVariant": {
         "natural": {
           "url": "/assets/finishes/14/_v_natural.png",
@@ -2694,71 +2757,84 @@
       "id": "15-urb-0-opt0",
       "partId": "15",
       "sheet": "アーバンシー",
-      "label": "ﾁｰｸ",
-      "productCode": "AW-TR2P",
+      "label": "ﾊｰﾄﾞﾒｰﾌﾟﾙ",
+      "productCode": "AW-MR2P",
       "thumbnailUrl": "/assets/finishes/15/15-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/15-urb-0-opt0.png",
-      "colorHex": "#A86C41"
+      "defaultForVariants": [
+        "natural"
+      ],
+      "colorHex": "#E5D3BC"
     },
     {
       "id": "15-urb-1-opt1",
       "partId": "15",
       "sheet": "アーバンシー",
-      "label": "ｱｶｼｱ",
-      "productCode": "AW-AR2P",
+      "label": "ﾅﾗ樫",
+      "productCode": "AW-NKR2P",
       "thumbnailUrl": "/assets/finishes/15/15-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/15-urb-1-opt1.png",
-      "colorHex": "#9F7752"
+      "defaultForVariants": [
+        "flat"
+      ],
+      "colorHex": "#D4B38B"
     },
     {
       "id": "15-urb-2-opt2",
       "partId": "15",
       "sheet": "アーバンシー",
-      "label": "ｳｫｰﾙﾅｯﾄ",
-      "productCode": "AW-WR2P",
+      "label": "ｱｶｼｱ",
+      "productCode": "AW-AR2P",
       "thumbnailUrl": "/assets/finishes/15/15-urb-2-opt2.png",
       "iconUrl": "/catalog/icons/15-urb-2-opt2.png",
-      "colorHex": "#9D7765"
+      "defaultForVariants": [
+        "sharp"
+      ],
+      "colorHex": "#9F7752"
     },
     {
       "id": "15-urb-3-opt3",
       "partId": "15",
       "sheet": "アーバンシー",
-      "label": "ﾌﾞﾗｯｸﾁｪﾘｰ",
-      "productCode": "AW-CR2P",
+      "label": "ﾁｰｸ",
+      "productCode": "AW-TR2P",
       "thumbnailUrl": "/assets/finishes/15/15-urb-3-opt3.png",
       "iconUrl": "/catalog/icons/15-urb-3-opt3.png",
-      "colorHex": "#CBA27D"
+      "defaultForVariants": [],
+      "colorHex": "#A86C41"
     },
     {
       "id": "15-urb-4-opt4",
       "partId": "15",
       "sheet": "アーバンシー",
-      "label": "ﾅﾗ樫",
-      "productCode": "AW-NKR2P",
+      "label": "ｳｫｰﾙﾅｯﾄ",
+      "productCode": "AW-WR2P",
       "thumbnailUrl": "/assets/finishes/15/15-urb-4-opt4.png",
       "iconUrl": "/catalog/icons/15-urb-4-opt4.png",
-      "colorHex": "#D4B38B"
+      "defaultForVariants": [],
+      "colorHex": "#9D7765"
     },
     {
       "id": "15-urb-5-opt5",
       "partId": "15",
       "sheet": "アーバンシー",
-      "label": "ｲﾀﾔｶｴﾃﾞ",
-      "productCode": "AW-IKR2P",
+      "label": "ﾌﾞﾗｯｸﾁｪﾘｰ",
+      "productCode": "AW-CR2P",
       "thumbnailUrl": "/assets/finishes/15/15-urb-5-opt5.png",
       "iconUrl": "/catalog/icons/15-urb-5-opt5.png",
-      "colorHex": "#C09B7C"
+      "defaultForVariants": [],
+      "colorHex": "#CBA27D"
     },
     {
       "id": "15-urb-6-opt6",
       "partId": "15",
       "sheet": "アーバンシー",
-      "label": "ﾊｰﾄﾞﾒｰﾌﾟﾙ",
-      "productCode": "AW-MR2P",
+      "label": "ｲﾀﾔｶｴﾃﾞ",
+      "productCode": "AW-IKR2P",
       "thumbnailUrl": "/assets/finishes/15/15-urb-6-opt6.png",
       "iconUrl": "/catalog/icons/15-urb-6-opt6.png",
-      "colorHex": "#E5D3BC"
+      "defaultForVariants": [],
+      "colorHex": "#C09B7C"
     },
     {
       "id": "16-urb-0-opt0",
@@ -2768,103 +2844,124 @@
       "productCode": "SP2544",
       "thumbnailUrl": "/assets/finishes/16/16-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/16-urb-0-opt0.png",
+      "defaultForVariants": [
+        "natural"
+      ],
       "colorHex": "#CAB9AF"
     },
     {
       "id": "16-urb-1-opt1",
       "partId": "16",
       "sheet": "アーバンシー",
-      "label": "サンドベージュ",
-      "productCode": "SP2545",
+      "label": "オリーブグリーン",
+      "productCode": "SP2588",
       "thumbnailUrl": "/assets/finishes/16/16-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/16-urb-1-opt1.png",
-      "colorHex": "#B0A093"
+      "defaultForVariants": [
+        "flat"
+      ],
+      "colorHex": "#72755D"
     },
     {
       "id": "16-urb-2-opt2",
       "partId": "16",
       "sheet": "アーバンシー",
-      "label": "スカイグレー",
-      "productCode": "SP2540",
+      "label": "ダークブルー",
+      "productCode": "SP2589",
       "thumbnailUrl": "/assets/finishes/16/16-urb-2-opt2.png",
       "iconUrl": "/catalog/icons/16-urb-2-opt2.png",
-      "colorHex": "#CECBC6"
+      "defaultForVariants": [
+        "sharp"
+      ],
+      "colorHex": "#515C6B"
     },
     {
       "id": "16-urb-3-opt3",
       "partId": "16",
       "sheet": "アーバンシー",
-      "label": "アッシュグレー",
-      "productCode": "SP2541",
+      "label": "サンドベージュ",
+      "productCode": "SP2545",
       "thumbnailUrl": "/assets/finishes/16/16-urb-3-opt3.png",
       "iconUrl": "/catalog/icons/16-urb-3-opt3.png",
-      "colorHex": "#A5A19C"
+      "defaultForVariants": [],
+      "colorHex": "#B0A093"
     },
     {
       "id": "16-urb-4-opt4",
       "partId": "16",
       "sheet": "アーバンシー",
-      "label": "エクルベージュ",
-      "productCode": "SP2537",
+      "label": "スカイグレー",
+      "productCode": "SP2540",
       "thumbnailUrl": "/assets/finishes/16/16-urb-4-opt4.png",
       "iconUrl": "/catalog/icons/16-urb-4-opt4.png",
-      "colorHex": "#D4CEC2"
+      "defaultForVariants": [],
+      "colorHex": "#CECBC6"
     },
     {
       "id": "16-urb-5-opt5",
       "partId": "16",
       "sheet": "アーバンシー",
-      "label": "オリーブグリーン",
-      "productCode": "SP2588",
+      "label": "アッシュグレー",
+      "productCode": "SP2541",
       "thumbnailUrl": "/assets/finishes/16/16-urb-5-opt5.png",
       "iconUrl": "/catalog/icons/16-urb-5-opt5.png",
-      "colorHex": "#72755D"
+      "defaultForVariants": [],
+      "colorHex": "#A5A19C"
     },
     {
       "id": "16-urb-6-opt6",
       "partId": "16",
       "sheet": "アーバンシー",
-      "label": "ダークブルー",
-      "productCode": "SP2589",
+      "label": "エクルベージュ",
+      "productCode": "SP2537",
       "thumbnailUrl": "/assets/finishes/16/16-urb-6-opt6.png",
       "iconUrl": "/catalog/icons/16-urb-6-opt6.png",
-      "colorHex": "#515C6B"
+      "defaultForVariants": [],
+      "colorHex": "#D4CEC2"
     },
     {
       "id": "17-urb-0-opt0",
       "partId": "17",
       "sheet": "アーバンシー",
-      "label": "ホワイト",
+      "label": "カームブラック",
       "thumbnailUrl": "/assets/finishes/17/17-urb-0-opt0.png",
       "iconUrl": "/catalog/icons/17-urb-0-opt0.png",
-      "colorHex": "#F7F2EC"
+      "defaultForVariants": [
+        "natural",
+        "flat",
+        "sharp"
+      ],
+      "colorHex": "#0D130F"
     },
     {
       "id": "17-urb-1-opt1",
       "partId": "17",
       "sheet": "アーバンシー",
-      "label": "プラチナステン",
+      "label": "ホワイト",
       "thumbnailUrl": "/assets/finishes/17/17-urb-1-opt1.png",
       "iconUrl": "/catalog/icons/17-urb-1-opt1.png",
-      "colorHex": "#9C8F81"
+      "defaultForVariants": [],
+      "colorHex": "#F7F2EC"
     },
     {
       "id": "17-urb-2-opt2",
       "partId": "17",
       "sheet": "アーバンシー",
-      "label": "ブラウン",
+      "label": "プラチナステン",
       "thumbnailUrl": "/assets/finishes/17/17-urb-2-opt2.png",
       "iconUrl": "/catalog/icons/17-urb-2-opt2.png",
-      "colorHex": "#362B1A"
+      "defaultForVariants": [],
+      "colorHex": "#9C8F81"
     },
     {
       "id": "17-urb-3-opt3",
       "partId": "17",
       "sheet": "アーバンシー",
-      "label": "カームブラック",
+      "label": "ブラウン",
       "thumbnailUrl": "/assets/finishes/17/17-urb-3-opt3.png",
       "iconUrl": "/catalog/icons/17-urb-3-opt3.png",
-      "colorHex": "#0D130F"
+      "defaultForVariants": [],
+      "colorHex": "#362B1A"
     },
     {
       "id": "01-rec-0-opt0",
@@ -2873,6 +2970,7 @@
       "label": "ﾁｬｲﾅ大理石(黒)",
       "thumbnailUrl": "/assets/finishes/01/01-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/01-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/01/_v_sharp.png",
       "textureBox": {
         "x": 1467,
@@ -2888,6 +2986,7 @@
       "label": "ﾁｬｲﾅ大理石(白)",
       "thumbnailUrl": "/assets/finishes/01/01-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/01-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/01/_v_natural.png",
       "textureBox": {
         "x": 1467,
@@ -2901,8 +3000,10 @@
       "partId": "02",
       "sheet": "レコリード",
       "label": "有",
+      "subLabel": "電球色",
       "thumbnailUrl": "/assets/finishes/02/02-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/02-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/02/02-rec-0-opt0.png"
     },
     {
@@ -2910,8 +3011,10 @@
       "partId": "02",
       "sheet": "レコリード",
       "label": "無",
+      "subLabel": "光無し",
       "thumbnailUrl": "/assets/finishes/02/02-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/02-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/02/02-rec-1-opt1.texture.png"
     },
     {
@@ -2922,6 +3025,7 @@
       "productCode": "RD322STSA",
       "thumbnailUrl": "/assets/finishes/03/03-rec-0-2.png",
       "iconUrl": "/catalog/icons/03-rec-0-2.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/03/03-rec-0-2.png"
     },
     {
@@ -2932,6 +3036,7 @@
       "productCode": "RD323STSA",
       "thumbnailUrl": "/assets/finishes/03/03-rec-1-2.png",
       "iconUrl": "/catalog/icons/03-rec-1-2.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/03/03-rec-1-2.png"
     },
     {
@@ -2942,6 +3047,7 @@
       "productCode": "RD641STSA",
       "thumbnailUrl": "/assets/finishes/03/03-rec-2-4.png",
       "iconUrl": "/catalog/icons/03-rec-2-4.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/03/03-rec-2-4.png"
     },
     {
@@ -2952,6 +3058,7 @@
       "productCode": "FAN1983ZMN",
       "thumbnailUrl": "/assets/finishes/04/04-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/04-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/04/04-rec-0-opt0.png"
     },
     {
@@ -2962,6 +3069,7 @@
       "productCode": "FJ-802ZN",
       "thumbnailUrl": "/assets/finishes/04/04-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/04-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/04/04-rec-1-opt1.png"
     },
     {
@@ -2972,6 +3080,7 @@
       "productCode": "FJ-10125ZD",
       "thumbnailUrl": "/assets/finishes/04/04-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/04-rec-2-opt2.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/04/04-rec-2-opt2.png"
     },
     {
@@ -2982,6 +3091,7 @@
       "productCode": "XAI-3A-4516",
       "thumbnailUrl": "/assets/finishes/05/05-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/05-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/05/_v_sharp.png",
       "textureBox": {
         "x": 1510,
@@ -2998,6 +3108,7 @@
       "productCode": "XAI-3A-4516",
       "thumbnailUrl": "/assets/finishes/05/05-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/05-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/05/_v_natural.png",
       "textureBox": {
         "x": 1510,
@@ -3011,8 +3122,10 @@
       "partId": "06",
       "sheet": "レコリード",
       "label": "ブラック",
+      "subLabel": "63504 ｼｰﾘﾝｸﾞｼｪﾙﾌS",
       "thumbnailUrl": "/assets/finishes/06/06-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/06-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/06/_v_sharp.png",
       "textureBox": {
         "x": 1768,
@@ -3026,8 +3139,10 @@
       "partId": "06",
       "sheet": "レコリード",
       "label": "ホワイト",
+      "subLabel": "63504 ｼｰﾘﾝｸﾞｼｪﾙﾌS",
       "thumbnailUrl": "/assets/finishes/06/06-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/06-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/06/_v_natural.png",
       "textureBox": {
         "x": 1768,
@@ -3044,6 +3159,7 @@
       "productCode": "SP2544",
       "thumbnailUrl": "/assets/finishes/07/07-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/07-rec-0-opt0.png",
+      "defaultForVariants": [],
       "colorHex": "#CAB9AF"
     },
     {
@@ -3054,6 +3170,7 @@
       "productCode": "SP2545",
       "thumbnailUrl": "/assets/finishes/07/07-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/07-rec-1-opt1.png",
+      "defaultForVariants": [],
       "colorHex": "#B0A093"
     },
     {
@@ -3064,6 +3181,7 @@
       "productCode": "SP2540",
       "thumbnailUrl": "/assets/finishes/07/07-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/07-rec-2-opt2.png",
+      "defaultForVariants": [],
       "colorHex": "#CECBC6"
     },
     {
@@ -3074,6 +3192,7 @@
       "productCode": "SP2541",
       "thumbnailUrl": "/assets/finishes/07/07-rec-3-opt3.png",
       "iconUrl": "/catalog/icons/07-rec-3-opt3.png",
+      "defaultForVariants": [],
       "colorHex": "#A5A19C"
     },
     {
@@ -3084,6 +3203,7 @@
       "productCode": "SP2537",
       "thumbnailUrl": "/assets/finishes/07/07-rec-4-opt4.png",
       "iconUrl": "/catalog/icons/07-rec-4-opt4.png",
+      "defaultForVariants": [],
       "colorHex": "#D4CEC2"
     },
     {
@@ -3094,6 +3214,7 @@
       "productCode": "ST17071",
       "thumbnailUrl": "/assets/finishes/08/08-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/08-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/08/_v_natural.png",
       "textureBox": {
         "x": 1517,
@@ -3110,6 +3231,7 @@
       "productCode": "EARTH-6015/BLACK",
       "thumbnailUrl": "/assets/finishes/08/08-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/08-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/08/_v_sharp.png",
       "textureBox": {
         "x": 1517,
@@ -3125,6 +3247,7 @@
       "label": "ブラック",
       "thumbnailUrl": "/assets/finishes/09/09-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/09-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/09/_v_sharp.png",
       "textureBox": {
         "x": 403,
@@ -3140,6 +3263,7 @@
       "label": "ホワイト",
       "thumbnailUrl": "/assets/finishes/09/09-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/09-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/09/_v_natural.png",
       "textureBox": {
         "x": 403,
@@ -3156,6 +3280,7 @@
       "productCode": "TE",
       "thumbnailUrl": "/assets/finishes/10/10-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/10-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-0-opt0.png"
     },
     {
@@ -3166,6 +3291,7 @@
       "productCode": "TF",
       "thumbnailUrl": "/assets/finishes/10/10-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/10-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-1-opt1.png"
     },
     {
@@ -3176,6 +3302,7 @@
       "productCode": "XP",
       "thumbnailUrl": "/assets/finishes/10/10-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/10-rec-2-opt2.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-2-opt2.png"
     },
     {
@@ -3186,6 +3313,7 @@
       "productCode": "DP",
       "thumbnailUrl": "/assets/finishes/10/10-rec-3-opt3.png",
       "iconUrl": "/catalog/icons/10-rec-3-opt3.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-3-opt3.png"
     },
     {
@@ -3196,6 +3324,7 @@
       "productCode": "AM",
       "thumbnailUrl": "/assets/finishes/10/10-rec-4-opt4.png",
       "iconUrl": "/catalog/icons/10-rec-4-opt4.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-4-opt4.png"
     },
     {
@@ -3206,6 +3335,7 @@
       "productCode": "YA",
       "thumbnailUrl": "/assets/finishes/10/10-rec-5-opt5.png",
       "iconUrl": "/catalog/icons/10-rec-5-opt5.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-5-opt5.png"
     },
     {
@@ -3216,6 +3346,7 @@
       "productCode": "YD",
       "thumbnailUrl": "/assets/finishes/10/10-rec-6-opt6.png",
       "iconUrl": "/catalog/icons/10-rec-6-opt6.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-6-opt6.png"
     },
     {
@@ -3226,6 +3357,7 @@
       "productCode": "C4",
       "thumbnailUrl": "/assets/finishes/10/10-rec-7-opt7.png",
       "iconUrl": "/catalog/icons/10-rec-7-opt7.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-7-opt7.png"
     },
     {
@@ -3236,6 +3368,7 @@
       "productCode": "AF",
       "thumbnailUrl": "/assets/finishes/10/10-rec-8-opt8.png",
       "iconUrl": "/catalog/icons/10-rec-8-opt8.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-8-opt8.png"
     },
     {
@@ -3246,6 +3379,7 @@
       "productCode": "C7",
       "thumbnailUrl": "/assets/finishes/10/10-rec-9-opt9.png",
       "iconUrl": "/catalog/icons/10-rec-9-opt9.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-9-opt9.png"
     },
     {
@@ -3256,6 +3390,7 @@
       "productCode": "B5",
       "thumbnailUrl": "/assets/finishes/10/10-rec-10-opt10.png",
       "iconUrl": "/catalog/icons/10-rec-10-opt10.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-10-opt10.png"
     },
     {
@@ -3266,6 +3401,7 @@
       "productCode": "JZ",
       "thumbnailUrl": "/assets/finishes/10/10-rec-11-opt11.png",
       "iconUrl": "/catalog/icons/10-rec-11-opt11.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-11-opt11.png"
     },
     {
@@ -3276,6 +3412,7 @@
       "productCode": "AU",
       "thumbnailUrl": "/assets/finishes/10/10-rec-12-opt12.png",
       "iconUrl": "/catalog/icons/10-rec-12-opt12.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-12-opt12.png"
     },
     {
@@ -3286,6 +3423,7 @@
       "productCode": "L2",
       "thumbnailUrl": "/assets/finishes/10/10-rec-13-opt13.png",
       "iconUrl": "/catalog/icons/10-rec-13-opt13.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-13-opt13.png"
     },
     {
@@ -3296,6 +3434,7 @@
       "productCode": "C1",
       "thumbnailUrl": "/assets/finishes/10/10-rec-14-opt14.png",
       "iconUrl": "/catalog/icons/10-rec-14-opt14.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-14-opt14.png"
     },
     {
@@ -3306,6 +3445,7 @@
       "productCode": "L8",
       "thumbnailUrl": "/assets/finishes/10/10-rec-15-opt15.png",
       "iconUrl": "/catalog/icons/10-rec-15-opt15.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-15-opt15.png"
     },
     {
@@ -3316,6 +3456,7 @@
       "productCode": "C2",
       "thumbnailUrl": "/assets/finishes/10/10-rec-16-opt16.png",
       "iconUrl": "/catalog/icons/10-rec-16-opt16.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-16-opt16.png"
     },
     {
@@ -3326,6 +3467,7 @@
       "productCode": "A1",
       "thumbnailUrl": "/assets/finishes/10/10-rec-17-opt17.png",
       "iconUrl": "/catalog/icons/10-rec-17-opt17.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-17-opt17.png"
     },
     {
@@ -3336,6 +3478,7 @@
       "productCode": "E01",
       "thumbnailUrl": "/assets/finishes/10/10-rec-18-opt18.png",
       "iconUrl": "/catalog/icons/10-rec-18-opt18.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-18-opt18.png"
     },
     {
@@ -3346,6 +3489,7 @@
       "productCode": "NT",
       "thumbnailUrl": "/assets/finishes/10/10-rec-19-opt19.png",
       "iconUrl": "/catalog/icons/10-rec-19-opt19.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-19-opt19.png"
     },
     {
@@ -3356,6 +3500,7 @@
       "productCode": "A4",
       "thumbnailUrl": "/assets/finishes/10/10-rec-20-opt20.png",
       "iconUrl": "/catalog/icons/10-rec-20-opt20.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-20-opt20.png"
     },
     {
@@ -3366,6 +3511,7 @@
       "productCode": "A2",
       "thumbnailUrl": "/assets/finishes/10/10-rec-21-opt21.png",
       "iconUrl": "/catalog/icons/10-rec-21-opt21.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-21-opt21.png"
     },
     {
@@ -3376,6 +3522,7 @@
       "productCode": "NR",
       "thumbnailUrl": "/assets/finishes/10/10-rec-22-opt22.png",
       "iconUrl": "/catalog/icons/10-rec-22-opt22.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-22-opt22.png"
     },
     {
@@ -3386,6 +3533,7 @@
       "productCode": "A7",
       "thumbnailUrl": "/assets/finishes/10/10-rec-23-opt23.png",
       "iconUrl": "/catalog/icons/10-rec-23-opt23.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-23-opt23.png"
     },
     {
@@ -3396,6 +3544,7 @@
       "productCode": "A8",
       "thumbnailUrl": "/assets/finishes/10/10-rec-24-opt24.png",
       "iconUrl": "/catalog/icons/10-rec-24-opt24.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-24-opt24.png"
     },
     {
@@ -3406,6 +3555,7 @@
       "productCode": "AQ",
       "thumbnailUrl": "/assets/finishes/10/10-rec-25-opt25.png",
       "iconUrl": "/catalog/icons/10-rec-25-opt25.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-25-opt25.png"
     },
     {
@@ -3416,6 +3566,7 @@
       "productCode": "LU",
       "thumbnailUrl": "/assets/finishes/10/10-rec-26-opt26.png",
       "iconUrl": "/catalog/icons/10-rec-26-opt26.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-26-opt26.png"
     },
     {
@@ -3426,6 +3577,7 @@
       "productCode": "A5",
       "thumbnailUrl": "/assets/finishes/10/10-rec-27-opt27.png",
       "iconUrl": "/catalog/icons/10-rec-27-opt27.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/10/10-rec-27-opt27.png"
     },
     {
@@ -3435,6 +3587,7 @@
       "label": "シルバー",
       "thumbnailUrl": "/assets/finishes/11/11-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/11-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/11/11-rec-0-opt0.png"
     },
     {
@@ -3444,6 +3597,7 @@
       "label": "ブラック",
       "thumbnailUrl": "/assets/finishes/11/11-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/11-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/11/11-rec-1-opt1.png"
     },
     {
@@ -3453,6 +3607,7 @@
       "label": "ゴールド",
       "thumbnailUrl": "/assets/finishes/11/11-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/11-rec-2-opt2.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/11/11-rec-2-opt2.png"
     },
     {
@@ -3463,6 +3618,7 @@
       "productCode": "CM-12250",
       "thumbnailUrl": "/assets/finishes/12/12-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/12-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/12/_v_flat.png",
       "textureBox": {
         "x": 2239,
@@ -3479,6 +3635,7 @@
       "productCode": "IS-2111",
       "thumbnailUrl": "/assets/finishes/12/12-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/12-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/12/_v_natural.png",
       "textureBox": {
         "x": 2239,
@@ -3495,6 +3652,7 @@
       "productCode": "IS-2071-C",
       "thumbnailUrl": "/assets/finishes/12/12-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/12-rec-2-opt2.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/12/_v_sharp.png",
       "textureBox": {
         "x": 2239,
@@ -3511,6 +3669,7 @@
       "productCode": "WH",
       "thumbnailUrl": "/assets/finishes/13/13-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/13-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-0-opt0.png"
     },
     {
@@ -3521,6 +3680,7 @@
       "productCode": "PL",
       "thumbnailUrl": "/assets/finishes/13/13-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/13-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-1-opt1.png"
     },
     {
@@ -3531,6 +3691,7 @@
       "productCode": "LC",
       "thumbnailUrl": "/assets/finishes/13/13-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/13-rec-2-opt2.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-2-opt2.png"
     },
     {
@@ -3541,6 +3702,7 @@
       "productCode": "LB",
       "thumbnailUrl": "/assets/finishes/13/13-rec-3-opt3.png",
       "iconUrl": "/catalog/icons/13-rec-3-opt3.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-3-opt3.png"
     },
     {
@@ -3551,6 +3713,7 @@
       "productCode": "DK",
       "thumbnailUrl": "/assets/finishes/13/13-rec-4-opt4.png",
       "iconUrl": "/catalog/icons/13-rec-4-opt4.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-4-opt4.png"
     },
     {
@@ -3561,6 +3724,7 @@
       "productCode": "CH",
       "thumbnailUrl": "/assets/finishes/13/13-rec-5-opt5.png",
       "iconUrl": "/catalog/icons/13-rec-5-opt5.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-5-opt5.png"
     },
     {
@@ -3571,6 +3735,7 @@
       "productCode": "GE",
       "thumbnailUrl": "/assets/finishes/13/13-rec-6-opt6.png",
       "iconUrl": "/catalog/icons/13-rec-6-opt6.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-6-opt6.png"
     },
     {
@@ -3581,6 +3746,7 @@
       "productCode": "CL",
       "thumbnailUrl": "/assets/finishes/13/13-rec-7-opt7.png",
       "iconUrl": "/catalog/icons/13-rec-7-opt7.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-7-opt7.png"
     },
     {
@@ -3591,6 +3757,7 @@
       "productCode": "W1",
       "thumbnailUrl": "/assets/finishes/13/13-rec-8-opt8.png",
       "iconUrl": "/catalog/icons/13-rec-8-opt8.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-8-opt8.png"
     },
     {
@@ -3601,6 +3768,7 @@
       "productCode": "G3",
       "thumbnailUrl": "/assets/finishes/13/13-rec-9-opt9.png",
       "iconUrl": "/catalog/icons/13-rec-9-opt9.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-9-opt9.png"
     },
     {
@@ -3611,6 +3779,7 @@
       "productCode": "G9",
       "thumbnailUrl": "/assets/finishes/13/13-rec-10-opt10.png",
       "iconUrl": "/catalog/icons/13-rec-10-opt10.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-10-opt10.png"
     },
     {
@@ -3621,6 +3790,7 @@
       "productCode": "N2",
       "thumbnailUrl": "/assets/finishes/13/13-rec-11-opt11.png",
       "iconUrl": "/catalog/icons/13-rec-11-opt11.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/13/13-rec-11-opt11.png"
     },
     {
@@ -3630,6 +3800,7 @@
       "label": "シルバー",
       "thumbnailUrl": "/assets/finishes/14/14-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/14-rec-0-opt0.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/14/14-rec-0-opt0.png"
     },
     {
@@ -3639,6 +3810,7 @@
       "label": "ブラック",
       "thumbnailUrl": "/assets/finishes/14/14-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/14-rec-1-opt1.png",
+      "defaultForVariants": [],
       "textureUrl": "/assets/finishes/14/14-rec-1-opt1.png"
     },
     {
@@ -3649,6 +3821,7 @@
       "productCode": "AW-TR2P",
       "thumbnailUrl": "/assets/finishes/15/15-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/15-rec-0-opt0.png",
+      "defaultForVariants": [],
       "colorHex": "#A86C41"
     },
     {
@@ -3659,6 +3832,7 @@
       "productCode": "AW-AR2P",
       "thumbnailUrl": "/assets/finishes/15/15-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/15-rec-1-opt1.png",
+      "defaultForVariants": [],
       "colorHex": "#9F7752"
     },
     {
@@ -3669,6 +3843,7 @@
       "productCode": "AW-WR2P",
       "thumbnailUrl": "/assets/finishes/15/15-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/15-rec-2-opt2.png",
+      "defaultForVariants": [],
       "colorHex": "#9D7765"
     },
     {
@@ -3679,6 +3854,7 @@
       "productCode": "AW-CR2P",
       "thumbnailUrl": "/assets/finishes/15/15-rec-3-opt3.png",
       "iconUrl": "/catalog/icons/15-rec-3-opt3.png",
+      "defaultForVariants": [],
       "colorHex": "#CBA27D"
     },
     {
@@ -3689,6 +3865,7 @@
       "productCode": "AW-NKR2P",
       "thumbnailUrl": "/assets/finishes/15/15-rec-4-opt4.png",
       "iconUrl": "/catalog/icons/15-rec-4-opt4.png",
+      "defaultForVariants": [],
       "colorHex": "#D4B38B"
     },
     {
@@ -3699,6 +3876,7 @@
       "productCode": "AW-IKR2P",
       "thumbnailUrl": "/assets/finishes/15/15-rec-5-opt5.png",
       "iconUrl": "/catalog/icons/15-rec-5-opt5.png",
+      "defaultForVariants": [],
       "colorHex": "#C09B7C"
     },
     {
@@ -3709,6 +3887,7 @@
       "productCode": "AW-MR2P",
       "thumbnailUrl": "/assets/finishes/15/15-rec-6-opt6.png",
       "iconUrl": "/catalog/icons/15-rec-6-opt6.png",
+      "defaultForVariants": [],
       "colorHex": "#E5D3BC"
     },
     {
@@ -3719,6 +3898,7 @@
       "productCode": "YN83-SW",
       "thumbnailUrl": "/assets/finishes/15/15-rec-7-opt7.png",
       "iconUrl": "/catalog/icons/15-rec-7-opt7.png",
+      "defaultForVariants": [],
       "colorHex": "#E3E2E0"
     },
     {
@@ -3729,6 +3909,7 @@
       "productCode": "YN83-SF",
       "thumbnailUrl": "/assets/finishes/15/15-rec-8-opt8.png",
       "iconUrl": "/catalog/icons/15-rec-8-opt8.png",
+      "defaultForVariants": [],
       "colorHex": "#FAEEDE"
     },
     {
@@ -3739,6 +3920,7 @@
       "productCode": "YN83-SX",
       "thumbnailUrl": "/assets/finishes/15/15-rec-9-opt9.png",
       "iconUrl": "/catalog/icons/15-rec-9-opt9.png",
+      "defaultForVariants": [],
       "colorHex": "#F6F3E8"
     },
     {
@@ -3749,6 +3931,7 @@
       "productCode": "YN83-SG",
       "thumbnailUrl": "/assets/finishes/15/15-rec-10-opt10.png",
       "iconUrl": "/catalog/icons/15-rec-10-opt10.png",
+      "defaultForVariants": [],
       "colorHex": "#D1C3AC"
     },
     {
@@ -3759,6 +3942,7 @@
       "productCode": "YN83-SA",
       "thumbnailUrl": "/assets/finishes/15/15-rec-11-opt11.png",
       "iconUrl": "/catalog/icons/15-rec-11-opt11.png",
+      "defaultForVariants": [],
       "colorHex": "#E8E2D9"
     },
     {
@@ -3769,6 +3953,7 @@
       "productCode": "YN83-SC",
       "thumbnailUrl": "/assets/finishes/15/15-rec-12-opt12.png",
       "iconUrl": "/catalog/icons/15-rec-12-opt12.png",
+      "defaultForVariants": [],
       "colorHex": "#C1B7A9"
     },
     {
@@ -3779,6 +3964,7 @@
       "productCode": "YN83-SK",
       "thumbnailUrl": "/assets/finishes/15/15-rec-13-opt13.png",
       "iconUrl": "/catalog/icons/15-rec-13-opt13.png",
+      "defaultForVariants": [],
       "colorHex": "#6D6668"
     },
     {
@@ -3789,6 +3975,7 @@
       "productCode": "SP2544",
       "thumbnailUrl": "/assets/finishes/16/16-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/16-rec-0-opt0.png",
+      "defaultForVariants": [],
       "colorHex": "#CAB9AF"
     },
     {
@@ -3799,6 +3986,7 @@
       "productCode": "SP2545",
       "thumbnailUrl": "/assets/finishes/16/16-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/16-rec-1-opt1.png",
+      "defaultForVariants": [],
       "colorHex": "#B0A093"
     },
     {
@@ -3809,6 +3997,7 @@
       "productCode": "SP2540",
       "thumbnailUrl": "/assets/finishes/16/16-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/16-rec-2-opt2.png",
+      "defaultForVariants": [],
       "colorHex": "#CECBC6"
     },
     {
@@ -3819,6 +4008,7 @@
       "productCode": "SP2541",
       "thumbnailUrl": "/assets/finishes/16/16-rec-3-opt3.png",
       "iconUrl": "/catalog/icons/16-rec-3-opt3.png",
+      "defaultForVariants": [],
       "colorHex": "#A5A19C"
     },
     {
@@ -3829,6 +4019,7 @@
       "productCode": "SP2537",
       "thumbnailUrl": "/assets/finishes/16/16-rec-4-opt4.png",
       "iconUrl": "/catalog/icons/16-rec-4-opt4.png",
+      "defaultForVariants": [],
       "colorHex": "#D4CEC2"
     },
     {
@@ -3839,6 +4030,7 @@
       "productCode": "SP2588",
       "thumbnailUrl": "/assets/finishes/16/16-rec-5-opt5.png",
       "iconUrl": "/catalog/icons/16-rec-5-opt5.png",
+      "defaultForVariants": [],
       "colorHex": "#72755D"
     },
     {
@@ -3849,6 +4041,7 @@
       "productCode": "SP2589",
       "thumbnailUrl": "/assets/finishes/16/16-rec-6-opt6.png",
       "iconUrl": "/catalog/icons/16-rec-6-opt6.png",
+      "defaultForVariants": [],
       "colorHex": "#515C6B"
     },
     {
@@ -3858,6 +4051,7 @@
       "label": "ホワイト",
       "thumbnailUrl": "/assets/finishes/17/17-rec-0-opt0.png",
       "iconUrl": "/catalog/icons/17-rec-0-opt0.png",
+      "defaultForVariants": [],
       "colorHex": "#F7F2EC"
     },
     {
@@ -3867,6 +4061,7 @@
       "label": "プラチナステン",
       "thumbnailUrl": "/assets/finishes/17/17-rec-1-opt1.png",
       "iconUrl": "/catalog/icons/17-rec-1-opt1.png",
+      "defaultForVariants": [],
       "colorHex": "#9C8F81"
     },
     {
@@ -3876,6 +4071,7 @@
       "label": "ブラウン",
       "thumbnailUrl": "/assets/finishes/17/17-rec-2-opt2.png",
       "iconUrl": "/catalog/icons/17-rec-2-opt2.png",
+      "defaultForVariants": [],
       "colorHex": "#362B1A"
     },
     {
@@ -3885,6 +4081,7 @@
       "label": "カームブラック",
       "thumbnailUrl": "/assets/finishes/17/17-rec-3-opt3.png",
       "iconUrl": "/catalog/icons/17-rec-3-opt3.png",
+      "defaultForVariants": [],
       "colorHex": "#0D130F"
     }
   ]

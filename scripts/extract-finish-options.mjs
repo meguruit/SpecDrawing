@@ -193,7 +193,10 @@ function buildCellImageMap(buf, workbook) {
       const text = block[0];
       const fromCol = readInt(text, /<xdr:from>[\s\S]*?<xdr:col>(\d+)<\/xdr:col>/);
       const fromRow = readInt(text, /<xdr:from>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>/);
-      const blip = text.match(/<a:blip\s+([^/>]+)\/?>/);
+      // Note: cannot use `[^/>]+` here because xmlns:r URLs in modern
+      // workbooks contain `/` (e.g. `xmlns:r="http://..."`) — those break
+      // out of the character class. Match up to the closing `>` instead.
+      const blip = text.match(/<a:blip\b([^>]*?)\/?>/);
       if (fromCol === null || fromRow === null || !blip) continue;
       const blipAttrs = parseAttrs(blip[1]);
       const rid = blipAttrs["r:embed"];
@@ -274,17 +277,65 @@ function rgbToHex([r, g, b]) {
   return `#${h(r)}${h(g)}${h(b)}`.toUpperCase();
 }
 
-// Parse a single sheet into an array of { partId, label, options:[{ index, label, productCode?, cellRef }] }.
-function parsePartsFromSheet(sheet) {
+// Detect Natural / Flat / Sharp column indices from row 0. Returns
+// `{ variantCols: { natural, flat, sharp }, altStartCol }` or `null`
+// if any required header is missing.
+const REQUIRED_VARIANTS = ["natural", "flat", "sharp"];
+
+function detectVariantColumns(headerRow) {
+  if (!Array.isArray(headerRow)) return null;
+  const cols = {};
+  for (let c = 0; c < headerRow.length; c++) {
+    const v = headerRow[c];
+    if (typeof v !== "string") continue;
+    const key = v.trim().toLowerCase();
+    if (REQUIRED_VARIANTS.includes(key) && cols[key] === undefined) {
+      cols[key] = c;
+    }
+  }
+  for (const k of REQUIRED_VARIANTS) {
+    if (cols[k] === undefined) return null;
+  }
+  const variantColIndices = REQUIRED_VARIANTS.map((k) => cols[k]);
+  const lastVariantCol = Math.max(...variantColIndices);
+  return {
+    variantCols: cols,
+    variantColIndices,
+    altStartCol: lastVariantCol + 1,
+  };
+}
+
+// Parse a single sheet. Auto-detects the layout from row 0:
+// - If `Natural`/`Flat`/`Sharp` headers are present, uses the variant-keyed
+//   layout (collapsed variant defaults + alternatives).
+// - Otherwise falls back to the legacy "every column under the part header
+//   is a separate option" layout. Legacy options carry `defaultForVariants: []`.
+//
+// Returns `{ parts: [...], layout: "variant-keyed" | "legacy" }`.
+function parsePartsFromSheet(sheet, displayName) {
   const rows = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
     defval: null,
     raw: false,
     blankrows: true,
   });
+  const headerCols = detectVariantColumns(rows[0]);
+  if (!headerCols) {
+    return {
+      layout: "legacy",
+      parts: parsePartsFromSheetLegacy(rows),
+    };
+  }
+  return {
+    layout: "variant-keyed",
+    parts: parsePartsFromSheetVariantKeyed(rows, headerCols),
+  };
+}
+
+function parsePartsFromSheetLegacy(rows) {
   const parts = [];
   let current = null;
-  let trailingRowBudget = 0; // how many subsequent rows to scan for product codes / sub-labels
+  let trailingRowBudget = 0;
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r];
     const numCell = row?.[1] ?? null;
@@ -297,37 +348,151 @@ function parsePartsFromSheet(sheet) {
         options: [],
         headerRow: r,
       };
-      // Capture option labels from columns D onward (index 3+).
-      // Embedded swatch images are anchored one row BELOW the header (the visual row),
-      // so look up images at (col, headerRow + 1).
-      for (let c = 3; c < (row?.length ?? 0); c++) {
+      const maxCol = row?.length ?? 0;
+      for (let c = 3; c < maxCol; c++) {
         const v = row[c];
-        if (typeof v === "string" && v.trim()) {
-          current.options.push({
-            index: c - 3,
-            label: v.replace(/\s+/g, " ").trim(),
-            productCode: undefined,
-            cellRef: cellRef(c, r + 1),
-          });
-        }
+        if (typeof v !== "string" || !v.trim()) continue;
+        current.options.push({
+          slot: "alternative",
+          label: v.replace(/\s+/g, " ").trim(),
+          sourceCols: [c],
+          defaultForVariants: [],
+          productCode: undefined,
+          subLabel: undefined,
+          cellRef: cellRef(c, r + 1),
+        });
       }
       parts.push(current);
-      trailingRowBudget = 4; // scan up to 4 trailing rows
+      trailingRowBudget = 4;
       continue;
     }
     if (current && trailingRowBudget > 0) {
-      // Scan D+ for product codes mapping to existing options by column index.
       let anyMatched = false;
-      for (let c = 3; c < (row?.length ?? 0); c++) {
-        const v = row[c];
+      for (const opt of current.options) {
+        const col = opt.sourceCols[0];
+        const v = row?.[col];
         if (typeof v !== "string" || !v.trim()) continue;
         anyMatched = true;
-        const opt = current.options.find((o) => o.index === c - 3);
-        if (opt) {
-          if (looksLikeProductCode(v) && !opt.productCode) {
-            opt.productCode = v.trim();
+        const trimmed = v.trim();
+        if (looksLikeProductCode(trimmed) && !opt.productCode) {
+          opt.productCode = trimmed;
+        } else if (!opt.subLabel) {
+          opt.subLabel = trimmed;
+        }
+      }
+      trailingRowBudget--;
+      if (!anyMatched) trailingRowBudget = Math.min(trailingRowBudget, 1);
+      continue;
+    }
+  }
+  return parts;
+}
+
+function parsePartsFromSheetVariantKeyed(rows, headerCols) {
+  const parts = [];
+  let current = null;
+  let trailingRowBudget = 0;
+
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    const numCell = row?.[1] ?? null;
+    const labelCell = row?.[2] ?? null;
+    const partId = partIdFromCircled(typeof numCell === "string" ? numCell : "");
+
+    if (partId && typeof labelCell === "string") {
+      // New part header. Read variant-default labels (collapsing same-label
+      // duplicates) and alternatives.
+      current = {
+        partId,
+        label: labelCell.replace(/\s+/g, " ").trim(),
+        options: [],
+        headerRow: r,
+      };
+
+      // Variant defaults: one entry per distinct label across the three
+      // variant columns. Maintains workbook order.
+      const labelToOption = new Map();
+      for (const variantKey of REQUIRED_VARIANTS) {
+        const col = headerCols.variantCols[variantKey];
+        const v = row?.[col];
+        if (typeof v !== "string" || !v.trim()) continue;
+        const trimmedLabel = v.replace(/\s+/g, " ").trim();
+        let opt = labelToOption.get(trimmedLabel);
+        if (!opt) {
+          opt = {
+            slot: "variant-default",
+            label: trimmedLabel,
+            sourceCols: [],
+            defaultForVariants: [],
+            productCode: undefined,
+            subLabel: undefined,
+            cellRef: cellRef(col, r + 1),
+          };
+          labelToOption.set(trimmedLabel, opt);
+          current.options.push(opt);
+        }
+        opt.sourceCols.push(col);
+        opt.defaultForVariants.push(variantKey);
+      }
+
+      // Alternatives: every non-empty cell strictly to the right of the
+      // variant block, each becomes its own option.
+      const maxCol = row?.length ?? 0;
+      for (let c = headerCols.altStartCol; c < maxCol; c++) {
+        const v = row[c];
+        if (typeof v !== "string" || !v.trim()) continue;
+        const trimmedLabel = v.replace(/\s+/g, " ").trim();
+        current.options.push({
+          slot: "alternative",
+          label: trimmedLabel,
+          sourceCols: [c],
+          defaultForVariants: [],
+          productCode: undefined,
+          subLabel: undefined,
+          cellRef: cellRef(c, r + 1),
+        });
+      }
+
+      parts.push(current);
+      trailingRowBudget = 4;
+      continue;
+    }
+
+    if (current && trailingRowBudget > 0) {
+      // Sub-row scan: classify each option's source-column cells in this row
+      // as productCode (alphanumeric pattern) or subLabel (other Japanese text).
+      // For collapsed variant-default options, the leftmost source column wins;
+      // a `label-collapse-product-code-conflict` warning fires when later
+      // columns disagree.
+      let anyMatched = false;
+      for (const opt of current.options) {
+        let codeFromCol = null;
+        let subFromCol = null;
+        const conflictingCodes = new Set();
+        for (const col of opt.sourceCols) {
+          const v = row?.[col];
+          if (typeof v !== "string" || !v.trim()) continue;
+          anyMatched = true;
+          const trimmed = v.trim();
+          if (looksLikeProductCode(trimmed)) {
+            if (codeFromCol === null) {
+              codeFromCol = trimmed;
+            } else if (codeFromCol !== trimmed) {
+              conflictingCodes.add(codeFromCol);
+              conflictingCodes.add(trimmed);
+            }
+          } else if (subFromCol === null) {
+            subFromCol = trimmed;
           }
-          // sub-labels (Japanese) are ignored to keep MVP shape simple
+        }
+        if (codeFromCol && !opt.productCode) {
+          opt.productCode = codeFromCol;
+          if (conflictingCodes.size > 1) {
+            opt.__codeConflict = Array.from(conflictingCodes);
+          }
+        }
+        if (subFromCol && !opt.subLabel) {
+          opt.subLabel = subFromCol;
         }
       }
       trailingRowBudget--;
@@ -385,7 +550,8 @@ async function main() {
     const displayName = normalizeSheetName(rawSheetName);
     const sheet = wb.Sheets[rawSheetName];
     const cellImages = cellImagesBySheet[rawSheetName] ?? new Map();
-    const sheetParts = parsePartsFromSheet(sheet);
+    const { layout, parts: sheetParts } = parsePartsFromSheet(sheet, displayName);
+    console.log(`✓ sheet "${displayName}" parsed (${layout} layout, ${sheetParts.length} parts)`);
 
     for (const part of sheetParts) {
       if (!knownPartIds.has(part.partId)) {
@@ -399,9 +565,10 @@ async function main() {
         continue;
       }
       const renderMode = partRenderMode.get(part.partId);
-      for (const opt of part.options) {
-        const slug = slugifyLabel(opt.label, opt.index);
-        const optionId = `${part.partId}-${sheetSlug(displayName)}-${opt.index}-${slug}`;
+      for (let optIndex = 0; optIndex < part.options.length; optIndex++) {
+        const opt = part.options[optIndex];
+        const slug = slugifyLabel(opt.label, optIndex);
+        const optionId = `${part.partId}-${sheetSlug(displayName)}-${optIndex}-${slug}`;
         if (seenIds.has(optionId)) {
           warnings.push({
             kind: "duplicate-id",
@@ -413,8 +580,28 @@ async function main() {
         }
         seenIds.add(optionId);
 
-        const imgBuf = cellImages.get(opt.cellRef);
+        // For collapsed variant-default options, cellRef is set to the
+        // leftmost source column on the header row + 1. If that lookup
+        // misses, fall back to the next source column.
+        let imgBuf = cellImages.get(opt.cellRef);
+        if (!imgBuf && opt.sourceCols && opt.sourceCols.length > 1) {
+          for (let i = 1; i < opt.sourceCols.length && !imgBuf; i++) {
+            const fallback = cellRef(opt.sourceCols[i], part.headerRow + 1);
+            imgBuf = cellImages.get(fallback);
+          }
+        }
         const isNone = isNoChangeLabel(opt.label);
+
+        if (opt.__codeConflict) {
+          warnings.push({
+            kind: "label-collapse-product-code-conflict",
+            partId: part.partId,
+            optionId,
+            label: opt.label,
+            codes: opt.__codeConflict,
+            message: `option ${opt.label} on part ${part.partId} has conflicting product codes across collapsed variant columns: ${opt.__codeConflict.join(", ")}`,
+          });
+        }
 
         let thumbnailUrl;
         let colorHex;
@@ -541,9 +728,11 @@ async function main() {
           partId: part.partId,
           sheet: displayName,
           label: opt.label,
+          ...(opt.subLabel ? { subLabel: opt.subLabel } : {}),
           ...(opt.productCode ? { productCode: opt.productCode } : {}),
           thumbnailUrl,
           iconUrl,
+          defaultForVariants: opt.defaultForVariants ?? [],
           ...(colorHex ? { colorHex } : {}),
           ...(textureUrl ? { textureUrl } : {}),
         });

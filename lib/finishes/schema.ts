@@ -65,6 +65,12 @@ export const finishOptionSchema = z
     partId: z.string().regex(/^\d{2}$/),
     sheet: sheetNameSchema,
     label: z.string().min(1),
+    /**
+     * Optional secondary description from the workbook sub-row (e.g. ②
+     * "電球色" / "光無し"). Distinct from `label`, which is the primary
+     * option name shown in the side-panel chips.
+     */
+    subLabel: z.string().min(1).optional(),
     productCode: z.string().optional(),
     thumbnailUrl: z.string().min(1),
     /**
@@ -73,6 +79,14 @@ export const finishOptionSchema = z
      * Falls back to `thumbnailUrl` at export time when absent.
      */
     iconUrl: z.string().min(1).optional(),
+    /**
+     * Variant keys for which this option is the customer-facing default
+     * (auto-displayed before any manual selection on that variant). Empty
+     * array means the option is an "alternative" (only displayed when the
+     * customer actively picks it). Populated by the seed pipeline from
+     * the workbook's Natural / Flat / Sharp columns.
+     */
+    defaultForVariants: z.array(z.string().min(1)).default([]),
     colorHex: z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/, "colorHex must be #RRGGBB")

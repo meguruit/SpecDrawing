@@ -235,6 +235,28 @@ export function crossValidateOptionsAgainstSheets(
 }
 
 /**
+ * Cross-validate that every `defaultForVariants` entry on every option
+ * resolves to a `key` declared on the active scene's `variants[]`. Catches
+ * workbook → seed pipeline → runtime drift early.
+ */
+export function crossValidateDefaultsAgainstScene(
+  options: FinishOption[],
+  scene: Scene,
+): void {
+  const known = new Set(scene.variants.map((v) => v.key));
+  for (const opt of options) {
+    if (!opt.defaultForVariants || opt.defaultForVariants.length === 0) continue;
+    for (const key of opt.defaultForVariants) {
+      if (!known.has(key)) {
+        throw new FinishesLoadError(
+          `Option "${opt.id}" defaultForVariants references unknown variant key "${key}"`,
+        );
+      }
+    }
+  }
+}
+
+/**
  * Cross-validate parts manifest against the active scene's primary sheet
  * config: when `variantsEnabled === true`, every non-accent-cloth part on
  * that scene MUST be `renderMode: "texture"`. Accent-cloth parts (`07`
