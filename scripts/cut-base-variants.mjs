@@ -176,9 +176,13 @@ async function main() {
   const warnings = [];
   let cutFiles = 0;
   let optionsRewritten = 0;
+  let autoRewritten = 0;
   // Cache per-(partId, variant) shared crop info so we can populate
   // `textureUrlByVariant` later without re-cutting.
   const sharedCropByPartVariant = new Map(); // key: `${partId}|${variantKey}` → { url, textureBox }
+  // Track option ids whose textureUrl was rewritten by the manual override
+  // config; auto-derive (below) skips these so manual config keeps priority.
+  const manuallyRewrittenIds = new Set();
 
   for (const [partId, ovByLabel] of Object.entries(overrides)) {
     const part = partById.get(partId);
@@ -238,6 +242,7 @@ async function main() {
       for (const opt of matching) {
         opt.textureUrl = sharedRel;
         opt.textureBox = sharedBox;
+        manuallyRewrittenIds.add(opt.id);
         optionsRewritten++;
       }
     }
@@ -294,6 +299,27 @@ async function main() {
       if (Object.keys(map).length > 0) {
         opt.textureUrlByVariant = map;
       }
+
+      // Auto-derive `textureUrl` from `defaultForVariants` when the workbook
+      // unambiguously assigns this option to exactly one variant column AND
+      // the manual override config did not already set it. This makes the
+      // option render the matching variant base's masked region — the
+      // expected behavior for "this option lives on Natural" / "Flat" /
+      // "Sharp" workbook entries (e.g. ④ キッチンパネル where each label
+      // sits in its own variant column).
+      if (
+        Array.isArray(opt.defaultForVariants) &&
+        opt.defaultForVariants.length === 1 &&
+        !manuallyRewrittenIds.has(opt.id)
+      ) {
+        const variantKey = opt.defaultForVariants[0];
+        const entry = map[variantKey];
+        if (entry) {
+          opt.textureUrl = entry.url;
+          opt.textureBox = entry.textureBox;
+          autoRewritten++;
+        }
+      }
     }
   }
 
@@ -321,7 +347,7 @@ async function main() {
   await writeFile(WARNINGS_JSON, JSON.stringify(merged, null, 2) + "\n");
 
   console.log(
-    `✓ wrote ${cutFiles} shared (partId, variant) PNG(s); rewrote ${optionsRewritten} option entries`,
+    `✓ wrote ${cutFiles} shared (partId, variant) PNG(s); ${optionsRewritten} options rewritten via manual config + ${autoRewritten} auto-derived from defaultForVariants`,
   );
   console.log(
     `✓ ${warnings.length} variant-cutter warnings appended to ${WARNINGS_JSON}`,
