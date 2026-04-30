@@ -26,15 +26,15 @@ This change wires the variant images into the runtime, scopes the variant switch
 
 ## Decisions
 
-### Decision 1: Pre-cropped variants at seed time, not runtime cropping
+### Decision 1: The variant switcher swaps only the base perspective
 
-**Choice:** Each texture-mode option on a variant-enabled sheet ships three pre-cut PNGs at `public/assets/finishes/<partId>/<optionId>__<variant>.png`. The runtime simply swaps which PNG it hands to `useImage` when the variant changes.
+**Choice:** Switching the variant swaps the canvas backdrop to `base_<variant>.jpg` and nothing else. Selected options keep their assigned `option.textureUrl` (set at seed time by `finish-base-overrides.json`, which already maps each option to a specific variant). The runtime does NOT consult `option.textureUrlByVariant` when rendering a selected texture; that field stays as designer-side metadata.
 
 **Alternatives considered:**
-- *Runtime cropping*: load `base_<variant>.jpg` once and mask it client-side per part on every variant switch. Rejected because the existing per-option flow (`seed:variants`) already produces these crops; doing it again at runtime would duplicate work, complicate caching, and burn CPU on every switch.
-- *Single multi-layer base image*: encode all three variants into one image with channel/blend tricks. Rejected as fragile and opaque.
+- *Per-variant lookup at render time* (initial design): on variant change, swap each selected option's texture to `option.textureUrlByVariant[activeVariantKey]`. **Rejected after a live test on アーバンシー** — picking "ﾁｬｲﾅ大理石(黒)" while on Natural variant would load `_v_natural.png` (the natural base's kitchen-top region, which is *white*), so the on-canvas overlay no longer matched the option's name. The customer's mental model is "variant = mood; option = material" — they should be independent.
+- *Runtime cropping*: load `base_<variant>.jpg` once and mask it client-side per part. Rejected because the seed pipeline already produces these crops.
 
-**Rationale:** The seed pipeline is the right place for image work. The runtime stays a thin renderer.
+**Rationale:** Decoupling "room mood" (variant) from "option appearance" (option texture) preserves the labelling integrity of the workbook: an option named "黒大理石" always paints the sharp-base black-marble crop, regardless of which variant the customer is previewing. The variant switcher only changes what the *unselected* parts of the room look like.
 
 ### Decision 2: `variantsEnabled` flag lives on the sheet config, not the scene
 
