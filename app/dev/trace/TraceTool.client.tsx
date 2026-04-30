@@ -595,6 +595,10 @@ export default function TraceTool() {
 
   const handleStageClick = useCallback(
     (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+      // Konva fires `click` for any mouse button. Right-click is handled
+      // per-vertex by `onContextMenu`; if we don't bail here, the post-
+      // delete click re-inserts a vertex right next to the deleted one.
+      if ("button" in e.evt && e.evt.button !== 0) return;
       if (e.target !== e.target.getStage()) return;
       const stage = e.target.getStage();
       const pos = stage?.getPointerPosition();
@@ -1175,18 +1179,24 @@ export default function TraceTool() {
                     kind: "outer",
                     polygonIndex: pi,
                   };
+                  // Keep handles at a constant ~2 px screen radius
+                  // regardless of the stage's displayScale so fine
+                  // adjustment is comfortable on both small and large scenes.
+                  const handleRadius = 2 / displayScale;
+                  const holeRadius = 1.75 / displayScale;
+                  const handleStroke = 0.75 / displayScale;
                   poly.outer.forEach((v, i) => {
                     handles.push(
                       <Circle
                         key={`p${pi}-outer-v${i}`}
                         x={v[0]}
                         y={v[1]}
-                        radius={14}
+                        radius={handleRadius}
                         fill="#ffffff"
                         stroke={
                           CATEGORY_COLOR[editingPart.category] ?? "#0F172A"
                         }
-                        strokeWidth={3}
+                        strokeWidth={handleStroke}
                         draggable
                         onMouseDown={() => setActiveRing(outerTarget)}
                         onDragStart={beginDrag}
@@ -1218,10 +1228,10 @@ export default function TraceTool() {
                           key={`p${pi}-hole-${hi}-v${i}`}
                           x={v[0]}
                           y={v[1]}
-                          radius={12}
+                          radius={holeRadius}
                           fill="#FEE2E2"
                           stroke="#DC2626"
-                          strokeWidth={3}
+                          strokeWidth={handleStroke}
                           draggable
                           onMouseDown={() => setActiveRing(holeTarget)}
                           onDragStart={beginDrag}
