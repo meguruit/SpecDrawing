@@ -23,17 +23,23 @@ The seed pipeline SHALL populate this field by reading the workbook's `Natural /
 - **THEN** validation fails at load time naming the option id and the unknown variant key
 
 ### Requirement: Header-driven workbook column resolution
-The seed pipeline (`scripts/extract-finish-options.mjs`) SHALL determine the variant column positions by reading row 0 of each sheet and locating cells whose values match the variant keys declared on the scene (case-insensitive). If the row 0 of a sheet does not contain at least the labels `Natural`, `Flat`, and `Sharp` (in any column), the seed step MUST exit non-zero with an error message naming the sheet and pointing at `resources/catalog/old/部材リスト.xlsx` as the legacy reference.
+The seed pipeline (`scripts/extract-finish-options.mjs`) SHALL determine each sheet's layout by reading row 0:
 
-Columns to the right of the rightmost variant column whose row-0 cell is non-empty are treated as alternatives.
+- If row 0 contains the labels `Natural`, `Flat`, AND `Sharp` (case-insensitive, in any columns), the sheet is parsed under the **variant-keyed layout**: those three columns hold per-variant defaults, and every column to the right of the rightmost detected variant column holds alternatives.
+- If row 0 is missing one or more of those labels, the sheet falls back to the **legacy layout**: every column under the part header row is treated as a sequential option whose `defaultForVariants` is `[]`.
 
-#### Scenario: Variant headers detected
-- **WHEN** sheet `アーバンシー` row 0 contains `Natural` at column D, `Flat` at column E, `Sharp` at column F
-- **THEN** the parser treats columns D / E / F as variant defaults and columns G+ as alternatives
+The seed step MUST NOT exit non-zero solely because a sheet is on the legacy layout — sheets in transition coexist with already-migrated sheets while the customer rolls the workbook forward. Each parsed sheet emits a one-line log entry naming its detected layout.
 
-#### Scenario: Missing variant headers fail visibly
-- **WHEN** a sheet's row 0 is missing one or more variant headers
-- **THEN** the seed step exits non-zero naming the sheet and the missing variant keys
+#### Scenario: Variant headers detected → variant-keyed layout
+- **WHEN** sheet `アーバンシー` row 0 contains `Natural`, `Flat`, `Sharp`
+- **THEN** the parser uses the variant-keyed layout
+- **AND** the parser logs `sheet "アーバンシー" parsed (variant-keyed layout, N parts)`
+
+#### Scenario: Missing variant headers → legacy layout fallback
+- **WHEN** sheet `レコリード` row 0 has no variant headers
+- **THEN** the parser falls back to the legacy layout and emits options with `defaultForVariants: []`
+- **AND** the parser logs `sheet "レコリード" parsed (legacy layout, N parts)`
+- **AND** the seed step continues processing other sheets without erroring
 
 ### Requirement: Sub-row product codes and sub-labels
 Per part header row, the seed pipeline MUST scan rows `headerRow + 1` through `headerRow + 4` for additional metadata in the same columns as the option labels. A cell whose value matches `/^[A-Za-z0-9][A-Za-z0-9\s\-./]*$/` MUST be treated as the option's `productCode`; any other non-empty Japanese-text cell MUST be captured as the option's optional `subLabel`.
@@ -52,12 +58,15 @@ When a label collapse merges multiple variant columns into one option, the produ
 - **WHEN** the same-label collapse for ⑥ ブラック spans columns E + F whose sub-row product codes are `BLK1` and `BLK2`
 - **THEN** the emitted option `ブラック` carries `productCode: "BLK1"` AND a `label-collapse-product-code-conflict` warning is appended naming both codes
 
-### Requirement: Old workbook layout no longer parsed
-The seed pipeline MUST NOT accept the legacy column layout (where every column under a part header is a sequential option). Detection is by absence of variant headers in row 0 (per the previous requirement). The archived workbook at `resources/catalog/old/部材リスト.xlsx` SHALL stay in the repository for human reference and MUST NOT be consumed by `seed:parts`.
+### Requirement: Archived legacy workbook preserved for reference
+The archived workbook at `resources/catalog/old/部材リスト.xlsx` SHALL stay in the repository for human reference. The current `seed:parts` continues to support the legacy layout via auto-detection (see header-driven workbook column resolution requirement above), so contributors MAY still seed it for regression checks via `SPECDRAWING_WORKBOOK=resources/catalog/old/部材リスト.xlsx npm run seed:parts`.
 
-#### Scenario: Legacy workbook seed attempt fails
+When the customer migrates `レコリード` to the variant-keyed layout in a future workbook, the legacy fallback path remains available but is exercised only by the archived file.
+
+#### Scenario: Archived legacy workbook still seedable
 - **WHEN** `SPECDRAWING_WORKBOOK=resources/catalog/old/部材リスト.xlsx npm run seed:parts` is invoked
-- **THEN** the seed step exits non-zero naming the missing variant headers and pointing at the canonical workbook
+- **THEN** every sheet parses under the legacy layout
+- **AND** every emitted option has `defaultForVariants: []`
 
 ## MODIFIED Requirements
 

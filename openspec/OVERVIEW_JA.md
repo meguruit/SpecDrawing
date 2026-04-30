@@ -228,7 +228,32 @@ OpenSpec で管理する capability は 8 つあります。
 6. 「選択部材エクスポート」で PNG + Excel 同 timestamp 出力。Excel は全 part ぶんの行（選択 / 既定 / 対象外）。
 7. **顧客 workbook 更新後**：parts.json で #15 #17 を texture-mode に flip、cross-validators を strict に戻す（[lib/finishes/load.ts](../lib/finishes/load.ts) の `mode` 引数 `"warn"` → `"strict"`）。
 
-### 6.3 `add-vercel-deployment` — Vercel への production + preview デプロイ
+### 6.3 `rewrite-seed-for-variant-keyed-workbook` — 新ワークブック構造の seed パーサー書き換え
+
+**Purpose / Context**: 顧客が `部材リスト_20260430.xlsx`（→ canonical 名 `部材リスト.xlsx` にリネーム）で列構造を一新。D/E/F に Natural / Flat / Sharp 列を予約、G+ に customer-selectable な alternatives を置く形式。旧 seed は「列 D 以降全部が options」の素直なシーケンシャル parser だったので、新構造では label collision（同じラベルが N/F/S に重複）と image anchor 不一致（swatch が異なる列に anchored）で 198 個の missing-swatch warning が出て使い物にならなかった。
+
+**Goals / Non-Goals**
+- (G) アーバンシーの新 layout を正しく parse、レコリードが旧 layout のままでも fall-back で動く。`defaultForVariants` を schema に追加して「どの variant でこの option が default か」を明示。canonical 名 `部材リスト.xlsx` で seed が走る。
+- (NG) ランタイムが `defaultForVariants` を実際に auto-apply（variant に応じて未選択 part のオプションを切替）する機能、`cut-base-variants.mjs` リライト、test runner 配線。
+
+**Decisions**
+- **D1**: Header-row driven column resolution。row 0 で `Natural`/`Flat`/`Sharp` を case-insensitive lookup、見つかれば variant-keyed layout、見つからなければ legacy fallback（per-sheet 自動切替）。
+- **D2**: 同一 label collapse。`Natural=白, Flat=白, Sharp=黒` → 2 options（白 with `defaultForVariants: ["natural", "flat"]`、黒 with `["sharp"]`）。
+- **D3**: 旧 layout は seed エラーにせず legacy parser に fall-back（design.md Open Question で示唆された運用方針）。`old/部材リスト.xlsx` を archive として保持、`SPECDRAWING_WORKBOOK` 環境変数で旧版に明示的に切替可能。
+- **D4**: `<a:blip>` 解析の正規表現バグ修正。旧 regex `[^/>]+` は xmlns URL の `http://` で `/` に当たって match break。新 regex `[^>]*?` で吸収。これで modern .xlsx の image anchor lookup が機能する。
+
+**Risks / Trade-offs**
+- swatch 画像が variant-default に存在しないケースが多い（顧客は「variant base 自体が表示」前提で省略している）→ gray placeholder が side-panel chip に出る可能性。許容範囲、後続で variant base の crop を thumbnail にする手も。
+- 同一 label collapse で複数列が異なる product code を持つ場合、左端優先 + warning。実データで衝突は今のところ無し。
+
+**Migration Plan**
+1. Schema 追加：`finishOptionSchema` に `defaultForVariants` / `subLabel`、cross-validator `crossValidateDefaultsAgainstScene`。
+2. workbook を canonical 名にリネーム。
+3. parser 書き換え（auto-detect layout、collapse、sub-row scan、blip regex 修正）。
+4. `seed:parts` → `seed:variants` 順に再実行。
+5. ランタイムでは新 schema の `defaultForVariants` は **読まない**（次の change で消費）。
+
+### 6.4 `add-vercel-deployment` — Vercel への production + preview デプロイ
 
 **Purpose / Context**: 現状ローカル `npm run dev` のみ。顧客プレビュー / デザイナー共有 / PR ごとの canonical URL を提供するためにホスティング必須。GitHub Pages は不可（Route Handler 不可・`next/image` 最適化不可・LFS 解決不可）。Vercel は 3 点ともネイティブ、PR ごとの自動 preview が無料。`/dev/trace` を preview だけで有効化し、production はクリーン保持が運用の要。
 

@@ -254,33 +254,76 @@ variant.
 ## 部材リスト.xlsx — column conventions
 
 The seed script `extract-finish-options.mjs` (`npm run seed:parts`) reads
-`resources/catalog/部材リスト.xlsx` and emits:
+`resources/catalog/部材リスト.xlsx` (canonical name; can be overridden
+via `SPECDRAWING_WORKBOOK=<path> npm run seed:parts`) and emits:
 
 - `public/catalog/finish-options.json` — every option keyed by
-  `(partId, sheet)` with `id`, `label`, `productCode?`, `thumbnailUrl`,
-  `iconUrl`, and either `colorHex` (color-mode) or `textureUrl`
-  (texture-mode).
+  `(partId, sheet)` with `id`, `label`, `subLabel?`, `productCode?`,
+  `thumbnailUrl`, `iconUrl`, `defaultForVariants[]`, and either
+  `colorHex` (color-mode) or `textureUrl` (texture-mode).
 - `public/catalog/icons/<optionId>.png` — 96×96 icon embedded in the
-  Excel spec-sheet export. Currently the seed step copies each option's
-  swatch image into the icon path; once the customer-prepared workbook
-  ships dedicated icon images, those replace the swatch derivatives.
-- `public/catalog/sheets.json` — sheet manifest. アーバンシー is emitted
-  with `variantsEnabled: true, defaultVariantKey: "natural"`; every
-  other sheet defaults to `variantsEnabled: false`.
+  Excel spec-sheet export.
+- `public/catalog/sheets.json` — sheet manifest.
 
-Workbook columns the script reads:
-- Column B (per part header row): the circled number (① — ⑰).
-- Column C (per part header row): the part's Japanese label.
-- Columns D, E, F, … (header row): one option per column. The cell value
-  is the option label; its embedded swatch image (anchored via
-  `xl/drawings`) becomes the option's `thumbnailUrl` and `iconUrl`.
-- Trailing rows under a header: scanned up to 4 rows for product codes
-  in the same option columns. Code-shaped values (`/^[A-Za-z0-9][A-Za-z0-9\s\-./]*$/`)
-  populate `productCode`.
+The parser auto-detects the layout per sheet from row 0:
 
-When the customer adds dedicated icon images to the workbook, the seed
-script will need a small extension to read them from a separate column
-or sheet — leave a TODO until that arrives.
+### Variant-keyed layout (current アーバンシー)
+
+Row 0 contains the headers `Natural`, `Flat`, `Sharp` (case-insensitive,
+in any columns):
+
+```
+A         B            C       D         E       F        G          H          ...
+キッチン  画像対応番号  部材名  Natural   Flat    Sharp    [alt 1]    [alt 2]    ...
+          ①           天板    白        白      黒
+                              SP1234    SP1234  SP5678
+          ②           照明    有        有      有       無
+                              SP2001    SP2001  SP2001   光無し
+```
+
+For each part header row:
+- The variant columns (D / E / F here) hold the per-variant defaults.
+  Same-label cells across variants collapse into ONE emitted option
+  whose `defaultForVariants` lists every matching variant key:
+  `白 → ["natural", "flat"]`, `黒 → ["sharp"]`.
+- Columns to the right of the rightmost detected variant column are
+  alternatives — separate options with `defaultForVariants: []` that
+  the customer can swap in.
+- The next 4 rows are scanned for sub-row metadata. A cell matching
+  `/^[A-Za-z0-9][A-Za-z0-9\s\-./]*$/` populates the option's
+  `productCode`; any other non-empty Japanese cell becomes its
+  `subLabel`.
+- Embedded swatch images (anchored via `xl/drawings`) at the same
+  column on row + 1 become the option's `thumbnailUrl` and `iconUrl`.
+  When a collapsed option spans multiple columns, the leftmost source
+  column's swatch wins; if it is missing, fall back to the next column.
+  Variant-default labels for which the workbook does NOT supply a
+  swatch (because the variant base itself shows them — e.g. ② 有 with
+  no overlay needed) get gray placeholder thumbnails.
+
+### Legacy layout (current レコリード)
+
+Row 0 is missing one or more variant headers. Parser falls back to the
+legacy "every column under a part header is a sequential option":
+
+```
+A         B            C       D         E       F        ...
+キッチン  画像対応番号  部材名  [opt 1]   [opt 2] [opt 3]
+```
+
+Every emitted option has `defaultForVariants: []`. The legacy fallback
+exists so sheets in transition coexist with already-migrated sheets.
+
+### Variant override config
+
+Per-option base-variant overrides live in
+`resources/catalog/finish-base-overrides.json` and map
+`(partId, optionLabel)` to a variant key. `seed:variants` cuts the
+matching variant base at the part's mask region and rewrites the
+option's `textureUrl` to the cropped piece. This lets a customer pick
+"ﾁｬｲﾅ大理石(黒)" on the natural variant and still see black marble
+(the override config maps `黒 → sharp`, and the sharp-base crop is
+overlaid on the natural backdrop).
 
 ## /dev/trace workflow
 
