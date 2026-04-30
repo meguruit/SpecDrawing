@@ -8,6 +8,7 @@ export function FinishOptionPanel() {
   const selectedPartId = useCanvasStore((s) => s.selectedPartId);
   const parts = useCanvasStore((s) => s.parts);
   const finishOptions = useCanvasStore((s) => s.finishOptions);
+  const optionsRev = useCanvasStore((s) => s.finishOptionsRev);
   const sheet = useCanvasStore((s) => s.activeOptionSheet);
   const selections = useCanvasStore((s) => s.partFinishSelections);
   const setFinish = useCanvasStore((s) => s.setFinish);
@@ -80,7 +81,11 @@ export function FinishOptionPanel() {
                 >
                   <div className="relative aspect-square w-full bg-slate-100">
                     <Image
-                      src={opt.thumbnailUrl}
+                      src={
+                        optionsRev
+                          ? `${opt.thumbnailUrl}?v=${optionsRev}`
+                          : opt.thumbnailUrl
+                      }
                       alt={opt.label}
                       fill
                       sizes="160px"

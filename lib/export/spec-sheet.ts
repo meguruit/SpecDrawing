@@ -21,8 +21,14 @@ export function buildSpecSheetRows(args: {
   finishOptions: FinishOption[];
   selections: Record<PartId, string>;
   activeSheet: SheetName;
+  optionsRev?: string;
 }): SpecSheetRow[] {
-  const { parts, finishOptions, selections, activeSheet } = args;
+  const { parts, finishOptions, selections, activeSheet, optionsRev } = args;
+  const bust = (url: string | null | undefined) => {
+    if (!url) return null;
+    if (!optionsRev) return url;
+    return `${url}?v=${optionsRev}`;
+  };
   const sortedParts = [...parts].sort((a, b) => a.id.localeCompare(b.id));
   const rows: SpecSheetRow[] = [];
   for (const part of sortedParts) {
@@ -69,7 +75,7 @@ export function buildSpecSheetRows(args: {
       // Fall back to thumbnailUrl when iconUrl is absent. The seed pipeline
       // is expected to populate iconUrl going forward; the fallback keeps
       // the export functional during the migration.
-      iconUrl: opt.iconUrl ?? opt.thumbnailUrl ?? null,
+      iconUrl: bust(opt.iconUrl ?? opt.thumbnailUrl ?? null),
       state,
     });
   }
@@ -94,6 +100,7 @@ export async function buildSpecSheetWorkbook(args: {
   finishOptions: FinishOption[];
   selections: Record<PartId, string>;
   activeSheet: SheetName;
+  optionsRev?: string;
 }): Promise<{ workbook: import("exceljs").Workbook; rows: SpecSheetRow[] }> {
   const { default: ExcelJS } = await import("exceljs");
   const rows = buildSpecSheetRows(args);
@@ -154,6 +161,7 @@ export async function downloadSpecSheet(args: {
   selections: Record<PartId, string>;
   activeSheet: SheetName;
   filename: string;
+  optionsRev?: string;
 }): Promise<void> {
   const { workbook } = await buildSpecSheetWorkbook(args);
   const buf = await workbook.xlsx.writeBuffer();

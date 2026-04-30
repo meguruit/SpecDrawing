@@ -127,6 +127,7 @@ export default function Page() {
           selections: state.partFinishSelections,
           activeSheet: state.activeOptionSheet,
           filename,
+          optionsRev: state.finishOptionsRev,
         });
       } catch (err) {
         useCanvasStore.setState({
