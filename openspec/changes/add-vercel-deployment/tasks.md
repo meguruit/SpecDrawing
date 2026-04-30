@@ -1,21 +1,30 @@
 ## 1. Vercel project setup (operational, no code change)
 
-- [ ] 1.1 Create a Vercel account if the project owner doesn't have one
-- [ ] 1.2 Vercel Dashboard → "Add New Project" → import `tatoflam/SpecDrawing` from GitHub
-- [ ] 1.3 Project Settings → General → Build & Development Settings: override Install Command (see task 2.1)
-- [ ] 1.4 Verify production branch = `main`; preview deployments enabled for all branches + PRs
-- [ ] 1.5 Note the assigned `*.vercel.app` URL (production) and the preview URL pattern (`spec-drawing-git-<branch>-<account>.vercel.app`)
+- [x] 1.1 Create a Vercel account if the project owner doesn't have one
+- [x] 1.2 Vercel Dashboard → "Add New Project" → import `tatoflam/SpecDrawing` from GitHub
+  - Repo was transferred to `meguruit/SpecDrawing` (org account) and imported
+    under the `meguru-construction` Vercel Pro Team because the team's GitHub
+    integration is org-scoped.
+- [x] 1.3 Project Settings → General → Build & Development Settings: override Install Command (see task 2.1)
+  - Satisfied by committing `vercel.json` (task 2.1) — Vercel reads the JSON on
+    every deploy, no UI override required.
+- [x] 1.4 Verify production branch = `main`; preview deployments enabled for all branches + PRs
+- [x] 1.5 Note the assigned `*.vercel.app` URL (production) and the preview URL pattern (`spec-drawing-git-<branch>-<account>.vercel.app`)
+  - Initial preview slug: `spec-drawing-6aqqijf2r-meguru-construction.vercel.app`.
+  - Production URL: TBD until the first `main`-branch deploy after this PR
+    merges (likely `spec-drawing-meguru-construction.vercel.app`).
 
 ## 2. Repo changes for Vercel build
 
-- [ ] 2.1 Add `vercel.json` to the repo root:
+- [x] 2.1 Add `vercel.json` to the repo root:
   - `installCommand`: `git lfs install --force && git lfs pull && npm install`
   - Add a smoke check at the end: `file -b public/assets/base/main/base_natural.jpg | grep -q JPEG || (echo "LFS pull failed: base_natural.jpg is not a JPEG" >&2; exit 1)`
   - `buildCommand`: `next build` (default; explicit for clarity)
   - `headers`: cache config from design.md D4
-- [ ] 2.2 Update `app/api/dev/parts/route.ts` `devOnly()`: accept either `NODE_ENV === "development"` OR `VERCEL_ENV === "preview"`
-- [ ] 2.3 Same update in `app/api/dev/parts/regen/route.ts`
-- [ ] 2.4 In `app/dev/trace/TraceTool.client.tsx`, when the mount-time `GET /api/dev/parts` returns 404, surface a friendly placeholder ("本番環境では `/dev/trace` は無効です。プレビューデプロイ または `npm run dev` をご利用ください")
+  - Note: `no-cache` paths corrected to match actual file layout (`/assets/base/scenes.json`, `/assets/base/main/{scene,parts}.json`, `/catalog/{finish-options,sheets,finish-options.warnings}.json`); design.md's listed paths were stale.
+- [x] 2.2 Update `app/api/dev/parts/route.ts` `devOnly()`: accept either `NODE_ENV === "development"` OR `VERCEL_ENV === "preview"`
+- [x] 2.3 Same update in `app/api/dev/parts/regen/route.ts`
+- [x] 2.4 In `app/dev/trace/TraceTool.client.tsx`, when the mount-time `GET /api/dev/parts` returns 404, surface a friendly placeholder ("本番環境では `/dev/trace` は無効です。プレビューデプロイ または `npm run dev` をご利用ください")
 
 ## 3. Verification
 
@@ -28,8 +37,10 @@
 
 ## 4. Docs
 
-- [ ] 4.1 Update `README.md` with the production URL + the preview URL pattern + a note about the `/dev/trace` gating model
-- [ ] 4.2 Update `AUTHORING.md` with the "edits on preview do not persist; download + commit" workflow
+- [x] 4.1 Update `README.md` with the production URL + the preview URL pattern + a note about the `/dev/trace` gating model
+- [x] 4.2 Update `AUTHORING.md` with the "edits on preview do not persist; download + commit" workflow
+  - Updated `resources/reference/AUTHORING.md` (the canonical authoring guide
+    referenced from `README.md`); no top-level `AUTHORING.md` exists.
 
 ## 5. Optional follow-ups (NOT in this change)
 

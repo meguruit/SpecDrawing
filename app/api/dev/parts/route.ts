@@ -19,7 +19,9 @@ const BAK = resolve(SCENE_DIR, "parts.json.bak");
 const EXTRACTED = "/tmp/parts-extracted.json";
 
 function devOnly(): NextResponse | null {
-  if (process.env.NODE_ENV !== "development") {
+  const isLocalDev = process.env.NODE_ENV === "development";
+  const isVercelPreview = process.env.VERCEL_ENV === "preview";
+  if (!isLocalDev && !isVercelPreview) {
     return new NextResponse(null, { status: 404 });
   }
   return null;

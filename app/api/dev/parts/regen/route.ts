@@ -38,7 +38,9 @@ const REGEN_STATE_TMP = resolve(SCENE_DIR, "parts.json.regen.json.tmp");
 const SCENE_JSON = resolve(SCENE_DIR, "scene.json");
 
 function devOnly(): NextResponse | null {
-  if (process.env.NODE_ENV !== "development") {
+  const isLocalDev = process.env.NODE_ENV === "development";
+  const isVercelPreview = process.env.VERCEL_ENV === "preview";
+  if (!isLocalDev && !isVercelPreview) {
     return new NextResponse(null, { status: 404 });
   }
   return null;

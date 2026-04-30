@@ -170,6 +170,39 @@ scripts/
 openspec/                               OpenSpec change records
 ```
 
+## Deployment
+
+The project is hosted on Vercel under the `meguru-construction` team:
+
+- **Production**: deploys automatically on every push to `main`. The default URL is
+  the team-namespaced `*.vercel.app` subdomain (e.g.
+  `spec-drawing-meguru-construction.vercel.app`); record the actual production
+  URL here once the first `main` deploy completes.
+- **Preview**: every non-`main` branch + every PR gets its own preview deploy.
+  URL pattern: `spec-drawing-git-<branch-slug>-meguru-construction.vercel.app`.
+
+LFS objects (base JPGs, mask PNGs, finish PNGs, base-variant cuts) are pulled at
+build time via `vercel.json`'s `installCommand`. The same install step runs a
+smoke check on `public/assets/base/main/base_natural.jpg` and fails the build
+if LFS pull left it as a 134-byte pointer.
+
+### `/dev/trace` gating
+
+The designer tool at `/dev/trace` and its companion API `/api/dev/parts*` use a
+three-tier gate:
+
+| Environment | `/dev/trace` UI | `/api/dev/parts*` |
+| --- | --- | --- |
+| Local `npm run dev` (`NODE_ENV=development`) | editable | 200 |
+| Vercel preview (`VERCEL_ENV=preview`) | editable | 200 |
+| Vercel production (`VERCEL_ENV=production`) | placeholder | 404 |
+
+Designers iterate on `parts.json` against a preview URL; the customer-facing
+production URL keeps the editor surface hidden. **Edits made on a preview deploy
+do NOT persist back to the repo** — see
+[`resources/reference/AUTHORING.md`](resources/reference/AUTHORING.md) for the
+download-and-commit workflow.
+
 ## What's deferred (not in this change)
 
 - No frontend/backend separation (single Next.js app).

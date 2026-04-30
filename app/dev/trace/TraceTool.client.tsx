@@ -107,6 +107,7 @@ export default function TraceTool() {
   const [manifest, setManifest] = useState<PartsManifest | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [productionDisabled, setProductionDisabled] = useState(false);
   const [restorePrompt, setRestorePrompt] = useState<{
     diskMtime: string;
     draftSavedAt: string;
@@ -174,6 +175,12 @@ export default function TraceTool() {
         setScene(sc);
 
         const res = await fetch("/api/dev/parts", { cache: "no-store" });
+        if (res.status === 404) {
+          // Production deploys gate the dev API to 404 (see app/api/dev/parts/route.ts).
+          // Surface a friendly placeholder instead of the generic error path.
+          if (alive) setProductionDisabled(true);
+          return;
+        }
         if (!res.ok) {
           throw new Error(
             `dev API not reachable (status ${res.status}). Are you running \`npm run dev\`?`,
@@ -878,6 +885,19 @@ export default function TraceTool() {
 
   // ----- render -----
 
+  if (productionDisabled) {
+    return (
+      <div className="mx-auto max-w-2xl p-8 text-sm text-slate-700">
+        <h1 className="mb-3 text-base font-semibold text-slate-900">
+          /dev/trace は本番環境では無効です
+        </h1>
+        <p>
+          本番環境では <code>/dev/trace</code> は無効です。プレビューデプロイ
+          または <code>npm run dev</code> をご利用ください。
+        </p>
+      </div>
+    );
+  }
   if (error && !manifest) {
     return (
       <div className="p-4 text-sm text-red-600">

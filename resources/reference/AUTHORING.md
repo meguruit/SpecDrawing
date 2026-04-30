@@ -542,6 +542,31 @@ The choice persists across sessions in localStorage.
 `ダウンロード` in the header still emits a `parts.json` file the same way
 as before. Use it if the dev API is unavailable for any reason.
 
+**Editing on a Vercel preview deploy**
+
+`/dev/trace` is also reachable on every Vercel preview deployment (per
+branch / PR), gated by `VERCEL_ENV === "preview"`. This lets a designer
+iterate on `parts.json` against the same hosted environment the customer
+will see when the PR merges.
+
+**Important: edits on a preview deploy do NOT propagate back to the
+repo.** The dev API writes to that preview's serverless filesystem, which
+is ephemeral — Vercel discards it on the next deploy or after a brief
+idle period. To persist preview-side edits:
+
+1. Make changes in `/dev/trace` as usual; the in-preview autosave still
+   reports `保存済み` (write succeeded against the preview's local disk).
+2. Click `ダウンロード` in the header to save the updated `parts.json` to
+   your local machine.
+3. Replace the repo's `public/assets/base/main/parts.json` with the
+   downloaded file, commit it to the branch, and push.
+4. The next preview build picks up the committed `parts.json` as the new
+   starting point and the previous preview-side autosave drops away.
+
+Production deploys (`VERCEL_ENV === "production"`) hide the editor
+entirely — `/api/dev/parts*` returns 404 and the `/dev/trace` UI shows a
+placeholder ("本番環境では `/dev/trace` は無効です").
+
 **Validation**
 
 The dev API runs the request body through the same Zod schema the runtime
