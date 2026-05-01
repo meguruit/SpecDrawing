@@ -4,19 +4,61 @@
   "buildCommand": "next build",
   "headers": [
     {
-      "source": "/assets/base/main/(mask_|shading_|base_).*\\.(png|jpg)",
+      "source": "/assets/base/main/mask_:file",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
-      "source": "/assets/finishes/(.*)\\.png",
+      "source": "/assets/base/main/shading_:file",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
-      "source": "/(catalog/finish-options\\.json|catalog/sheets\\.json|catalog/finish-options\\.warnings\\.json|assets/base/scenes\\.json|assets/base/main/scene\\.json|assets/base/main/parts\\.json)",
+      "source": "/assets/base/main/base_:file",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/assets/finishes/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/catalog/finish-options.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/catalog/sheets.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/catalog/finish-options.warnings.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/assets/base/scenes.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/assets/base/main/scene.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/assets/base/main/parts.json",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache" }
       ]
