@@ -544,24 +544,29 @@ as before. Use it if the dev API is unavailable for any reason.
 
 **Editing on a Vercel preview deploy**
 
-`/dev/trace` is also reachable on every Vercel preview deployment (per
-branch / PR), gated by `VERCEL_ENV === "preview"`. This lets a designer
-iterate on `parts.json` against the same hosted environment the customer
-will see when the PR merges.
+`/dev/trace` is reachable on every Vercel preview deployment (per branch
+/ PR) for **reads only** — `GET /api/dev/parts` returns the deployed
+`parts.json`, so designers can load and edit polygons against the same
+hosted environment the customer will see. `PUT` and `POST` (autosave +
+mask regen) return `503 preview-readonly` on Vercel because the
+serverless runtime mounts the deployed app as a read-only filesystem
+(only `/tmp` is writable, and even that is per-instance and ephemeral).
 
-**Important: edits on a preview deploy do NOT propagate back to the
-repo.** The dev API writes to that preview's serverless filesystem, which
-is ephemeral — Vercel discards it on the next deploy or after a brief
-idle period. To persist preview-side edits:
+**The persistence path on preview is browser localStorage + manual
+commit.** The autosave UI surfaces a terminal
+`プレビューは保存不可 — ダウンロードしてコミット` status (no retry loop)
+to steer designers to:
 
-1. Make changes in `/dev/trace` as usual; the in-preview autosave still
-   reports `保存済み` (write succeeded against the preview's local disk).
-2. Click `ダウンロード` in the header to save the updated `parts.json` to
-   your local machine.
+1. Make changes in `/dev/trace`; edits land in your browser's
+   localStorage immediately (no disk roundtrip needed).
+2. Click `ダウンロード` in the header to save the updated `parts.json`
+   to your local machine.
 3. Replace the repo's `public/assets/base/main/parts.json` with the
-   downloaded file, commit it to the branch, and push.
-4. The next preview build picks up the committed `parts.json` as the new
-   starting point and the previous preview-side autosave drops away.
+   downloaded file, commit to the branch, and push.
+4. The next preview build serves the committed `parts.json`. If
+   polygons changed, run `npm run seed:masks` locally first (mask regen
+   also returns `503 preview-readonly` on Vercel) and commit the
+   updated `mask_<NN>.png` / `shading_<NN>.png` files alongside.
 
 Production deploys (`VERCEL_ENV === "production"`) hide the editor
 entirely — `/api/dev/parts*` returns 404 and the `/dev/trace` UI shows a

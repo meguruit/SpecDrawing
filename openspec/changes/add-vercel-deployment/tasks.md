@@ -25,6 +25,7 @@
 - [x] 2.2 Update `app/api/dev/parts/route.ts` `devOnly()`: accept either `NODE_ENV === "development"` OR `VERCEL_ENV === "preview"`
 - [x] 2.3 Same update in `app/api/dev/parts/regen/route.ts`
 - [x] 2.4 In `app/dev/trace/TraceTool.client.tsx`, when the mount-time `GET /api/dev/parts` returns 404, surface a friendly placeholder ("本番環境では `/dev/trace` は無効です。プレビューデプロイ または `npm run dev` をご利用ください")
+- [x] 2.5 (added during preview verification) Block `PUT /api/dev/parts` and `POST /api/dev/parts/regen` with `503 preview-readonly` when `process.env.VERCEL === "1"`; client surfaces a terminal `プレビューは保存不可 — ダウンロードしてコミット` status without retry-looping. Reason: Vercel's serverless runtime mounts the deployed app as a read-only filesystem, so the original design.md assumption that "edits land on the preview's ephemeral serverless filesystem" was wrong — writes were 500-ing and the autosave loop never terminated. design.md and dev-trace-tool spec scenarios updated accordingly.
 
 ## 3. Verification
 

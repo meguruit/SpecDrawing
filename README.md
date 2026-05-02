@@ -191,17 +191,19 @@ if LFS pull left it as a 134-byte pointer.
 The designer tool at `/dev/trace` and its companion API `/api/dev/parts*` use a
 three-tier gate:
 
-| Environment | `/dev/trace` UI | `/api/dev/parts*` |
-| --- | --- | --- |
-| Local `npm run dev` (`NODE_ENV=development`) | editable | 200 |
-| Vercel preview (`VERCEL_ENV=preview`) | editable | 200 |
-| Vercel production (`VERCEL_ENV=production`) | placeholder | 404 |
+| Environment | `/dev/trace` UI | `GET /api/dev/parts` | `PUT` / regen `POST` |
+| --- | --- | --- | --- |
+| Local `npm run dev` (`NODE_ENV=development`) | editable + persists to disk | 200 | 200 (writes `parts.json` + masks) |
+| Vercel preview (`VERCEL_ENV=preview`) | editable in browser only | 200 | **503 `preview-readonly`** (Vercel FS is read-only) |
+| Vercel production (`VERCEL_ENV=production`) | placeholder | 404 | 404 |
 
-Designers iterate on `parts.json` against a preview URL; the customer-facing
-production URL keeps the editor surface hidden. **Edits made on a preview deploy
-do NOT persist back to the repo** — see
+Designers load + edit on a preview URL; autosave reports
+`プレビューは保存不可 — ダウンロードしてコミット` (Vercel's serverless filesystem
+is read-only outside `/tmp`, so writes can't persist). To save changes,
+designers click `ダウンロード`, replace `public/assets/base/main/parts.json` in
+the repo, and commit. See
 [`resources/reference/AUTHORING.md`](resources/reference/AUTHORING.md) for the
-download-and-commit workflow.
+full workflow.
 
 ## What's deferred (not in this change)
 

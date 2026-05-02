@@ -27,6 +27,26 @@ function devOnly(): NextResponse | null {
   return null;
 }
 
+// Vercel's serverless runtime mounts the deployed app as a read-only
+// filesystem (only /tmp is writable, and even that is per-instance and
+// ephemeral). Any attempt to writeFile/rename under public/ on a preview
+// deploy fails with EROFS. Bail before touching disk so the client gets a
+// clear 503 + "preview-readonly" code instead of a 500 that triggers a
+// 60-second retry loop. Local dev (`process.env.VERCEL` unset) is unaffected.
+function previewReadOnly(): NextResponse | null {
+  if (process.env.VERCEL === "1") {
+    return NextResponse.json(
+      {
+        error: "preview-readonly",
+        message:
+          "プレビュー環境ではディスクへ保存できません。ヘッダの「ダウンロード」から parts.json を取得し、ブランチへコミットしてください。",
+      },
+      { status: 503 },
+    );
+  }
+  return null;
+}
+
 export async function GET(request: Request) {
   const guard = devOnly();
   if (guard) return guard;
@@ -94,6 +114,8 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   const guard = devOnly();
   if (guard) return guard;
+  const ro = previewReadOnly();
+  if (ro) return ro;
 
   let body: unknown;
   try {
@@ -133,6 +155,20 @@ export async function PUT(request: Request) {
           warnings.push({ partId: part.id, polygonIndex: pi, holeIndex: hi });
         }
       });
+    });
+  }
+
+  // On Vercel preview the deployed filesystem is read-only — the PUT cannot
+  // persist back to disk. Validate the manifest (above) and return success so
+  // the client's autosave clears the "ローカルに保持中" state; the user's
+  // localStorage mirror plus the manual "ダウンロード" → commit workflow is the
+  // canonical persistence path on preview (see resources/reference/AUTHORING.md).
+  if (process.env.VERCEL_ENV === "preview") {
+    const savedAt = new Date().toISOString();
+    return NextResponse.json({
+      savedAt,
+      mtime: savedAt,
+      warnings: warnings.length ? warnings : undefined,
     });
   }
 

@@ -83,7 +83,24 @@ function devOnly(): NextResponse | null {
 
 **Why this split**: designers need `/dev/trace` against a hosted environment so they can iterate against the same `parts.json` the customer sees in the next demo. The customer-facing production URL stays clean (no editor surface, no risk of accidental edits via the API). Per-PR preview deploys give each in-flight change its own designer playground.
 
-**Risk**: a curious user who learns the preview URL pattern could trigger writes to `parts.json` on a preview environment. Mitigation: preview deploys are URL-scoped (`spec-drawing-git-<branch>-<account>.vercel.app`), not indexable by search engines (Vercel sets `X-Robots-Tag: noindex` on previews automatically), and writes only affect that preview's runtime — they do not propagate to production. If we need stronger isolation later, gate `/dev/trace` behind Vercel Password Protection (Pro feature).
+**Risk**: a curious user who learns the preview URL pattern could trigger writes to `parts.json` on a preview environment. Mitigation: preview deploys are URL-scoped (`spec-drawing-git-<branch>-<account>.vercel.app`), not indexable by search engines (Vercel sets `X-Robots-Tag: noindex` on previews automatically), and writes are blocked at the API layer (see correction below). If we need stronger isolation later, gate `/dev/trace` behind Vercel Password Protection (Pro feature).
+
+> **Correction (post-implementation)**: Vercel's serverless runtime mounts
+> the deployed app under `/var/task` as a **read-only filesystem**; only
+> `/tmp` is writable, and even `/tmp` is per-instance and ephemeral across
+> requests. The earlier "edits land on the preview's serverless filesystem"
+> assumption was wrong — `writeFile` under `public/` fails with `EROFS`.
+>
+> The implementation therefore returns `503 { error: "preview-readonly" }`
+> from `PUT /api/dev/parts` and `POST /api/dev/parts/regen` whenever
+> `process.env.VERCEL === "1"` (covers preview and would-be production,
+> though production is already 404 from `devOnly()`). The `/dev/trace`
+> client treats this as a terminal save status and steers the designer to
+> the "ダウンロード → commit" workflow without retry-looping.
+>
+> Net effect: GET still works on preview (read-only access to the bundled
+> `parts.json` is fine), so designers can load + edit + download, but
+> preview writes never persist. Local `npm run dev` is unaffected.
 
 ### D4. Cache strategy
 

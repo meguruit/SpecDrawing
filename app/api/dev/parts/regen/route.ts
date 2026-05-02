@@ -46,6 +46,24 @@ function devOnly(): NextResponse | null {
   return null;
 }
 
+// See app/api/dev/parts/route.ts for context. Vercel preview filesystems are
+// read-only outside /tmp, so mask/shading regen (which writes PNGs back into
+// public/) cannot run on preview. Return 503 + "preview-readonly" so the
+// client surfaces a clear status instead of looping on 500 errors.
+function previewReadOnly(): NextResponse | null {
+  if (process.env.VERCEL === "1") {
+    return NextResponse.json(
+      {
+        error: "preview-readonly",
+        message:
+          "プレビュー環境ではマスク再生成ができません。ローカルで `npm run dev` 後に再生成し、ブランチへコミットしてください。",
+      },
+      { status: 503 },
+    );
+  }
+  return null;
+}
+
 // FNV-1a 32-bit on the polygons + asset filenames. Same shape as the
 // runtime `_rev` so a part's mask and runtime URL bust together. Hashing
 // `polygons` (post-normalization) means any topology change — vertex move,
@@ -103,6 +121,8 @@ async function readManifest(path: string): Promise<PartsManifest | null> {
 export async function POST(request: Request) {
   const guard = devOnly();
   if (guard) return guard;
+  const ro = previewReadOnly();
+  if (ro) return ro;
 
   const url = new URL(request.url);
   const force = url.searchParams.get("force") === "true";

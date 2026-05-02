@@ -83,14 +83,16 @@ type SaveStatus =
   | { kind: "saving" }
   | { kind: "saved"; at: string }
   | { kind: "validation-failed"; message: string }
-  | { kind: "local-only"; since: number };
+  | { kind: "local-only"; since: number }
+  | { kind: "preview-readonly" };
 
 type RegenStatus =
   | { kind: "idle" }
   | { kind: "scheduled" }
   | { kind: "running" }
   | { kind: "done"; count: number; at: string }
-  | { kind: "failed"; message: string };
+  | { kind: "failed"; message: string }
+  | { kind: "preview-readonly" };
 
 const REGEN_DEBOUNCE_MS = 1500;
 
@@ -306,6 +308,15 @@ export default function TraceTool() {
         ? "/api/dev/parts/regen?force=true"
         : "/api/dev/parts/regen";
       const res = await fetch(url, { method: "POST" });
+      if (res.status === 503) {
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        if (body.error === "preview-readonly") {
+          setRegenStatus({ kind: "preview-readonly" });
+          return;
+        }
+      }
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as {
           message?: string;
@@ -364,6 +375,21 @@ export default function TraceTool() {
             message: `${body.field ?? "?"}: ${body.message ?? "validation failed"}`,
           });
           return;
+        }
+        if (res.status === 503) {
+          // Vercel preview deploys mark the API as read-only; surface a
+          // distinct, terminal status (no retry) so the user heads to the
+          // ダウンロード → commit workflow.
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          if (body.error === "preview-readonly") {
+            if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+            retryTimerRef.current = null;
+            retryStartedAtRef.current = null;
+            setSaveStatus({ kind: "preview-readonly" });
+            return;
+          }
         }
         if (!res.ok) {
           startLocalOnlyMode();
@@ -1353,6 +1379,15 @@ function RegenBadge({ status }: { status: RegenStatus }) {
           マスク再生成 失敗
         </span>
       );
+    case "preview-readonly":
+      return (
+        <span
+          className="text-[10px] text-amber-700"
+          title="プレビュー環境では再生成不可。ローカルで再生成 → コミット → 再デプロイで反映されます。"
+        >
+          マスク再生成 不可（プレビュー）
+        </span>
+      );
   }
 }
 
@@ -1382,6 +1417,15 @@ function SaveBadge({ status }: { status: SaveStatus }) {
       return (
         <span className="text-[11px] text-amber-700">
           ローカルに保持中（再送信を試行...）
+        </span>
+      );
+    case "preview-readonly":
+      return (
+        <span
+          className="text-[11px] text-amber-700"
+          title="プレビューはディスク保存不可。ヘッダの「ダウンロード」から parts.json を取得してブランチへコミットしてください。"
+        >
+          プレビューは保存不可 — ダウンロードしてコミット
         </span>
       );
   }
