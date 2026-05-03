@@ -22,10 +22,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const PUBLIC_DIR = resolve(ROOT, "public");
 const SCENE_DIR = resolve(ROOT, "public/assets/base/main");
 const PARTS_PATH = resolve(SCENE_DIR, "parts.json");
 const SCENE_JSON = resolve(SCENE_DIR, "scene.json");
-const BASE_JPG = resolve(SCENE_DIR, "base.jpg");
 
 const MASK_FEATHER_RADIUS = 2; // pixels — Gaussian sigma for edge anti-aliasing
 
@@ -33,11 +33,11 @@ async function ensureDir(path) {
   await mkdir(dirname(path), { recursive: true });
 }
 
-function pointInPolygon(x, y, polygon) {
+function pointInRing(x, y, ring) {
   let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, yi] = polygon[i];
-    const [xj, yj] = polygon[j];
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
     const intersect =
       yi > y !== yj > y &&
       x < ((xj - xi) * (y - yi)) / (yj - yi + 1e-9) + xi;
@@ -46,16 +46,41 @@ function pointInPolygon(x, y, polygon) {
   return inside;
 }
 
-function polygonBounds(polygon, width, height) {
+// Even-odd fill across every ring of every polygon entry. Outer adds 1,
+// each hole adds 1 — odd count = inside.
+function pointInPolygons(x, y, polygons) {
+  let count = 0;
+  for (const poly of polygons) {
+    if (pointInRing(x, y, poly.outer)) count++;
+    if (poly.holes) {
+      for (const hole of poly.holes) {
+        if (pointInRing(x, y, hole)) count++;
+      }
+    }
+  }
+  return (count & 1) === 1;
+}
+
+// Accept both legacy `polygon: Vertex[]` and new `polygons: [{outer, holes?}]`.
+// Returns the runtime `polygons` shape.
+function getPolygons(part) {
+  if (Array.isArray(part.polygons)) return part.polygons;
+  if (Array.isArray(part.polygon)) return [{ outer: part.polygon }];
+  throw new Error(`part ${part.id} has neither polygons nor polygon`);
+}
+
+function polygonsBounds(polygons, width, height) {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const [x, y] of polygon) {
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-    if (x > maxX) maxX = x;
-    if (y > maxY) maxY = y;
+  for (const poly of polygons) {
+    for (const [x, y] of poly.outer) {
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
   }
   return {
     x0: Math.max(0, Math.floor(minX) - MASK_FEATHER_RADIUS * 2),
@@ -65,14 +90,14 @@ function polygonBounds(polygon, width, height) {
   };
 }
 
-// Build a hard alpha mask from the polygon, then feather with Gaussian blur.
+// Build a hard alpha mask from every ring, then feather with Gaussian blur.
 // Returns the rasterized RGBA buffer (alpha-only) at scene resolution.
-function rasterizePolygonMask(polygon, width, height) {
+function rasterizePolygonsMask(polygons, width, height) {
   const buf = Buffer.alloc(width * height * 4);
-  const { x0, y0, x1, y1 } = polygonBounds(polygon, width, height);
+  const { x0, y0, x1, y1 } = polygonsBounds(polygons, width, height);
   for (let y = y0; y < y1; y++) {
     for (let x = x0; x < x1; x++) {
-      if (pointInPolygon(x + 0.5, y + 0.5, polygon)) {
+      if (pointInPolygons(x + 0.5, y + 0.5, polygons)) {
         const i = (y * width + x) * 4;
         buf[i] = 255;
         buf[i + 1] = 255;
@@ -85,7 +110,8 @@ function rasterizePolygonMask(polygon, width, height) {
 }
 
 async function writeMask(part, width, height) {
-  const raw = rasterizePolygonMask(part.polygon, width, height);
+  const polygons = getPolygons(part);
+  const raw = rasterizePolygonsMask(polygons, width, height);
   const path = resolve(SCENE_DIR, part.mask);
   await ensureDir(path);
   // Apply Gaussian blur to feather the alpha edge.
@@ -102,18 +128,19 @@ async function writeMask(part, width, height) {
 // stays mid-gray (180) — the runtime clips by the mask anyway.
 async function writeShading(part, baseRgb, width, height) {
   if (!part.shading) return;
+  const polygons = getPolygons(part);
   const out = Buffer.alloc(width * height * 4);
-  // Mid-gray default outside the polygon.
+  // Mid-gray default outside the polygons.
   for (let i = 0; i < out.length; i += 4) {
     out[i] = 180;
     out[i + 1] = 180;
     out[i + 2] = 180;
     out[i + 3] = 255;
   }
-  const { x0, y0, x1, y1 } = polygonBounds(part.polygon, width, height);
+  const { x0, y0, x1, y1 } = polygonsBounds(polygons, width, height);
   for (let y = y0; y < y1; y++) {
     for (let x = x0; x < x1; x++) {
-      if (pointInPolygon(x + 0.5, y + 0.5, part.polygon)) {
+      if (pointInPolygons(x + 0.5, y + 0.5, polygons)) {
         const j = (y * width + x) * 3;
         const r = baseRgb[j];
         const g = baseRgb[j + 1];
@@ -141,14 +168,21 @@ async function main() {
   const manifest = JSON.parse(await readFile(PARTS_PATH, "utf-8"));
   const { width, height } = scene;
 
-  // Load base.jpg as raw RGB once for shading extraction.
-  const { data: baseRgb, info: baseInfo } = await sharp(BASE_JPG)
+  // The base image filename is sourced from scene.json (`baseImageUrl`),
+  // not hardcoded — follows the natural/sharp/flat variant rename.
+  const baseImageUrl = scene.baseImageUrl;
+  if (typeof baseImageUrl !== "string") {
+    throw new Error("scene.json is missing a string `baseImageUrl`");
+  }
+  const baseJpgPath = resolve(PUBLIC_DIR, baseImageUrl.replace(/^\//, ""));
+
+  const { data: baseRgb, info: baseInfo } = await sharp(baseJpgPath)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
   if (baseInfo.width !== width || baseInfo.height !== height) {
     throw new Error(
-      `base.jpg dimensions (${baseInfo.width}x${baseInfo.height}) do not match scene.json (${width}x${height})`,
+      `base image dimensions (${baseInfo.width}x${baseInfo.height}) do not match scene.json (${width}x${height})`,
     );
   }
 

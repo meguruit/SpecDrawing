@@ -15,7 +15,7 @@ The system SHALL load finish options from a single JSON file at `public/catalog/
 - **THEN** the app surfaces an error naming the failing entry id and field, and does not render the finish-options panel
 
 ### Requirement: Finish-option entry shape
-Each finish-option entry MUST have a globally unique `id`, a `partId` that resolves to a known part in the active scene's parts manifest, a `sheet` value identifying which workbook sheet it came from (e.g. `"アーバンシー"` or `"レコリード"`), a Japanese `label`, an optional `productCode`, and a `thumbnailUrl` for the swatch image. Each entry MUST set exactly one of `colorHex` (when its part's `renderMode` is `"color"`) or `textureUrl` (when its part's `renderMode` is `"texture"`).
+Each finish-option entry MUST have a globally unique `id`, a `partId` that resolves to a known part in the active scene's parts manifest, a `sheet` value identifying which workbook sheet it came from (e.g. `"アーバンシー"` or `"レコリード"`), a Japanese `label`, an optional `productCode`, an optional `subLabel`, a `thumbnailUrl` for the swatch image, an `iconUrl` for the Excel spec-sheet export, and a `defaultForVariants: VariantKey[]` array. Each entry MUST set exactly one of `colorHex` (when its part's `renderMode` is `"color"`) or `textureUrl` (when its part's `renderMode` is `"texture"`).
 
 #### Scenario: Color-mode option requires colorHex
 - **WHEN** an option's `partId` resolves to a part with `renderMode: "color"` and the option omits `colorHex`
@@ -32,6 +32,78 @@ Each finish-option entry MUST have a globally unique `id`, a `partId` that resol
 #### Scenario: Duplicate option id rejected
 - **WHEN** two options share the same `id`
 - **THEN** validation fails at load time with an error naming the duplicated id
+
+#### Scenario: defaultForVariants defaults to empty array
+- **WHEN** an option entry omits the `defaultForVariants` field
+- **THEN** the loaded option's `defaultForVariants` is the empty array `[]`
+
+### Requirement: defaultForVariants on every finish-option entry
+Every finish-option entry MUST carry a `defaultForVariants: VariantKey[]` field. The array enumerates every variant key on which this option is the customer-facing default — i.e. the option that is auto-displayed before the customer picks anything else on that variant.
+
+- A non-empty array (`["natural"]`, `["flat", "sharp"]`, etc.) marks the option as a per-variant default.
+- An empty array marks the option as an "alternative": only displayed when the customer actively selects it.
+
+The seed pipeline SHALL populate this field by reading the workbook's `Natural / Flat / Sharp` columns under each part header. Two columns that share the same label collapse into one option entry whose `defaultForVariants` lists every matching variant. Columns to the right of the variant block (alternatives) emit one option each with `defaultForVariants: []`.
+
+#### Scenario: One option per distinct label per part-sheet
+- **WHEN** the workbook lists part ⑤ レンジフード on アーバンシー with `Natural=ホワイト, Flat=ブラック, Sharp=ブラック`
+- **THEN** the catalog contains exactly two options for `(partId="05", sheet="アーバンシー")`:
+  - `{ label: "ホワイト", defaultForVariants: ["natural"] }`
+  - `{ label: "ブラック", defaultForVariants: ["flat", "sharp"] }`
+
+#### Scenario: Alternative columns emit empty defaultForVariants
+- **WHEN** the workbook lists part ⑦ キッチンアクセントクロス with `Natural=ダークホワイト, Flat=ダークホワイト, Sharp=ダークホワイト` and alternatives `サンドベージュ / スカイグレー / アッシュグレー / エクルベージュ`
+- **THEN** the catalog contains one option `{ label: "ダークホワイト", defaultForVariants: ["natural", "flat", "sharp"] }` AND four options whose `defaultForVariants` is `[]`
+
+#### Scenario: defaultForVariants references unknown variant key rejected
+- **WHEN** any option's `defaultForVariants` contains a string that does not match a `key` declared by the active scene's `variants` array
+- **THEN** validation fails at load time naming the option id and the unknown variant key
+
+### Requirement: Header-driven workbook column resolution
+The seed pipeline (`scripts/extract-finish-options.mjs`) SHALL determine each sheet's layout by reading row 0:
+
+- If row 0 contains the labels `Natural`, `Flat`, AND `Sharp` (case-insensitive, in any columns), the sheet is parsed under the **variant-keyed layout**: those three columns hold per-variant defaults, and every column to the right of the rightmost detected variant column holds alternatives.
+- If row 0 is missing one or more of those labels, the sheet falls back to the **legacy layout**: every column under the part header row is treated as a sequential option whose `defaultForVariants` is `[]`.
+
+The seed step MUST NOT exit non-zero solely because a sheet is on the legacy layout — sheets in transition coexist with already-migrated sheets while the customer rolls the workbook forward. Each parsed sheet emits a one-line log entry naming its detected layout.
+
+#### Scenario: Variant headers detected → variant-keyed layout
+- **WHEN** sheet `アーバンシー` row 0 contains `Natural`, `Flat`, `Sharp`
+- **THEN** the parser uses the variant-keyed layout
+- **AND** the parser logs `sheet "アーバンシー" parsed (variant-keyed layout, N parts)`
+
+#### Scenario: Missing variant headers → legacy layout fallback
+- **WHEN** sheet `レコリード` row 0 has no variant headers
+- **THEN** the parser falls back to the legacy layout and emits options with `defaultForVariants: []`
+- **AND** the parser logs `sheet "レコリード" parsed (legacy layout, N parts)`
+- **AND** the seed step continues processing other sheets without erroring
+
+### Requirement: Sub-row product codes and sub-labels
+Per part header row, the seed pipeline MUST scan rows `headerRow + 1` through `headerRow + 4` for additional metadata in the same columns as the option labels. A cell whose value matches `/^[A-Za-z0-9][A-Za-z0-9\s\-./]*$/` MUST be treated as the option's `productCode`; any other non-empty Japanese-text cell MUST be captured as the option's optional `subLabel`.
+
+When a label collapse merges multiple variant columns into one option, the product code MUST come from the first column whose row-+1 cell is non-empty; if multiple columns disagree, an entry of `kind: "label-collapse-product-code-conflict"` MUST be appended to `finish-options.warnings.json` naming the option id and the conflicting codes.
+
+#### Scenario: Product code in sub-row populates the option
+- **WHEN** part ⑤ row 13 (sub-row of ⑤'s header) contains `XAI-3A-4516` at columns D, E, F
+- **THEN** the emitted option `ホワイト` carries `productCode: "XAI-3A-4516"` AND the emitted option `ブラック` also carries `productCode: "XAI-3A-4516"` (no conflict warning since values match)
+
+#### Scenario: Sub-label captured separately
+- **WHEN** part ② sub-row contains `電球色` at columns D / E / F and `光無し` at column G
+- **THEN** the emitted option `有` carries `subLabel: "電球色"` AND the alternative option `無` carries `subLabel: "光無し"`
+
+#### Scenario: Conflicting product codes warned
+- **WHEN** the same-label collapse for ⑥ ブラック spans columns E + F whose sub-row product codes are `BLK1` and `BLK2`
+- **THEN** the emitted option `ブラック` carries `productCode: "BLK1"` AND a `label-collapse-product-code-conflict` warning is appended naming both codes
+
+### Requirement: Archived legacy workbook preserved for reference
+The archived workbook at `resources/catalog/old/部材リスト.xlsx` SHALL stay in the repository for human reference. The current `seed:parts` continues to support the legacy layout via auto-detection (see header-driven workbook column resolution requirement above), so contributors MAY still seed it for regression checks via `SPECDRAWING_WORKBOOK=resources/catalog/old/部材リスト.xlsx npm run seed:parts`.
+
+When the customer migrates `レコリード` to the variant-keyed layout in a future workbook, the legacy fallback path remains available but is exercised only by the archived file.
+
+#### Scenario: Archived legacy workbook still seedable
+- **WHEN** `SPECDRAWING_WORKBOOK=resources/catalog/old/部材リスト.xlsx npm run seed:parts` is invoked
+- **THEN** every sheet parses under the legacy layout
+- **AND** every emitted option has `defaultForVariants: []`
 
 ### Requirement: Sheet-aware option lookup
 The system MUST expose a lookup that returns, for a given `(partId, sheet)`, the ordered list of finish options for that part on that sheet. Sheets MUST be enumerable, and the active sheet MUST be UI-selectable. Switching sheets MUST not silently change the displayed perspective; finish layers continue to render the user's prior selections until the user picks new options for the new sheet.
@@ -115,4 +187,185 @@ This mirrors the per-part `_rev` cache-bust on mask + shading URLs introduced fo
 #### Scenario: Re-running seed:variants invalidates texture URLs
 - **WHEN** `seed:variants` rewrites several option textureUrls and the catalog file is re-saved
 - **THEN** on the next reload of `/`, the new texture URLs use a different `?v=` query than before
+
+### Requirement: Per-sheet variants-enabled flag
+The seed pipeline SHALL emit, alongside `finish-options.json`, a sheet-config map at `public/catalog/sheets.json` declaring which sheets enable runtime variant switching. The shape MUST be:
+
+```
+{ version: 1, sheets: Array<{ key: string, label: string, variantsEnabled: boolean, defaultVariantKey?: string }> }
+```
+
+When `variantsEnabled === true`, `defaultVariantKey` MUST be set and MUST match a `key` in the active scene's `scene.json` `variants` array. The `アーバンシー` sheet SHALL ship with `variantsEnabled: true` and `defaultVariantKey: "natural"`. Validation failure produces a loud, named error and blocks the finish-options UI from rendering.
+
+#### Scenario: Sheets manifest loads and validates
+- **WHEN** the app starts and `sheets.json` passes Zod validation
+- **THEN** every sheet is enumerable with its `variantsEnabled` flag and `defaultVariantKey`
+
+#### Scenario: Variants enabled without default variant key rejected
+- **WHEN** a sheet declares `variantsEnabled: true` and omits `defaultVariantKey` (or `defaultVariantKey` does not match any scene variant)
+- **THEN** validation fails at load time with an error naming the sheet key
+
+### Requirement: Per-variant texture URL on texture-mode options
+Every texture-mode option entry on a sheet whose `variantsEnabled === true` MUST carry a `textureUrlByVariant: Record<VariantKey, string>` map. The map MUST contain one entry for each `key` declared by the active scene's `scene.json` `variants` array. Each value MUST resolve to a file under `public/assets/finishes/<partId>/<optionId>__<variantKey>.png`.
+
+The legacy `textureUrl` field MAY remain on options for back-compat with non-variant sheets, but on variant-enabled sheets the runtime SHALL ignore `textureUrl` and use `textureUrlByVariant[activeVariantKey]` instead.
+
+The seed pipeline (`seed:variants`) SHALL be extended so that for every texture-mode option on a variant-enabled sheet it emits one masked PNG per declared variant key, written to the path above, regardless of whether `finish-base-overrides.json` lists the option.
+
+#### Scenario: Texture option without textureUrlByVariant on variant-enabled sheet rejected
+- **WHEN** an option has texture-mode resolution and lives on a sheet with `variantsEnabled === true` but omits `textureUrlByVariant`
+- **THEN** validation fails at load time naming the option id
+
+#### Scenario: textureUrlByVariant missing a declared variant key rejected
+- **WHEN** the active scene declares variants `[natural, flat, sharp]` and an option's `textureUrlByVariant` omits `sharp`
+- **THEN** validation fails at load time naming the option id and the missing variant key
+
+#### Scenario: Variant PNG missing on disk fails visibly at seed time
+- **WHEN** `seed:variants` runs and a `base_<variant>.jpg` declared by the scene is absent
+- **THEN** an entry of `kind: "variant-missing"` is appended to `finish-options.warnings.json` naming the variant key AND every affected `(partId, optionId)`
+- **AND** the seed step exits non-zero so the runtime does not attempt to load with a partial catalog
+
+### Requirement: Icon URL on every option for spec-sheet export
+Every finish-option entry MUST carry an `iconUrl: string` field that resolves to a file under `public/catalog/icons/<optionId>.png`. The seed pipeline SHALL extract icon images from the `部材リスト.xlsx` workbook (one per option) and emit them at this path. Icons SHALL be square PNGs at minimum 96 × 96 pixels suitable for embedding inside a spreadsheet cell.
+
+`iconUrl` is a separate field from `thumbnailUrl`: `thumbnailUrl` is sized for the on-canvas swatch chip, `iconUrl` is sized for the Excel export.
+
+#### Scenario: Option without iconUrl rejected
+- **WHEN** any finish-option entry omits `iconUrl`
+- **THEN** validation fails at load time naming the option id
+
+#### Scenario: Icon file missing on disk fails at load
+- **WHEN** an option's `iconUrl` resolves to a path that does not exist under `public/`
+- **THEN** the loader surfaces an error naming the option id and the missing file
+
+#### Scenario: Seed pipeline copies icons from the workbook
+- **WHEN** `npm run seed:parts` runs against a 部材リスト.xlsx that contains icon images for every option
+- **THEN** every emitted option has an `iconUrl` pointing at a corresponding file under `public/catalog/icons/`
+
+### Requirement: Per-variant colorHex on color-mode options
+Color-mode finish options on a variant-enabled sheet MAY declare an optional `colorHexByVariant: { [variantKey]: "#RRGGBB" }` map alongside the existing `colorHex`. Every key in the map MUST match a `key` declared on the active scene's `variants[]` array; values MUST match `^#[0-9A-Fa-f]{6}$`. The map MAY be partial — variants not listed fall back to the static `colorHex`.
+
+The map MUST NOT be set on texture-mode options; validation MUST reject the field there.
+
+#### Scenario: Sash option declares per-variant colorHex
+- **WHEN** option `17-urb-2-opt2` (プラチナステン) ships with `colorHex: "#9C8F81"` and `colorHexByVariant: { "natural": "#9C8F81", "flat": "#A39685", "sharp": "#80776B" }`
+- **THEN** the catalog validates and the option carries both fields
+
+#### Scenario: Partial colorHexByVariant inherits static colorHex
+- **WHEN** an option declares only `colorHexByVariant: { "sharp": "#…" }` and a static `colorHex: "#…"`
+- **THEN** validation passes; on `Natural` and `Flat`, the runtime resolves the static `colorHex`; on `Sharp`, the runtime resolves the per-variant override
+
+#### Scenario: Unknown variant key in colorHexByVariant rejected
+- **WHEN** `colorHexByVariant` contains a key (e.g. `"matte"`) not declared on the active scene's `variants[]`
+- **THEN** validation fails at load time naming the option id and the unknown variant key
+
+#### Scenario: Texture-mode option declaring colorHexByVariant rejected
+- **WHEN** a texture-mode option declares `colorHexByVariant`
+- **THEN** validation fails at load time naming the option id
+
+### Requirement: Variant-mapping override config
+The seed pipeline SHALL accept a designer-editable override config at `resources/catalog/finish-variant-mapping.json` with shape:
+
+```ts
+{
+  version: 1,
+  overrides?: {
+    [partId: string]: { [variantKey: string]: optionLabel }
+  },
+  noEffect?: {
+    partId: string;
+    optionLabel: string;
+    dilate?: number;     // 1..256, default 16: ring distance (px) outside mask
+    dim?: number;        // 0..2, default 1: brightness multiplier on sampled ring
+    targetHex?: string;  // "#RRGGBB": override ring sample with hand-picked color
+  }[],
+  colorHexByVariant?: {
+    [partId: string]: {
+      [optionLabel: string]: { [variantKey: string]: "#RRGGBB" }
+    }
+  }
+}
+```
+
+`overrides` re-assigns `defaultForVariants` on emitted options so that exactly one option per declared variant key claims that key. The named option becomes the variant's default; previously-claimant options on the same `(partId, sheet)` are demoted (the variant key is removed from their `defaultForVariants`).
+
+When an `overrides` entry references an option label that does NOT exist on the active scene's primary sheet, the seed step MUST attempt cross-sheet synthesis: search the same `partId` on every other emitted sheet for a matching label; if found, copy that option (preserving `productCode`, `iconUrl`, `subLabel`, and other workbook-derived fields) and tag the synthesized option `synthesized: true`. If no match exists across all sheets, the seed step MUST append a `missing-overridden-option` warning entry naming `(partId, variantKey, optionLabel)` to `finish-options.warnings.json` and leave the variant unclaimed.
+
+`noEffect` and `colorHexByVariant` blocks are applied as the rules in their dedicated requirements describe.
+
+#### Scenario: Override re-assigns variant claimant
+- **WHEN** the workbook emits ⑩ with `defaultForVariants: { ﾍｱﾗｲﾝｼﾙﾊﾞｰ:["natural"], ｱｲﾎﾞﾘｰ:["flat"], ｺｺﾅｯﾂﾁｪﾘｰ:["sharp"] }` AND the override declares `"10": { natural: "ｺｺﾅｯﾂﾁｪﾘｰ", flat: "ﾀﾞｰｼﾞﾘﾝｳｫﾙﾅｯﾄ", sharp: "ｴｽﾌﾟﾚｯｿｳｯﾄﾞ" }`
+- **THEN** the emitted catalog has `ｺｺﾅｯﾂﾁｪﾘｰ.defaultForVariants = ["natural"]`, `ﾀﾞｰｼﾞﾘﾝｳｫﾙﾅｯﾄ = ["flat"]`, `ｴｽﾌﾟﾚｯｿｳｯﾄﾞ = ["sharp"]`, AND `ﾍｱﾗｲﾝｼﾙﾊﾞｰ = []`, `ｱｲﾎﾞﾘｰ = []`
+
+#### Scenario: Cross-sheet synthesis for missing option
+- **WHEN** the override declares `"14": { sharp: "ブラック" }` AND `アーバンシー` ⑭ has only `シルバー` AND `レコリード` ⑭ has `ブラック`
+- **THEN** the seed step copies `レコリード`'s ⑭ ブラック option into `アーバンシー` ⑭ tagged `synthesized: true`, then claims `defaultForVariants: ["sharp"]` on it
+
+#### Scenario: Missing-overridden-option warning
+- **WHEN** an override references an option label that exists on no sheet for the partId
+- **THEN** a `missing-overridden-option` warning naming `(partId, variantKey, optionLabel)` is appended to `finish-options.warnings.json` AND the variant remains unclaimed by any option
+
+#### Scenario: Same-label collapse via override
+- **WHEN** the override declares `"14": { natural: "シルバー", flat: "シルバー", sharp: "ブラック" }`
+- **THEN** `シルバー.defaultForVariants = ["natural", "flat"]` and `ブラック.defaultForVariants = ["sharp"]` (same-label collapse rule already in finish-spec-catalog applies)
+
+### Requirement: Tint-base alternative texture generation
+The seed pipeline SHALL accept a `tintBase` block in `resources/catalog/finish-base-overrides.json`:
+
+```ts
+{
+  ...,
+  tintBase?: {
+    [partId: string]: {
+      label?: string;   // OPTIONAL: omit on color-mode parts (e.g. ⑰ サッシ枠)
+      lift?: number;    // 0..1, default 0
+    }
+  }
+}
+```
+
+`label` is OPTIONAL. When present, the named option's masked variant crop is used as the luminance source for tinting alternatives on the part (texture-mode behavior). When ABSENT, the entry is treated as a color-mode lift directive: `seed:variants` lifts the part's `shading_<id>.png` file in-place by the `lift` factor, suppressing dark shading bands so light `colorHex` values do not read as gray (e.g. ⑰ サッシ枠 with light fill colors).
+
+`lift` ranges 0 (pure multiply, full grain contrast) to 1 (no shading at all). Applied as `Y' = Y + (1 − Y) * lift` before the multiply for texture-mode tinting, or directly to `shading_<id>.png` for color-mode parts.
+
+When `tintBase[partId]` is set with a `label`, `seed:variants` SHALL, for every alternative option (`defaultForVariants: []`) on that part:
+
+1. Resolve the tint-base option by `(partId, label)` and read its `defaultForVariants` to derive the tint-base variant key. The tint-base option MUST have exactly one variant in `defaultForVariants`; otherwise emit a `tint-base-ambiguous-variant` warning and skip the part.
+2. Load `<partId>/_v_<tintBaseVariantKey>.png` and convert RGB to monotone luminance (`Y = 0.2126·R + 0.7152·G + 0.0722·B`), then apply the `lift` factor.
+3. Compute the dominant non-white color of the alternative's `iconUrl` PNG: drop pixels where `min(R, G, B) > 240`, take the channel-wise mean of the rest. If fewer than 5% of pixels remain, emit a `tint-color-low-confidence` warning.
+4. Multiply monotone × dominant color, retain the original mask alpha, and write three byte-identical PNGs `<partId>/<optionId>__natural.png`, `__flat.png`, `__sharp.png` (one per scene variant key).
+5. Set `option.textureUrlByVariant[v] = { url: "/assets/finishes/<partId>/<optionId>__<v>.png", textureBox: <bbox> }` for every variant `v` declared on the scene.
+
+When `tintBase[partId]` is set WITHOUT a `label` (color-mode part), `seed:variants` SHALL instead lift the part's `public/assets/finishes/<partId>/shading_<id>.png` file in-place using `Y' = Y + (1 − Y) * lift`.
+
+Re-running `seed:variants` with unchanged inputs MUST produce byte-identical tinted PNGs (texture-mode) or byte-identical lifted shading files (color-mode).
+
+#### Scenario: Tint-base produces grain-following alternative
+- **WHEN** ⑩'s `tintBase = { label: "ｺｺﾅｯﾂﾁｪﾘｰ" }` AND ⑩ has alternative option `ｶﾞﾅｯｼｭｳｫｰﾙﾅｯﾄ` with iconUrl pointing at a brown-gray swatch
+- **THEN** `seed:variants` emits `10/<gnasshu-id>__natural.png` whose pixels are the ココナッツチェリー luminance pattern multiplied by the brown-gray dominant icon color, AND the option's `textureUrlByVariant["natural"].url` resolves to that file
+
+#### Scenario: Tint-base option with multi-variant default skipped
+- **WHEN** `tintBase = { label: "X" }` AND option `X` has `defaultForVariants: ["natural", "flat"]`
+- **THEN** a `tint-base-ambiguous-variant` warning is appended AND no tint output is emitted for that part
+
+### Requirement: Ambient-fill texture for noEffect options
+For each entry in `finish-variant-mapping.json`'s `noEffect` array, `seed:variants` SHALL generate a per-variant solid-fill texture that erases the visual effect of the part. Each entry MAY tune its sample with three optional fields: `dilate` (1..256, default 16) sets the ring distance in px, `dim` (0..2, default 1) is a brightness multiplier applied to the sampled color, and `targetHex` (`#RRGGBB`) replaces the sampled color entirely with a hand-picked value.
+
+For each entry:
+
+1. For each variant base, dilate the part's mask outward by `dilate` px (default 16; using sharp's `convolve` or equivalent), subtract the original mask → "neighborhood ring".
+2. Compute the mean RGB inside the ring on that variant base. If `targetHex` is set, use that color instead of the sampled mean.
+3. Multiply the resulting RGB by `dim` (default 1).
+4. Emit a solid-RGB PNG sized to the part bbox, alpha = original mask alpha.
+5. Wire as `option.textureUrlByVariant[<variant>]` for every variant declared on the scene.
+
+The output filename follows the same `<partId>/<optionId>__<variant>.png` pattern.
+
+#### Scenario: ② 無 erases indirect-lighting bloom
+- **WHEN** `noEffect: [{ partId: "02", optionLabel: "無" }]` AND the user picks ② 無 on `アーバンシー` Natural
+- **THEN** the ② region renders the mean ceiling color from a 16-px-wide ring around the lighting strip on `base_natural.jpg`, visually erasing the lighting bloom
+
+#### Scenario: noEffect entry pointing at non-existent option warned
+- **WHEN** a `noEffect` entry references a `(partId, optionLabel)` not present in the emitted catalog
+- **THEN** a `missing-no-effect-option` warning is appended and no texture is emitted
 

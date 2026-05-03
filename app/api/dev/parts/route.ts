@@ -9,7 +9,8 @@
 import { NextResponse } from "next/server";
 import { readFile, writeFile, rename, stat, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
-import { partsManifestSchema } from "@/lib/parts/types";
+import { partsManifestSchema, normalizePart } from "@/lib/parts/types";
+import { pointInRing } from "@/lib/parts/hitTest";
 
 const SCENE_DIR = resolve(process.cwd(), "public/assets/base/main");
 const LIVE = resolve(SCENE_DIR, "parts.json");
@@ -18,8 +19,30 @@ const BAK = resolve(SCENE_DIR, "parts.json.bak");
 const EXTRACTED = "/tmp/parts-extracted.json";
 
 function devOnly(): NextResponse | null {
-  if (process.env.NODE_ENV !== "development") {
+  const isLocalDev = process.env.NODE_ENV === "development";
+  const isVercelPreview = process.env.VERCEL_ENV === "preview";
+  if (!isLocalDev && !isVercelPreview) {
     return new NextResponse(null, { status: 404 });
+  }
+  return null;
+}
+
+// Vercel's serverless runtime mounts the deployed app as a read-only
+// filesystem (only /tmp is writable, and even that is per-instance and
+// ephemeral). Any attempt to writeFile/rename under public/ on a preview
+// deploy fails with EROFS. Bail before touching disk so the client gets a
+// clear 503 + "preview-readonly" code instead of a 500 that triggers a
+// 60-second retry loop. Local dev (`process.env.VERCEL` unset) is unaffected.
+function previewReadOnly(): NextResponse | null {
+  if (process.env.VERCEL === "1") {
+    return NextResponse.json(
+      {
+        error: "preview-readonly",
+        message:
+          "プレビュー環境ではディスクへ保存できません。ヘッダの「ダウンロード」から parts.json を取得し、ブランチへコミットしてください。",
+      },
+      { status: 503 },
+    );
   }
   return null;
 }
@@ -59,7 +82,26 @@ export async function GET(request: Request) {
       readFile(LIVE, "utf-8"),
       stat(LIVE),
     ]);
-    const manifest = JSON.parse(raw);
+    const json = JSON.parse(raw);
+    // Normalize legacy `polygon` to `polygons: [{ outer }]` so the client
+    // (TraceTool) always sees the runtime shape regardless of whether
+    // migration has been run on disk yet.
+    const parsed = partsManifestSchema.safeParse(json);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return NextResponse.json(
+        {
+          error: "invalid-on-disk",
+          field: first.path.join("."),
+          message: first.message,
+        },
+        { status: 500 },
+      );
+    }
+    const manifest = {
+      version: parsed.data.version,
+      parts: parsed.data.parts.map((p) => normalizePart(p)),
+    };
     return NextResponse.json({ manifest, mtime: st.mtime.toISOString() });
   } catch (err) {
     return NextResponse.json(
@@ -72,6 +114,8 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   const guard = devOnly();
   if (guard) return guard;
+  const ro = previewReadOnly();
+  if (ro) return ro;
 
   let body: unknown;
   try {
@@ -96,6 +140,38 @@ export async function PUT(request: Request) {
     );
   }
 
+  // Soft geometric-validity warning: a hole whose first vertex sits
+  // outside its parent's outer is almost always an authoring mistake.
+  // We do NOT reject — even-odd fill produces a defined output regardless,
+  // and rejecting would block the designer mid-edit. Just surface a note.
+  const warnings: Array<{ partId: string; polygonIndex: number; holeIndex: number }> = [];
+  for (const raw of parsed.data.parts) {
+    const part = normalizePart(raw);
+    part.polygons.forEach((poly, pi) => {
+      poly.holes?.forEach((hole, hi) => {
+        if (hole.length === 0) return;
+        const [hx, hy] = hole[0];
+        if (!pointInRing(hx, hy, poly.outer)) {
+          warnings.push({ partId: part.id, polygonIndex: pi, holeIndex: hi });
+        }
+      });
+    });
+  }
+
+  // On Vercel preview the deployed filesystem is read-only — the PUT cannot
+  // persist back to disk. Validate the manifest (above) and return success so
+  // the client's autosave clears the "ローカルに保持中" state; the user's
+  // localStorage mirror plus the manual "ダウンロード" → commit workflow is the
+  // canonical persistence path on preview (see resources/reference/AUTHORING.md).
+  if (process.env.VERCEL_ENV === "preview") {
+    const savedAt = new Date().toISOString();
+    return NextResponse.json({
+      savedAt,
+      mtime: savedAt,
+      warnings: warnings.length ? warnings : undefined,
+    });
+  }
+
   const serialized = JSON.stringify(parsed.data, null, 2) + "\n";
 
   try {
@@ -114,6 +190,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       savedAt: new Date().toISOString(),
       mtime: st.mtime.toISOString(),
+      warnings: warnings.length ? warnings : undefined,
     });
   } catch (err) {
     // Best-effort cleanup of stray .tmp on failure.

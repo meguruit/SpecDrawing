@@ -12,26 +12,29 @@ import {
   PartMarkerLayer,
   isPointInsideAnyPart,
 } from "@/components/parts/PartMarkerLayer";
+import {
+  buildExportFilename,
+  formatExportTimestamp,
+} from "@/lib/export/filename";
 
 const MAX_DISPLAY_WIDTH = 1100;
-
-function formatTimestamp(d = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    d.getFullYear().toString() +
-    pad(d.getMonth() + 1) +
-    pad(d.getDate()) +
-    pad(d.getHours()) +
-    pad(d.getMinutes()) +
-    pad(d.getSeconds())
-  );
-}
 
 export default function CanvasStage() {
   const stageRef = useRef<Konva.Stage>(null);
   const scene = useCanvasStore((s) => s.activeScene);
   const parts = useCanvasStore((s) => s.parts);
-  const baseImage = useImage(scene?.baseImageUrl);
+  const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
+  // Resolve which base image to display: when a variant is active, swap to
+  // its `baseImageUrl`. Otherwise fall back to the scene's default base.
+  const baseUrl = useMemo(() => {
+    if (!scene) return undefined;
+    if (activeVariantKey) {
+      const v = scene.variants.find((entry) => entry.key === activeVariantKey);
+      if (v) return v.baseImageUrl;
+    }
+    return scene.baseImageUrl;
+  }, [scene, activeVariantKey]);
+  const baseImage = useImage(baseUrl);
   const clearSelection = useCanvasStore((s) => s.clearSelection);
   const selectPart = useCanvasStore((s) => s.selectPart);
   const exportRequestedAt = useCanvasStore((s) => s.exportRequestedAt);
@@ -64,9 +67,12 @@ export default function CanvasStage() {
           pixelRatio: 1 / displayScale,
           mimeType: "image/png",
         });
+        const ts =
+          useCanvasStore.getState().exportTimestamp ?? formatExportTimestamp();
+        const variantKey = useCanvasStore.getState().activeVariantKey;
         const a = document.createElement("a");
         a.href = dataUrl;
-        a.download = `specdrawing-${sceneNow.id}-${formatTimestamp()}.png`;
+        a.download = buildExportFilename(sceneNow.id, variantKey, ts, "png");
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

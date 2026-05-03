@@ -171,31 +171,62 @@ All variant base files MUST share the same dimensions and camera as the
 default. The seed script `resize`s on dimension mismatch with a warning,
 but a slight mismatch leads to bleeding edges in the cropped piece.
 
-**Override config**
+**Override config — when to add an entry**
 
 `resources/catalog/finish-base-overrides.json` maps `(partId, optionLabel)`
-to a variant key:
+to a variant key. **As of the variant-keyed workbook (2026-04-30), the
+override config is only required for collapsed-label cases** — when the
+same option label appears in MORE THAN ONE Natural / Flat / Sharp column.
+Single-variant labels are auto-derived by `seed:variants` (no entry
+needed).
+
+Auto-derivation rule (in `cut-base-variants.mjs`):
+- For every texture-mode option on a variant-enabled sheet, if
+  `defaultForVariants.length === 1` AND the option has no manual
+  override entry, the seed step automatically points the option's
+  `textureUrl` at `_v_<defaultForVariants[0]>.png`.
+
+When to add an override entry:
+- The option's label appears in 2+ variant columns (collapsed). The
+  manual entry tells the seed step which variant base to crop for the
+  option's static `textureUrl` — this is the fallback used by the
+  runtime when the active variant is NOT in the option's
+  `defaultForVariants` set.
+
+Example — current config (post-cleanup):
 
 ```json
 {
   "version": 1,
   "overrides": {
-    "01": {
-      "ﾁｬｲﾅ大理石(黒)": "sharp",
-      "ﾁｬｲﾅ大理石(白)": "natural"
-    },
-    "12": {
-      "ｸﾚﾏﾌﾞﾛｯｸ": "flat",
-      "ｵﾝﾌﾀﾞｶﾞﾀﾗｲﾄ": "natural",
-      "ﾜｲﾄﾞﾓﾙﾀﾙ": "sharp"
-    }
+    "01": { "ﾁｬｲﾅ大理石(白)": "natural" },     // 白 collapses [natural,flat]; on Sharp use natural cut
+    "05": { "ブラック": "sharp" },              // ブラック collapses [flat,sharp]; on Natural use sharp cut
+    "06": { "ブラック": "sharp" },
+    "08": { "ｼｬﾝﾊﾟﾝﾎﾜｲﾄ": "natural" },        // collapses [natural,flat]; on Sharp use natural cut
+    "09": { "ブラック": "sharp" }
   }
 }
 ```
 
+Notice that ⑫ has NO entry even though it has 3 distinct variant
+labels — each label is single-variant (length 1) and auto-derived
+from `defaultForVariants`. Same for ④, ⑩, ⑬, ⑮.
+
 The same `(partId, optionLabel)` resolves to the same variant on every
-sheet (`アーバンシー`, `レコリード`, …). Options with no entry keep
-their previous behavior (workbook swatch).
+sheet. Options without an entry AND with `defaultForVariants` length
+zero (alternatives in column G+) keep their previous behavior
+(workbook swatch).
+
+**Runtime variant-following rule**: when an option has
+`defaultForVariants` that includes the active variant key (e.g. ⑭
+シルバー collapses across all 3 variants → defaults=[natural,flat,sharp]),
+the canvas uses `option.textureUrlByVariant[activeVariantKey]` so the
+part follows the active variant's base on every switch. Otherwise the
+canvas uses the static `option.textureUrl` (set by override config or
+auto-derive). This decouples "name = appearance" options (e.g. ﾁｬｲﾅ
+大理石(黒) always paints the sharp-base black-marble crop) from
+"variant-driven" options (e.g. ⑭ シルバー hardware naturally follows
+the active room mood).
 
 **Pipeline order**
 
@@ -228,6 +259,224 @@ overrides MUST be `renderMode: "texture"` in `parts.json`. Color-mode
 parts that need variant cuts must be flipped to texture (and the
 `shading` field removed). Example: ⑫ 玄関床 was `color` in earlier
 versions and is `texture` now to support its 3 variant options.
+
+**Runtime variant switching (アーバンシー sheet)**
+
+When a sheet declares `variantsEnabled: true` in
+`public/catalog/sheets.json`, a runtime variant switcher (Natural / Flat /
+Sharp) is shown next to the sheet selector. Switching the variant:
+
+- swaps the canvas backdrop to the matching `base_<variant>.jpg`
+  (declared in `scene.json`'s `variants` array),
+- re-points every texture-mode part's `textureUrl` to
+  `option.textureUrlByVariant[activeVariantKey]`,
+- leaves color-mode parts unchanged (the customer's chosen color persists).
+
+`seed:variants` populates `textureUrlByVariant` for every texture-mode
+option on a variant-enabled sheet using one shared
+`/assets/finishes/<partId>/_v_<variant>.png` per `(partId, variant)` pair.
+A missing `base_<variant>.jpg` makes the seed step exit non-zero.
+
+The accent-cloth carve-out (parts `"07"` キッチンアクセントクロス and
+`"16"` 収納アクセントクロス) stays `renderMode: "color"` so the customer's
+hex color continues to drive their appearance regardless of the active
+variant.
+
+## 部材リスト.xlsx — column conventions
+
+The seed script `extract-finish-options.mjs` (`npm run seed:parts`) reads
+`resources/catalog/部材リスト.xlsx` (canonical name; can be overridden
+via `SPECDRAWING_WORKBOOK=<path> npm run seed:parts`) and emits:
+
+- `public/catalog/finish-options.json` — every option keyed by
+  `(partId, sheet)` with `id`, `label`, `subLabel?`, `productCode?`,
+  `thumbnailUrl`, `iconUrl`, `defaultForVariants[]`, and either
+  `colorHex` (color-mode) or `textureUrl` (texture-mode).
+- `public/catalog/icons/<optionId>.png` — 96×96 icon embedded in the
+  Excel spec-sheet export.
+- `public/catalog/sheets.json` — sheet manifest.
+
+The parser auto-detects the layout per sheet from row 0:
+
+### Variant-keyed layout (current アーバンシー)
+
+Row 0 contains the headers `Natural`, `Flat`, `Sharp` (case-insensitive,
+in any columns):
+
+```
+A         B            C       D         E       F        G          H          ...
+キッチン  画像対応番号  部材名  Natural   Flat    Sharp    [alt 1]    [alt 2]    ...
+          ①           天板    白        白      黒
+                              SP1234    SP1234  SP5678
+          ②           照明    有        有      有       無
+                              SP2001    SP2001  SP2001   光無し
+```
+
+For each part header row:
+- The variant columns (D / E / F here) hold the per-variant defaults.
+  Same-label cells across variants collapse into ONE emitted option
+  whose `defaultForVariants` lists every matching variant key:
+  `白 → ["natural", "flat"]`, `黒 → ["sharp"]`.
+- Columns to the right of the rightmost detected variant column are
+  alternatives — separate options with `defaultForVariants: []` that
+  the customer can swap in.
+- The next 4 rows are scanned for sub-row metadata. A cell matching
+  `/^[A-Za-z0-9][A-Za-z0-9\s\-./]*$/` populates the option's
+  `productCode`; any other non-empty Japanese cell becomes its
+  `subLabel`.
+- Embedded swatch images (anchored via `xl/drawings`) at the same
+  column on row + 1 become the option's `thumbnailUrl` and `iconUrl`.
+  When a collapsed option spans multiple columns, the leftmost source
+  column's swatch wins; if it is missing, fall back to the next column.
+  Variant-default labels for which the workbook does NOT supply a
+  swatch (because the variant base itself shows them — e.g. ② 有 with
+  no overlay needed) get gray placeholder thumbnails.
+
+### Legacy layout (current レコリード)
+
+Row 0 is missing one or more variant headers. Parser falls back to the
+legacy "every column under a part header is a sequential option":
+
+```
+A         B            C       D         E       F        ...
+キッチン  画像対応番号  部材名  [opt 1]   [opt 2] [opt 3]
+```
+
+Every emitted option has `defaultForVariants: []`. The legacy fallback
+exists so sheets in transition coexist with already-migrated sheets.
+
+### Variant override config
+
+Per-option base-variant overrides live in
+`resources/catalog/finish-base-overrides.json` and map
+`(partId, optionLabel)` to a variant key. `seed:variants` cuts the
+matching variant base at the part's mask region and rewrites the
+option's `textureUrl` to the cropped piece. This lets a customer pick
+"ﾁｬｲﾅ大理石(黒)" on the natural variant and still see black marble
+(the override config maps `黒 → sharp`, and the sharp-base crop is
+overlaid on the natural backdrop).
+
+### Tint-base for alternative options
+
+`finish-base-overrides.json` also accepts a `tintBase` block per part:
+
+```json
+"tintBase": {
+  "10": { "label": "ｺｺﾅｯﾂﾁｪﾘｰ", "lift": 0.35 },
+  "13": { "label": "ｸﾞﾚｰｼﾞｭ", "lift": 0.35 },
+  "15": { "label": "ﾅﾗ樫", "lift": 0.15 },
+  "17": { "lift": 0.5 }
+}
+```
+
+`label` is **omitted** for color-mode parts (e.g. ⑰ サッシ枠). When
+absent, the entry switches mode: `seed:variants` lifts the part's
+`shading_<id>.png` file in-place using the same `Y' = Y + (255 - Y) * lift`
+formula. This suppresses dark shading bands so `colorHex` values render
+closer to their nominal hue (especially helpful for white/light hex
+values that otherwise read as gray after the shading multiply). The
+original shading is preserved as `shading_<id>.orig.png` so re-runs are
+idempotent (never compound the lift).
+
+When set, every alternative option (`defaultForVariants: []`) on that
+part receives a per-variant **tinted** PNG: the named tint-base option's
+masked variant base is converted to monotone luminance, then multiplied
+by the alternative's icon color. The result preserves the wood-grain
+detail from the base finish while shifting hue toward each option's
+swatch. Output files: `<partId>/<optionId>__<variantKey>.png` × 3
+(byte-identical across variants — kept three so each entry in
+`textureUrlByVariant` has a unique URL for cache-bust).
+
+`lift` (0..1, default 0) **suppresses the dark grain bands before the
+multiply**. Pure multiply (`lift: 0`) crushes light icon colors —
+white / ivory swatches collapse toward gray because the dark bands of
+the wood grain dominate. The lift formula is `Y' = Y + (1 - Y) * lift`,
+which pulls the luminance map toward white while preserving relative
+contrast. Tuning notes:
+
+- **Wood-grain doors / panels (⑩, ⑬)**: 0.5–0.6 keeps grain visible while
+  letting light swatches read as light.
+- **Floors (⑮)**: 0.1–0.2 — the floor grain is subtler and benefits from
+  more contrast. Most floor alternatives are mid-tone, so the dark crush
+  is less noticeable.
+- **Sweep**: bump in 0.1 increments and re-run `npm run seed:variants`
+  until the lightest icon-color alternative reads correctly.
+
+The tint-base option MUST claim exactly one variant in its
+`defaultForVariants` so the seed step knows which variant base to use as
+the luminance source. If it claims multiple, the seed emits a
+`tint-base-ambiguous-variant` warning and skips the part.
+
+### Finish-variant-mapping config
+
+`resources/catalog/finish-variant-mapping.json` is a designer-owned
+override layer applied AFTER the workbook is parsed. It has three
+independent blocks:
+
+1. **`overrides`** — re-assign which option claims each
+   `(partId, variantKey)`. Use this when the customer-prepared workbook
+   has the wrong label in the Natural / Flat / Sharp column. Format:
+
+   ```json
+   "overrides": {
+     "10": { "natural": "ｺｺﾅｯﾂﾁｪﾘｰ", "flat": "ﾀﾞｰｼﾞﾘﾝｳｫﾙﾅｯﾄ", "sharp": "ｴｽﾌﾟﾚｯｿｳｯﾄﾞ" }
+   }
+   ```
+
+   Adds the variant to the named option's `defaultForVariants` and strips
+   it from any prior claimant on the same `(partId, sheet)`.
+
+   When the named label doesn't exist on the primary sheet (`アーバンシー`)
+   but exists on a sibling sheet (e.g. `レコリード`), the seed step
+   **synthesizes** a copy onto the primary sheet, preserving icon /
+   product code / sub-label, and tags it `synthesized: true`. This is how
+   ⑭ ブラック shows up on `アーバンシー` even though the workbook only lists
+   it on `レコリード`.
+
+2. **`noEffect`** — list of `(partId, optionLabel)` pairs that should
+   render as an **ambient-fill** texture: the seed step samples the mean
+   RGB of a 16-px ring just outside the part mask in each variant base
+   and emits a solid-fill PNG. The part region visually erases by adopting
+   its surroundings. Used for ② キッチン間接照明 *無* (turning off the
+   lighting bloom). Format:
+
+   ```json
+   "noEffect": [
+     { "partId": "02", "optionLabel": "無" }
+   ]
+   ```
+
+3. **`colorHexByVariant`** — per-variant `#RRGGBB` overrides for
+   color-mode options on a variant-enabled sheet. Materializes into
+   `option.colorHexByVariant`. The runtime resolves
+   `colorHexByVariant[activeVariantKey] ?? colorHex` so options can carry
+   a per-variant palette while keeping the static `colorHex` as the
+   fallback. Used for ⑰ サッシ枠 to harmonize the sash with each base
+   perspective. Format:
+
+   ```json
+   "colorHexByVariant": {
+     "17": {
+       "カームブラック": { "natural": "#484d4a", "flat": "#484d4b", "sharp": "#494e4c" }
+     }
+   }
+   ```
+
+   To bootstrap a starter palette, run
+   `node scripts/suggest-sash-palette.mjs [ringWidthPx] [blendWeight]` —
+   it samples the mean wall color around ⑰ in each variant base and
+   prints suggested per-variant hex values blended toward that wall.
+
+### Auditing finish-options consistency
+
+`node scripts/audit-finish-options.mjs [partIds...]` walks every option
+on the primary sheet for the listed parts (default: `02 10 11 13 14 15
+17`) and flags `(label, iconUrl, dominant texture color)` divergences.
+Useful before a customer demo to catch workbook-level mistakes that the
+override config didn't catch. The default distance threshold (80 in
+sRGB) is tuned conservatively — a tinted-alternative texture will appear
+darker than its icon (multiply blend), which the script flags but is
+intended behavior for `tintBase` parts.
 
 ## /dev/trace workflow
 
@@ -293,8 +542,87 @@ The choice persists across sessions in localStorage.
 `ダウンロード` in the header still emits a `parts.json` file the same way
 as before. Use it if the dev API is unavailable for any reason.
 
+**Editing on a Vercel preview deploy**
+
+`/dev/trace` is reachable on every Vercel preview deployment (per branch
+/ PR) for **reads only** — `GET /api/dev/parts` returns the deployed
+`parts.json`, so designers can load and edit polygons against the same
+hosted environment the customer will see. `PUT` and `POST` (autosave +
+mask regen) return `503 preview-readonly` on Vercel because the
+serverless runtime mounts the deployed app as a read-only filesystem
+(only `/tmp` is writable, and even that is per-instance and ephemeral).
+
+**The persistence path on preview is browser localStorage + manual
+commit.** The autosave UI surfaces a terminal
+`プレビューは保存不可 — ダウンロードしてコミット` status (no retry loop)
+to steer designers to:
+
+1. Make changes in `/dev/trace`; edits land in your browser's
+   localStorage immediately (no disk roundtrip needed).
+2. Click `ダウンロード` in the header to save the updated `parts.json`
+   to your local machine.
+3. Replace the repo's `public/assets/base/main/parts.json` with the
+   downloaded file, commit to the branch, and push.
+4. The next preview build serves the committed `parts.json`. If
+   polygons changed, run `npm run seed:masks` locally first (mask regen
+   also returns `503 preview-readonly` on Vercel) and commit the
+   updated `mask_<NN>.png` / `shading_<NN>.png` files alongside.
+
+Production deploys (`VERCEL_ENV === "production"`) hide the editor
+entirely — `/api/dev/parts*` returns 404 and the `/dev/trace` UI shows a
+placeholder ("本番環境では `/dev/trace` は無効です").
+
 **Validation**
 
 The dev API runs the request body through the same Zod schema the runtime
 uses. A malformed manifest returns 422 with the failing field path; the
 on-disk file is left untouched and the localStorage draft is preserved.
+
+## Multi-ring polygons (`polygons` schema)
+
+Each part's geometry is now a `polygons: Array<{ outer, holes? }>` field
+instead of the single `polygon` field. Each entry is one disjoint region of
+the part; `outer` is the region's outer ring and `holes` (optional) are
+rings cut out of that outer.
+
+Two authoring patterns this enables:
+
+- **Multi-region parts** — e.g. ⑬ closet doors as two outer rings, one per
+  door slab. The hit-test treats either region as a click on ⑬.
+- **Holed parts** — e.g. ⑰ サッシ枠 as one outer rectangle (the frame's
+  outer edge) with one hole rectangle (the glass). Clicks inside the hole
+  fall through; clicks on the frame ring select ⑰.
+
+### Migrating an existing `parts.json`
+
+The repository keeps existing single-polygon parts working for one release
+via a loader compatibility shim, but new authoring should use `polygons`.
+Migrate in one shot:
+
+```bash
+npm run migrate:multiring   # rewrites parts.json: polygon → polygons[0].outer
+npm run seed:masks          # regenerates every mask under the new sidecar hash
+```
+
+The migration is idempotent — re-running on an already-migrated file is a
+no-op.
+
+### Authoring sub-polygons and holes in `/dev/trace`
+
+(UI shipping in this change; documented here for reference.)
+
+- **`ポリゴンを追加`** appends a new `{ outer: [], holes: [] }` to the
+  active part. The next canvas clicks build that entry's outer ring.
+- **`穴を追加`** toggles hole-build mode under the active outer. The next
+  click sequence builds a new hole; toggle off (or right-click `穴を完了`)
+  to return to outer-edit.
+- The side panel groups vertices by `polygons[i] / outer` and
+  `polygons[i] / hole j`. Active sub-polygon and active hole are
+  highlighted.
+
+### Soft validation
+
+- A hole MUST have ≥ 3 vertices (Zod-enforced; an in-progress hole with
+  fewer triggers a 422 at autosave).
+- The dev API also warns (non-blocking) when a hole's first vertex is
+  geometrically outside its parent outer — likely an authoring mistake.

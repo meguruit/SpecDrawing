@@ -19,7 +19,7 @@
 //
 // Run with: npm run seed:parts
 
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -27,11 +27,49 @@ import AdmZip from "adm-zip";
 import * as XLSX from "xlsx";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const XLSX_PATH = resolve(ROOT, "resources/catalog/部材リスト.xlsx");
+const CATALOG_DIR = resolve(ROOT, "resources/catalog");
+
+// Resolve the workbook path. The script honours an explicit
+// SPECDRAWING_WORKBOOK env var first, then prefers the canonical
+// `部材リスト.xlsx`, then falls back to the most recent date-suffixed
+// `部材リスト_<YYYYMMDD>.xlsx` in the catalog directory. Subdirectories
+// (e.g. `old/`) are ignored.
+async function resolveWorkbookPath() {
+  if (process.env.SPECDRAWING_WORKBOOK) {
+    return resolve(process.env.SPECDRAWING_WORKBOOK);
+  }
+  const canonical = resolve(CATALOG_DIR, "部材リスト.xlsx");
+  const entries = await readdir(CATALOG_DIR, { withFileTypes: true });
+  const hasCanonical = entries.some(
+    (e) => e.isFile() && e.name === "部材リスト.xlsx",
+  );
+  if (hasCanonical) return canonical;
+  const dated = entries
+    .filter((e) => e.isFile() && /^部材リスト.*\.xlsx$/.test(e.name))
+    .map((e) => e.name)
+    .sort();
+  if (dated.length === 0) {
+    throw new Error(`No 部材リスト*.xlsx found under ${CATALOG_DIR}`);
+  }
+  return resolve(CATALOG_DIR, dated[dated.length - 1]);
+}
 const PARTS_JSON = resolve(ROOT, "public/assets/base/main/parts.json");
 const OUT_JSON = resolve(ROOT, "public/catalog/finish-options.json");
 const OUT_WARN = resolve(ROOT, "public/catalog/finish-options.warnings.json");
+const OUT_SHEETS = resolve(ROOT, "public/catalog/sheets.json");
+const ICONS_DIR = resolve(ROOT, "public/catalog/icons");
 const FINISHES_DIR = resolve(ROOT, "public/assets/finishes");
+
+// Sheets that opt into the runtime variant switcher. Keep in lockstep with
+// scene.json's `variants[]`. アーバンシー's defaultVariantKey here MUST match
+// a variant key registered on the scene.
+const VARIANT_ENABLED_SHEETS = {
+  "アーバンシー": { defaultVariantKey: "natural" },
+};
+// Icon size used for the Excel spec-sheet export. The seed step copies each
+// option's swatch into public/catalog/icons/<optionId>.png at this resolution
+// until the customer-prepared 部材リスト.xlsx ships dedicated icon assets.
+const ICON_EDGE = 96;
 const SCENE_W = 3000;
 const SCENE_H = 2142;
 // Downsample workbook swatches to keep public/ small. Texture-mode parts use
@@ -155,7 +193,10 @@ function buildCellImageMap(buf, workbook) {
       const text = block[0];
       const fromCol = readInt(text, /<xdr:from>[\s\S]*?<xdr:col>(\d+)<\/xdr:col>/);
       const fromRow = readInt(text, /<xdr:from>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>/);
-      const blip = text.match(/<a:blip\s+([^/>]+)\/?>/);
+      // Note: cannot use `[^/>]+` here because xmlns:r URLs in modern
+      // workbooks contain `/` (e.g. `xmlns:r="http://..."`) — those break
+      // out of the character class. Match up to the closing `>` instead.
+      const blip = text.match(/<a:blip\b([^>]*?)\/?>/);
       if (fromCol === null || fromRow === null || !blip) continue;
       const blipAttrs = parseAttrs(blip[1]);
       const rid = blipAttrs["r:embed"];
@@ -236,17 +277,65 @@ function rgbToHex([r, g, b]) {
   return `#${h(r)}${h(g)}${h(b)}`.toUpperCase();
 }
 
-// Parse a single sheet into an array of { partId, label, options:[{ index, label, productCode?, cellRef }] }.
-function parsePartsFromSheet(sheet) {
+// Detect Natural / Flat / Sharp column indices from row 0. Returns
+// `{ variantCols: { natural, flat, sharp }, altStartCol }` or `null`
+// if any required header is missing.
+const REQUIRED_VARIANTS = ["natural", "flat", "sharp"];
+
+function detectVariantColumns(headerRow) {
+  if (!Array.isArray(headerRow)) return null;
+  const cols = {};
+  for (let c = 0; c < headerRow.length; c++) {
+    const v = headerRow[c];
+    if (typeof v !== "string") continue;
+    const key = v.trim().toLowerCase();
+    if (REQUIRED_VARIANTS.includes(key) && cols[key] === undefined) {
+      cols[key] = c;
+    }
+  }
+  for (const k of REQUIRED_VARIANTS) {
+    if (cols[k] === undefined) return null;
+  }
+  const variantColIndices = REQUIRED_VARIANTS.map((k) => cols[k]);
+  const lastVariantCol = Math.max(...variantColIndices);
+  return {
+    variantCols: cols,
+    variantColIndices,
+    altStartCol: lastVariantCol + 1,
+  };
+}
+
+// Parse a single sheet. Auto-detects the layout from row 0:
+// - If `Natural`/`Flat`/`Sharp` headers are present, uses the variant-keyed
+//   layout (collapsed variant defaults + alternatives).
+// - Otherwise falls back to the legacy "every column under the part header
+//   is a separate option" layout. Legacy options carry `defaultForVariants: []`.
+//
+// Returns `{ parts: [...], layout: "variant-keyed" | "legacy" }`.
+function parsePartsFromSheet(sheet, displayName) {
   const rows = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
     defval: null,
     raw: false,
     blankrows: true,
   });
+  const headerCols = detectVariantColumns(rows[0]);
+  if (!headerCols) {
+    return {
+      layout: "legacy",
+      parts: parsePartsFromSheetLegacy(rows),
+    };
+  }
+  return {
+    layout: "variant-keyed",
+    parts: parsePartsFromSheetVariantKeyed(rows, headerCols),
+  };
+}
+
+function parsePartsFromSheetLegacy(rows) {
   const parts = [];
   let current = null;
-  let trailingRowBudget = 0; // how many subsequent rows to scan for product codes / sub-labels
+  let trailingRowBudget = 0;
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r];
     const numCell = row?.[1] ?? null;
@@ -259,37 +348,151 @@ function parsePartsFromSheet(sheet) {
         options: [],
         headerRow: r,
       };
-      // Capture option labels from columns D onward (index 3+).
-      // Embedded swatch images are anchored one row BELOW the header (the visual row),
-      // so look up images at (col, headerRow + 1).
-      for (let c = 3; c < (row?.length ?? 0); c++) {
+      const maxCol = row?.length ?? 0;
+      for (let c = 3; c < maxCol; c++) {
         const v = row[c];
-        if (typeof v === "string" && v.trim()) {
-          current.options.push({
-            index: c - 3,
-            label: v.replace(/\s+/g, " ").trim(),
-            productCode: undefined,
-            cellRef: cellRef(c, r + 1),
-          });
-        }
+        if (typeof v !== "string" || !v.trim()) continue;
+        current.options.push({
+          slot: "alternative",
+          label: v.replace(/\s+/g, " ").trim(),
+          sourceCols: [c],
+          defaultForVariants: [],
+          productCode: undefined,
+          subLabel: undefined,
+          cellRef: cellRef(c, r + 1),
+        });
       }
       parts.push(current);
-      trailingRowBudget = 4; // scan up to 4 trailing rows
+      trailingRowBudget = 4;
       continue;
     }
     if (current && trailingRowBudget > 0) {
-      // Scan D+ for product codes mapping to existing options by column index.
       let anyMatched = false;
-      for (let c = 3; c < (row?.length ?? 0); c++) {
-        const v = row[c];
+      for (const opt of current.options) {
+        const col = opt.sourceCols[0];
+        const v = row?.[col];
         if (typeof v !== "string" || !v.trim()) continue;
         anyMatched = true;
-        const opt = current.options.find((o) => o.index === c - 3);
-        if (opt) {
-          if (looksLikeProductCode(v) && !opt.productCode) {
-            opt.productCode = v.trim();
+        const trimmed = v.trim();
+        if (looksLikeProductCode(trimmed) && !opt.productCode) {
+          opt.productCode = trimmed;
+        } else if (!opt.subLabel) {
+          opt.subLabel = trimmed;
+        }
+      }
+      trailingRowBudget--;
+      if (!anyMatched) trailingRowBudget = Math.min(trailingRowBudget, 1);
+      continue;
+    }
+  }
+  return parts;
+}
+
+function parsePartsFromSheetVariantKeyed(rows, headerCols) {
+  const parts = [];
+  let current = null;
+  let trailingRowBudget = 0;
+
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    const numCell = row?.[1] ?? null;
+    const labelCell = row?.[2] ?? null;
+    const partId = partIdFromCircled(typeof numCell === "string" ? numCell : "");
+
+    if (partId && typeof labelCell === "string") {
+      // New part header. Read variant-default labels (collapsing same-label
+      // duplicates) and alternatives.
+      current = {
+        partId,
+        label: labelCell.replace(/\s+/g, " ").trim(),
+        options: [],
+        headerRow: r,
+      };
+
+      // Variant defaults: one entry per distinct label across the three
+      // variant columns. Maintains workbook order.
+      const labelToOption = new Map();
+      for (const variantKey of REQUIRED_VARIANTS) {
+        const col = headerCols.variantCols[variantKey];
+        const v = row?.[col];
+        if (typeof v !== "string" || !v.trim()) continue;
+        const trimmedLabel = v.replace(/\s+/g, " ").trim();
+        let opt = labelToOption.get(trimmedLabel);
+        if (!opt) {
+          opt = {
+            slot: "variant-default",
+            label: trimmedLabel,
+            sourceCols: [],
+            defaultForVariants: [],
+            productCode: undefined,
+            subLabel: undefined,
+            cellRef: cellRef(col, r + 1),
+          };
+          labelToOption.set(trimmedLabel, opt);
+          current.options.push(opt);
+        }
+        opt.sourceCols.push(col);
+        opt.defaultForVariants.push(variantKey);
+      }
+
+      // Alternatives: every non-empty cell strictly to the right of the
+      // variant block, each becomes its own option.
+      const maxCol = row?.length ?? 0;
+      for (let c = headerCols.altStartCol; c < maxCol; c++) {
+        const v = row[c];
+        if (typeof v !== "string" || !v.trim()) continue;
+        const trimmedLabel = v.replace(/\s+/g, " ").trim();
+        current.options.push({
+          slot: "alternative",
+          label: trimmedLabel,
+          sourceCols: [c],
+          defaultForVariants: [],
+          productCode: undefined,
+          subLabel: undefined,
+          cellRef: cellRef(c, r + 1),
+        });
+      }
+
+      parts.push(current);
+      trailingRowBudget = 4;
+      continue;
+    }
+
+    if (current && trailingRowBudget > 0) {
+      // Sub-row scan: classify each option's source-column cells in this row
+      // as productCode (alphanumeric pattern) or subLabel (other Japanese text).
+      // For collapsed variant-default options, the leftmost source column wins;
+      // a `label-collapse-product-code-conflict` warning fires when later
+      // columns disagree.
+      let anyMatched = false;
+      for (const opt of current.options) {
+        let codeFromCol = null;
+        let subFromCol = null;
+        const conflictingCodes = new Set();
+        for (const col of opt.sourceCols) {
+          const v = row?.[col];
+          if (typeof v !== "string" || !v.trim()) continue;
+          anyMatched = true;
+          const trimmed = v.trim();
+          if (looksLikeProductCode(trimmed)) {
+            if (codeFromCol === null) {
+              codeFromCol = trimmed;
+            } else if (codeFromCol !== trimmed) {
+              conflictingCodes.add(codeFromCol);
+              conflictingCodes.add(trimmed);
+            }
+          } else if (subFromCol === null) {
+            subFromCol = trimmed;
           }
-          // sub-labels (Japanese) are ignored to keep MVP shape simple
+        }
+        if (codeFromCol && !opt.productCode) {
+          opt.productCode = codeFromCol;
+          if (conflictingCodes.size > 1) {
+            opt.__codeConflict = Array.from(conflictingCodes);
+          }
+        }
+        if (subFromCol && !opt.subLabel) {
+          opt.subLabel = subFromCol;
         }
       }
       trailingRowBudget--;
@@ -311,11 +514,13 @@ function slugifyLabel(label, fallbackIndex) {
 }
 
 async function main() {
-  const buf = await readFile(XLSX_PATH);
+  const xlsxPath = await resolveWorkbookPath();
+  console.log(`✓ workbook: ${xlsxPath}`);
+  const buf = await readFile(xlsxPath);
   // LFS pointer guard
   if (buf.slice(0, 60).toString("utf-8").startsWith("version https://git-lfs.github.com/spec/v1")) {
     throw new Error(
-      `${XLSX_PATH} is an unresolved Git LFS pointer file.\n` +
+      `${xlsxPath} is an unresolved Git LFS pointer file.\n` +
         `Run \`git lfs install && git lfs pull\` and retry.`,
     );
   }
@@ -330,8 +535,9 @@ async function main() {
   );
   const knownPartIds = new Set(partsManifest.parts.map((p) => p.id));
 
-  // Wipe finishes dir for a clean idempotent run.
+  // Wipe finishes and icons dirs for a clean idempotent run.
   await rm(FINISHES_DIR, { recursive: true, force: true });
+  await rm(ICONS_DIR, { recursive: true, force: true });
 
   const outOptions = [];
   const warnings = [];
@@ -344,7 +550,8 @@ async function main() {
     const displayName = normalizeSheetName(rawSheetName);
     const sheet = wb.Sheets[rawSheetName];
     const cellImages = cellImagesBySheet[rawSheetName] ?? new Map();
-    const sheetParts = parsePartsFromSheet(sheet);
+    const { layout, parts: sheetParts } = parsePartsFromSheet(sheet, displayName);
+    console.log(`✓ sheet "${displayName}" parsed (${layout} layout, ${sheetParts.length} parts)`);
 
     for (const part of sheetParts) {
       if (!knownPartIds.has(part.partId)) {
@@ -358,9 +565,10 @@ async function main() {
         continue;
       }
       const renderMode = partRenderMode.get(part.partId);
-      for (const opt of part.options) {
-        const slug = slugifyLabel(opt.label, opt.index);
-        const optionId = `${part.partId}-${sheetSlug(displayName)}-${opt.index}-${slug}`;
+      for (let optIndex = 0; optIndex < part.options.length; optIndex++) {
+        const opt = part.options[optIndex];
+        const slug = slugifyLabel(opt.label, optIndex);
+        const optionId = `${part.partId}-${sheetSlug(displayName)}-${optIndex}-${slug}`;
         if (seenIds.has(optionId)) {
           warnings.push({
             kind: "duplicate-id",
@@ -372,8 +580,28 @@ async function main() {
         }
         seenIds.add(optionId);
 
-        const imgBuf = cellImages.get(opt.cellRef);
+        // For collapsed variant-default options, cellRef is set to the
+        // leftmost source column on the header row + 1. If that lookup
+        // misses, fall back to the next source column.
+        let imgBuf = cellImages.get(opt.cellRef);
+        if (!imgBuf && opt.sourceCols && opt.sourceCols.length > 1) {
+          for (let i = 1; i < opt.sourceCols.length && !imgBuf; i++) {
+            const fallback = cellRef(opt.sourceCols[i], part.headerRow + 1);
+            imgBuf = cellImages.get(fallback);
+          }
+        }
         const isNone = isNoChangeLabel(opt.label);
+
+        if (opt.__codeConflict) {
+          warnings.push({
+            kind: "label-collapse-product-code-conflict",
+            partId: part.partId,
+            optionId,
+            label: opt.label,
+            codes: opt.__codeConflict,
+            message: `option ${opt.label} on part ${part.partId} has conflicting product codes across collapsed variant columns: ${opt.__codeConflict.join(", ")}`,
+          });
+        }
 
         let thumbnailUrl;
         let colorHex;
@@ -469,13 +697,42 @@ async function main() {
           }
         }
 
+        // Icon for the Excel spec-sheet export. Until the customer-prepared
+        // 部材リスト.xlsx ships dedicated icon assets, copy the swatch as a
+        // 96×96 PNG. Same image bytes as `thumbnailUrl` would be wasteful;
+        // emit a separate file so the customer can later swap them
+        // independently without retouching swatch chips.
+        const iconPath = resolve(ICONS_DIR, `${optionId}.png`);
+        await ensureDir(iconPath);
+        if (imgBuf) {
+          await sharp(imgBuf)
+            .resize({ width: ICON_EDGE, height: ICON_EDGE, fit: "cover" })
+            .png({ compressionLevel: 9 })
+            .toFile(iconPath);
+        } else {
+          await sharp({
+            create: {
+              width: ICON_EDGE,
+              height: ICON_EDGE,
+              channels: 4,
+              background: { r: 220, g: 220, b: 220, alpha: 1 },
+            },
+          })
+            .png()
+            .toFile(iconPath);
+        }
+        const iconUrl = `/catalog/icons/${optionId}.png`;
+
         outOptions.push({
           id: optionId,
           partId: part.partId,
           sheet: displayName,
           label: opt.label,
+          ...(opt.subLabel ? { subLabel: opt.subLabel } : {}),
           ...(opt.productCode ? { productCode: opt.productCode } : {}),
           thumbnailUrl,
+          iconUrl,
+          defaultForVariants: opt.defaultForVariants ?? [],
           ...(colorHex ? { colorHex } : {}),
           ...(textureUrl ? { textureUrl } : {}),
         });
@@ -490,8 +747,31 @@ async function main() {
   );
   await writeFile(OUT_WARN, JSON.stringify(warnings, null, 2));
 
+  // Emit the sheets manifest. Every distinct sheet in the workbook becomes
+  // an entry; sheets in VARIANT_ENABLED_SHEETS get variantsEnabled=true and
+  // their declared defaultVariantKey.
+  const sheetsSeen = Array.from(new Set(outOptions.map((o) => o.sheet)));
+  const sheetsManifest = {
+    version: 1,
+    sheets: sheetsSeen.map((key) => {
+      const cfg = VARIANT_ENABLED_SHEETS[key];
+      if (cfg) {
+        return {
+          key,
+          label: key,
+          variantsEnabled: true,
+          defaultVariantKey: cfg.defaultVariantKey,
+        };
+      }
+      return { key, label: key, variantsEnabled: false };
+    }),
+  };
+  await ensureDir(OUT_SHEETS);
+  await writeFile(OUT_SHEETS, JSON.stringify(sheetsManifest, null, 2));
+
   console.log(`✓ wrote ${outOptions.length} options to ${OUT_JSON}`);
   console.log(`✓ wrote ${warnings.length} warnings to ${OUT_WARN}`);
+  console.log(`✓ wrote sheets manifest to ${OUT_SHEETS}`);
 }
 
 main().catch((err) => {

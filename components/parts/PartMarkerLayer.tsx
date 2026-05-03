@@ -5,6 +5,7 @@ import { Layer, Circle, Text, Line } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { useCanvasStore } from "@/lib/canvas/store";
 import type { Part } from "@/lib/parts/types";
+import { findPartAt } from "@/lib/parts/hitTest";
 
 const CATEGORY_COLOR: Record<string, string> = {
   キッチン: "#F97316",
@@ -18,23 +19,6 @@ const CATEGORY_COLOR: Record<string, string> = {
 
 function categoryColor(category: string): string {
   return CATEGORY_COLOR[category] ?? "#64748B";
-}
-
-function pointInPolygon(
-  x: number,
-  y: number,
-  polygon: ReadonlyArray<readonly [number, number]>,
-): boolean {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, yi] = polygon[i];
-    const [xj, yj] = polygon[j];
-    const intersect =
-      yi > y !== yj > y &&
-      x < ((xj - xi) * (y - yi)) / (yj - yi + 1e-9) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
 }
 
 const CIRCLED_DIGITS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
@@ -92,37 +76,77 @@ function PartMarker({
 }) {
   const color = categoryColor(part.category);
 
-  // Flatten polygon for Konva Line.
-  const flatPoints = useMemo(
-    () => part.polygon.flatMap(([x, y]) => [x, y]),
-    [part.polygon],
-  );
+  // Each polygon entry contributes one outer hit-target Line plus a dashed
+  // outline Line, and each hole contributes its own outline (no hit-target —
+  // clicks inside a hole fall through).
+  const rings = useMemo(() => {
+    const out: Array<{
+      key: string;
+      kind: "outer" | "hole";
+      points: number[];
+    }> = [];
+    part.polygons.forEach((poly, pi) => {
+      out.push({
+        key: `p${pi}-outer`,
+        kind: "outer",
+        points: poly.outer.flatMap(([x, y]) => [x, y]),
+      });
+      poly.holes?.forEach((hole, hi) => {
+        out.push({
+          key: `p${pi}-hole-${hi}`,
+          kind: "hole",
+          points: hole.flatMap(([x, y]) => [x, y]),
+        });
+      });
+    });
+    return out;
+  }, [part.polygons]);
 
   const showOutline = isSelected || isHovered;
 
   return (
     <Fragment>
-      {/* Invisible polygon for hit-testing the whole part region */}
-      <Line
-        points={flatPoints}
-        closed
-        stroke={showOutline ? color : undefined}
-        strokeWidth={showOutline ? 6 : 0}
-        dash={showOutline ? [16, 12] : undefined}
-        fill="rgba(0,0,0,0.001)"
-        listening
-        hitStrokeWidth={0}
-        onMouseEnter={() => onHoverChange(true)}
-        onMouseLeave={() => onHoverChange(false)}
-        onClick={(e: KonvaEventObject<MouseEvent>) => {
-          e.cancelBubble = true;
-          onSelect();
-        }}
-        onTap={(e: KonvaEventObject<TouchEvent>) => {
-          e.cancelBubble = true;
-          onSelect();
-        }}
-      />
+      {rings.map((r) =>
+        r.kind === "outer" ? (
+          // Outer rings: hit-target with a near-transparent fill so clicks
+          // inside the region select the part. Mouse hover toggles outline.
+          <Line
+            key={r.key}
+            points={r.points}
+            closed
+            stroke={showOutline ? color : undefined}
+            strokeWidth={showOutline ? 6 : 0}
+            dash={showOutline ? [16, 12] : undefined}
+            fill="rgba(0,0,0,0.001)"
+            listening
+            hitStrokeWidth={0}
+            onMouseEnter={() => onHoverChange(true)}
+            onMouseLeave={() => onHoverChange(false)}
+            onClick={(e: KonvaEventObject<MouseEvent>) => {
+              e.cancelBubble = true;
+              onSelect();
+            }}
+            onTap={(e: KonvaEventObject<TouchEvent>) => {
+              e.cancelBubble = true;
+              onSelect();
+            }}
+          />
+        ) : (
+          // Hole rings: outline only, no hit-target. Use a shorter dash
+          // pattern to distinguish from outer rings on hover.
+          showOutline ? (
+            <Line
+              key={r.key}
+              points={r.points}
+              closed
+              stroke={color}
+              strokeWidth={4}
+              dash={[6, 6]}
+              listening={false}
+            />
+          ) : null
+        ),
+      )}
       {/* Numbered marker */}
       <Circle
         x={part.marker.x}
@@ -163,14 +187,13 @@ function PartMarker({
   );
 }
 
+// Programmatic hit-test for callers outside the marker layer (e.g.
+// click-on-stage handlers that need to know which part a coordinate falls
+// into without going through Konva's event system).
 export function isPointInsideAnyPart(
   x: number,
   y: number,
   parts: Part[],
 ): string | null {
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const p = parts[i];
-    if (pointInPolygon(x, y, p.polygon)) return p.id;
-  }
-  return null;
+  return findPartAt(x, y, parts);
 }

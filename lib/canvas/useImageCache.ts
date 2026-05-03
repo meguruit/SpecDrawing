@@ -4,6 +4,24 @@ import { useEffect, useState } from "react";
 
 const cache = new Map<string, HTMLImageElement>();
 
+/**
+ * Warm the image cache for a list of URLs without subscribing to load state.
+ * Used to pre-fetch the inactive variant crops of selected texture-mode parts
+ * so subsequent variant switches hit the browser cache instead of triggering
+ * a visible reload.
+ */
+export function prefetchImages(urls: Array<string | undefined>): void {
+  if (typeof window === "undefined") return;
+  for (const url of urls) {
+    if (!url) continue;
+    if (cache.has(url)) continue;
+    const el = new window.Image();
+    el.crossOrigin = "anonymous";
+    el.src = url;
+    cache.set(url, el);
+  }
+}
+
 export function useImage(src: string | undefined): HTMLImageElement | null {
   const [img, setImg] = useState<HTMLImageElement | null>(() =>
     src ? cache.get(src) ?? null : null,

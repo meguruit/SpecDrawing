@@ -23,31 +23,54 @@ import { resolve } from "node:path";
 import sharp from "sharp";
 import {
   partsManifestSchema,
+  normalizePart,
   type Part,
   type PartsManifest,
 } from "@/lib/parts/types";
 import { sceneSchema } from "@/lib/scenes/types";
 import { regenPartsAssets } from "@/lib/dev/regenAssets";
 
+const PUBLIC_DIR = resolve(process.cwd(), "public");
 const SCENE_DIR = resolve(process.cwd(), "public/assets/base/main");
 const LIVE = resolve(SCENE_DIR, "parts.json");
 const REGEN_STATE = resolve(SCENE_DIR, "parts.json.regen.json");
 const REGEN_STATE_TMP = resolve(SCENE_DIR, "parts.json.regen.json.tmp");
 const SCENE_JSON = resolve(SCENE_DIR, "scene.json");
-const BASE_JPG = resolve(SCENE_DIR, "base.jpg");
 
 function devOnly(): NextResponse | null {
-  if (process.env.NODE_ENV !== "development") {
+  const isLocalDev = process.env.NODE_ENV === "development";
+  const isVercelPreview = process.env.VERCEL_ENV === "preview";
+  if (!isLocalDev && !isVercelPreview) {
     return new NextResponse(null, { status: 404 });
   }
   return null;
 }
 
-// FNV-1a 32-bit on the polygon + asset filenames. Same shape as the
-// runtime `_rev` so a part's mask and runtime URL bust together.
+// See app/api/dev/parts/route.ts for context. Vercel preview filesystems are
+// read-only outside /tmp, so mask/shading regen (which writes PNGs back into
+// public/) cannot run on preview. Return 503 + "preview-readonly" so the
+// client surfaces a clear status instead of looping on 500 errors.
+function previewReadOnly(): NextResponse | null {
+  if (process.env.VERCEL === "1") {
+    return NextResponse.json(
+      {
+        error: "preview-readonly",
+        message:
+          "プレビュー環境ではマスク再生成ができません。ローカルで `npm run dev` 後に再生成し、ブランチへコミットしてください。",
+      },
+      { status: 503 },
+    );
+  }
+  return null;
+}
+
+// FNV-1a 32-bit on the polygons + asset filenames. Same shape as the
+// runtime `_rev` so a part's mask and runtime URL bust together. Hashing
+// `polygons` (post-normalization) means any topology change — vertex move,
+// ring add/remove, polygon entry add/remove, hole add/remove — invalidates.
 function partRegenKey(part: Part): string {
   const payload =
-    JSON.stringify(part.polygon) + "|" + part.mask + "|" + (part.shading ?? "");
+    JSON.stringify(part.polygons) + "|" + part.mask + "|" + (part.shading ?? "");
   let h = 0x811c9dc5;
   for (let i = 0; i < payload.length; i++) {
     h ^= payload.charCodeAt(i);
@@ -83,7 +106,11 @@ async function writeRegenStateAtomic(state: RegenStateFile): Promise<void> {
 async function readManifest(path: string): Promise<PartsManifest | null> {
   try {
     const raw = await readFile(path, "utf-8");
-    return partsManifestSchema.parse(JSON.parse(raw));
+    const parsed = partsManifestSchema.parse(JSON.parse(raw));
+    return {
+      version: parsed.version,
+      parts: parsed.parts.map((p) => normalizePart(p)),
+    };
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === "ENOENT") return null;
@@ -94,6 +121,8 @@ async function readManifest(path: string): Promise<PartsManifest | null> {
 export async function POST(request: Request) {
   const guard = devOnly();
   if (guard) return guard;
+  const ro = previewReadOnly();
+  if (ro) return ro;
 
   const url = new URL(request.url);
   const force = url.searchParams.get("force") === "true";
@@ -131,7 +160,11 @@ export async function POST(request: Request) {
 
     const sceneRaw = await readFile(SCENE_JSON, "utf-8");
     const scene = sceneSchema.parse(JSON.parse(sceneRaw));
-    const { data: baseRgb, info } = await sharp(BASE_JPG)
+    const baseJpgPath = resolve(
+      PUBLIC_DIR,
+      scene.baseImageUrl.replace(/^\//, ""),
+    );
+    const { data: baseRgb, info } = await sharp(baseJpgPath)
       .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
@@ -139,7 +172,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "dimension-mismatch",
-          message: `base.jpg (${info.width}×${info.height}) does not match scene.json (${scene.width}×${scene.height})`,
+          message: `base image (${info.width}×${info.height}) does not match scene.json (${scene.width}×${scene.height})`,
         },
         { status: 500 },
       );

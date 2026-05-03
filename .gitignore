@@ -50,3 +50,6 @@ public/assets/base/main/parts.json.tmp
 # /dev/trace per-part regenerated-mask hash sidecar (local state only)
 public/assets/base/main/parts.json.regen.json
 public/assets/base/main/parts.json.regen.json.tmp
+
+~$部材リスト.xlsx
+~$部材リスト_*.xlsx

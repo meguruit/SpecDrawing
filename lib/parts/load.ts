@@ -1,5 +1,6 @@
 import {
   partsManifestSchema,
+  normalizePart,
   type Part,
   type PartsManifest,
 } from "./types";
@@ -14,11 +15,11 @@ export class PartsLoadError extends Error {
 
 // Tiny non-cryptographic hash used only as a cache-buster for mask /
 // shading URLs. We don't need collision resistance — we need a string
-// that changes whenever the part's polygon (or asset filenames) change,
+// that changes whenever the part's polygons (or asset filenames) change,
 // so the browser refetches mask_<id>.png after /dev/trace edits + regen.
 function partRevision(part: Part): string {
   const payload =
-    JSON.stringify(part.polygon) + "|" + part.mask + "|" + (part.shading ?? "");
+    JSON.stringify(part.polygons) + "|" + part.mask + "|" + (part.shading ?? "");
   let h = 0x811c9dc5; // FNV-1a 32-bit offset basis
   for (let i = 0; i < payload.length; i++) {
     h ^= payload.charCodeAt(i);
@@ -68,7 +69,22 @@ export async function loadPartsForScene(
       }: ${first.message}`,
     );
   }
-  const manifest: PartsManifest = result.data;
+  // Normalize each part: collapse legacy `polygon` into `polygons: [{ outer }]`.
+  // Dev-only deprecation warning steers contributors to the migration script.
+  const normalized = result.data.parts.map((raw) =>
+    normalizePart(raw, (id) => {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          `[parts] scene "${scene.id}" part ${id} uses legacy single-polygon shape; ` +
+            "run `npm run migrate:multiring` to migrate.",
+        );
+      }
+    }),
+  );
+  const manifest: PartsManifest = {
+    version: result.data.version,
+    parts: normalized,
+  };
 
   // Reject duplicate ids.
   const seen = new Set<string>();

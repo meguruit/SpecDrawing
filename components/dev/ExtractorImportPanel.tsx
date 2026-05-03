@@ -1,7 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Part, PartsManifest } from "@/lib/parts/types";
+import type { PartsManifest, Vertex } from "@/lib/parts/types";
+import { firstOuter } from "@/lib/parts/polygonOps";
+
+// The extracted manifest (`/tmp/parts-extracted.json`) is the raw output
+// of `scripts/extract-pdf-polygons.mjs` — it uses the legacy single
+// `polygon` field. We do NOT normalize it before showing the import
+// preview, so this panel reads `polygon` directly off the extracted
+// records via this local shape.
+type ExtractedPart = {
+  id: string;
+  polygon: Vertex[];
+  marker: { x: number; y: number };
+};
+export type ExtractedManifest = {
+  version: 1;
+  parts: ExtractedPart[];
+};
 
 const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
 function glyph(id: string): string {
@@ -9,7 +25,7 @@ function glyph(id: string): string {
   return Number.isFinite(n) && n >= 1 && n <= 20 ? CIRCLED[n - 1] : `#${id}`;
 }
 
-function bboxOf(polygon: Part["polygon"]): { w: number; h: number } | null {
+function bboxOf(polygon: ReadonlyArray<Vertex>): { w: number; h: number } | null {
   if (!polygon.length) return null;
   let minX = Infinity;
   let minY = Infinity;
@@ -28,7 +44,7 @@ type RowState = { polygon: boolean; marker: boolean };
 
 type Props = {
   current: PartsManifest;
-  extracted: PartsManifest;
+  extracted: ExtractedManifest;
   onClose: () => void;
   onApply: (
     selections: Record<string, RowState>,
@@ -49,11 +65,12 @@ export function ExtractorImportPanel({
   const rows = useMemo(() => {
     return current.parts.map((p) => {
       const ex = extById.get(p.id);
+      const currentOuter = firstOuter(p);
       return {
         partId: p.id,
         label: p.label,
-        currentVertices: p.polygon.length,
-        currentBbox: bboxOf(p.polygon),
+        currentVertices: currentOuter.length,
+        currentBbox: bboxOf(currentOuter),
         currentMarker: p.marker,
         extractedVertices: ex?.polygon.length ?? 0,
         extractedBbox: ex ? bboxOf(ex.polygon) : null,

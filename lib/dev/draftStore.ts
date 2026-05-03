@@ -7,7 +7,11 @@
 // Value: { manifest, savedAt: ISO string }
 // All operations no-op safely when window is unavailable (SSR / pre-mount).
 
-import type { PartsManifest } from "@/lib/parts/types";
+import {
+  partsManifestSchema,
+  normalizePart,
+  type PartsManifest,
+} from "@/lib/parts/types";
 
 const KEY_PREFIX = "dev:trace:parts:";
 
@@ -29,9 +33,18 @@ export function loadDraft(sceneId: string): Draft | null {
   try {
     const raw = window.localStorage.getItem(key(sceneId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Draft;
+    const parsed = JSON.parse(raw) as { manifest?: unknown; savedAt?: string };
     if (!parsed?.manifest || !parsed?.savedAt) return null;
-    return parsed;
+    // Drafts saved before the multi-ring schema migration carry legacy
+    // `polygon` fields. Normalize on read so callers always see the
+    // runtime `polygons` shape; an unrecognizable draft is dropped.
+    const validated = partsManifestSchema.safeParse(parsed.manifest);
+    if (!validated.success) return null;
+    const manifest: PartsManifest = {
+      version: validated.data.version,
+      parts: validated.data.parts.map((p) => normalizePart(p)),
+    };
+    return { manifest, savedAt: parsed.savedAt };
   } catch {
     return null;
   }

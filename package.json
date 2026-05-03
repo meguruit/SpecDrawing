@@ -13,9 +13,11 @@
     "typecheck": "tsc --noEmit",
     "seed:parts": "node scripts/extract-finish-options.mjs",
     "seed:masks": "node scripts/generate-placeholder-masks.mjs",
-    "seed:variants": "node scripts/cut-base-variants.mjs"
+    "seed:variants": "node scripts/cut-base-variants.mjs",
+    "migrate:multiring": "node scripts/migrate-parts-multiring.mjs"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "konva": "^9.3.16",
     "next": "^14.2.35",
     "react": "^18.3.1",

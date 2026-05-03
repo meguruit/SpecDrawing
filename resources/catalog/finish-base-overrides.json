@@ -1,30 +1,27 @@
 {
   "version": 1,
+  "_doc": "Two blocks: `overrides` is `(partId, optionLabel) → variantKey`, used ONLY for collapsed-label cases (an option label that sits in MORE THAN ONE Natural/Flat/Sharp column in 部材リスト.xlsx) to pick which variant base to crop for the option's static `textureUrl`. Single-variant labels are auto-derived in cut-base-variants.mjs (no entry needed). `tintBase` is `partId → { label }`: declares the option whose monotone luminance pattern is multiplied by each alternative option's icon color to generate grain-following alternative textures. See resources/reference/AUTHORING.md for details.",
   "overrides": {
     "01": {
-      "ﾁｬｲﾅ大理石(黒)": "sharp",
       "ﾁｬｲﾅ大理石(白)": "natural"
     },
     "05": {
-      "ブラック": "sharp",
-      "ホワイト": "natural"
+      "ブラック": "sharp"
     },
     "06": {
-      "ブラック": "sharp",
-      "ホワイト": "natural"
+      "ブラック": "sharp"
     },
     "08": {
-      "ｼｬﾝﾊﾟﾝﾎﾜｲﾄ": "natural",
-      "ｱｰｽｽﾄｰﾝ": "sharp"
+      "ｼｬﾝﾊﾟﾝﾎﾜｲﾄ": "natural"
     },
     "09": {
-      "ブラック": "sharp",
-      "ホワイト": "natural"
-    },
-    "12": {
-      "ｸﾚﾏﾌﾞﾛｯｸ": "flat",
-      "ｵﾝﾌﾀﾞｶﾞﾀﾗｲﾄ": "natural",
-      "ﾜｲﾄﾞﾓﾙﾀﾙ": "sharp"
+      "ブラック": "sharp"
     }
+  },
+  "tintBase": {
+    "10": { "label": "ｺｺﾅｯﾂﾁｪﾘｰ", "lift": 0.35 },
+    "13": { "label": "ｸﾞﾚｰｼﾞｭ", "lift": 0.35 },
+    "15": { "label": "ﾅﾗ樫", "lift": 0.15 },
+    "17": { "lift": 0.55 }
   }
 }

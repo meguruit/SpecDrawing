@@ -1,16 +1,17 @@
 // Capped per-tool undo/redo stack for /dev/trace.
-// Entry shape: snapshot of (editingId, polygon, marker) for the part the
+// Entry shape: snapshot of (editingId, polygons, marker) for the part the
 // designer is working on. Switching parts also pushes a checkpoint, so
 // undo can step back across part-switches.
 //
 // Push semantics: terminal mutations only (vertex add/delete, vertex
-// drag-end, marker drag-end, polygon-clear, extractor-import).
+// drag-end, marker drag-end, polygon-clear, extractor-import, ring
+// add/remove, hole add/remove).
 
 import type { Part, PartId } from "@/lib/parts/types";
 
 export type HistoryEntry = {
   editingId: PartId | null;
-  polygon: Part["polygon"];
+  polygons: Part["polygons"];
   marker: Part["marker"];
 };
 

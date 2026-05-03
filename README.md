@@ -27,6 +27,7 @@ npm install
 npm run seed:parts               # extract finish options from the workbook
 npm run seed:masks               # generate mask + shading PNGs from parts.json polygons
 npm run seed:variants            # crop per-(part, variant) textures from base variants
+npm run migrate:multiring        # one-shot: legacy `polygon` field → `polygons: [{ outer }]`
 npm run dev                      # http://localhost:3000
 ```
 
@@ -71,9 +72,17 @@ public/                                   runtime, served by Next.js
 ```
 
 The `parts.json` manifest declares for each part: id, label, category,
-sourcePdf reference, marker centroid, polygon (for hit-testing), `renderMode`,
-and the mask / shading filenames. The loader probes every declared mask and
-shading file at scene-load time and throws a named error on missing assets.
+sourcePdf reference, marker centroid, `polygons` (one or more
+`{ outer, holes? }` entries describing disjoint regions and interior
+cuts; used for both rasterizing the mask and hit-testing), `renderMode`,
+and the mask / shading filenames. The loader probes every declared mask
+and shading file at scene-load time and throws a named error on missing
+assets.
+
+> The legacy single `polygon: Vertex[]` field is still accepted on read
+> for one release with a dev-mode deprecation warning. Run
+> `npm run migrate:multiring` once on an older `parts.json` to convert it
+> to `polygons: [{ outer: <existing> }]`, then re-run `npm run seed:masks`.
 
 The `finish-options.json` catalog is derived from `部材リスト.xlsx` by
 `scripts/extract-finish-options.mjs`. Each option entry sets exactly one of
@@ -160,6 +169,41 @@ scripts/
   extract-finish-options.mjs            npm run seed:parts
 openspec/                               OpenSpec change records
 ```
+
+## Deployment
+
+The project is hosted on Vercel under the `meguru-construction` team:
+
+- **Production**: deploys automatically on every push to `main`. The default URL is
+  the team-namespaced `*.vercel.app` subdomain (e.g.
+  `spec-drawing-meguru-construction.vercel.app`); record the actual production
+  URL here once the first `main` deploy completes.
+- **Preview**: every non-`main` branch + every PR gets its own preview deploy.
+  URL pattern: `spec-drawing-git-<branch-slug>-meguru-construction.vercel.app`.
+
+LFS objects (base JPGs, mask PNGs, finish PNGs, base-variant cuts) are pulled at
+build time via `vercel.json`'s `installCommand`. The same install step runs a
+smoke check on `public/assets/base/main/base_natural.jpg` and fails the build
+if LFS pull left it as a 134-byte pointer.
+
+### `/dev/trace` gating
+
+The designer tool at `/dev/trace` and its companion API `/api/dev/parts*` use a
+three-tier gate:
+
+| Environment | `/dev/trace` UI | `GET /api/dev/parts` | `PUT` / regen `POST` |
+| --- | --- | --- | --- |
+| Local `npm run dev` (`NODE_ENV=development`) | editable + persists to disk | 200 | 200 (writes `parts.json` + masks) |
+| Vercel preview (`VERCEL_ENV=preview`) | editable in browser only | 200 | **503 `preview-readonly`** (Vercel FS is read-only) |
+| Vercel production (`VERCEL_ENV=production`) | placeholder | 404 | 404 |
+
+Designers load + edit on a preview URL; autosave reports
+`プレビューは保存不可 — ダウンロードしてコミット` (Vercel's serverless filesystem
+is read-only outside `/tmp`, so writes can't persist). To save changes,
+designers click `ダウンロード`, replace `public/assets/base/main/parts.json` in
+the repo, and commit. See
+[`resources/reference/AUTHORING.md`](resources/reference/AUTHORING.md) for the
+full workflow.
 
 ## What's deferred (not in this change)
 
