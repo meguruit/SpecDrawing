@@ -31,6 +31,17 @@ export const partSchema = z
     renderMode: partRenderModeSchema,
     mask: z.string().min(1),
     shading: z.string().min(1).optional(),
+    // Per-variant mask overrides. `maskByVariant[key]` is the mask filename
+    // (relative to the scene dir) composited when variant `key` is active;
+    // `maskPolygonsByVariant[key]` is the polygon set the regen pipeline
+    // rasterizes into that file. Keys MUST match the scene's `scene.json`
+    // variants (cross-checked in the loader, where the scene is available).
+    // Both optional: a variant without an entry falls back to `mask` /
+    // `polygons`. Hit-testing + marker always use the shared `polygons`.
+    maskByVariant: z.record(z.string().min(1), z.string().min(1)).optional(),
+    maskPolygonsByVariant: z
+      .record(z.string().min(1), z.array(polygonSchema).min(1))
+      .optional(),
   })
   .superRefine((p, ctx) => {
     const hasLegacy = p.polygon !== undefined;
@@ -95,6 +106,22 @@ export function normalizePart(
   if (onLegacy) onLegacy(raw.id);
   const { polygon, ...rest } = raw;
   return { ...rest, polygons: [{ outer: polygon as Vertex[] }] };
+}
+
+/**
+ * Conventional filename for a part's per-variant mask, derived from its base
+ * `mask` by inserting `__<variantKey>` before the extension
+ * (e.g. `mask_07.png` + `flat` → `mask_07__flat.png`). Keeps the variant mask
+ * adjacent to the base mask regardless of the base naming scheme. Used by
+ * /dev/trace when it first creates a `maskByVariant` entry.
+ */
+export function deriveVariantMaskFilename(
+  baseMask: string,
+  variantKey: string,
+): string {
+  const dot = baseMask.lastIndexOf(".");
+  if (dot < 0) return `${baseMask}__${variantKey}`;
+  return `${baseMask.slice(0, dot)}__${variantKey}${baseMask.slice(dot)}`;
 }
 
 export const partsManifestSchema = z.object({

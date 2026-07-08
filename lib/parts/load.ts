@@ -19,7 +19,15 @@ export class PartsLoadError extends Error {
 // so the browser refetches mask_<id>.png after /dev/trace edits + regen.
 function partRevision(part: Part): string {
   const payload =
-    JSON.stringify(part.polygons) + "|" + part.mask + "|" + (part.shading ?? "");
+    JSON.stringify(part.polygons) +
+    "|" +
+    part.mask +
+    "|" +
+    (part.shading ?? "") +
+    "|" +
+    JSON.stringify(part.maskByVariant ?? null) +
+    "|" +
+    JSON.stringify(part.maskPolygonsByVariant ?? null);
   let h = 0x811c9dc5; // FNV-1a 32-bit offset basis
   for (let i = 0; i < payload.length; i++) {
     h ^= payload.charCodeAt(i);
@@ -97,7 +105,25 @@ export async function loadPartsForScene(
     seen.add(p.id);
   }
 
-  // Probe every declared mask and shading file.
+  // Cross-check every per-variant mask key against the scene's declared
+  // variants (mirrors crossValidateColorHexByVariantAgainstScene for finish
+  // options). Keys not present in scene.json `variants` are author errors.
+  const variantKeys = new Set(scene.variants.map((v) => v.key));
+  for (const p of manifest.parts) {
+    const perVariantKeys = [
+      ...Object.keys(p.maskByVariant ?? {}),
+      ...Object.keys(p.maskPolygonsByVariant ?? {}),
+    ];
+    for (const key of perVariantKeys) {
+      if (!variantKeys.has(key)) {
+        throw new PartsLoadError(
+          `Scene "${scene.id}" part "${p.id}" references unknown variant key "${key}" in maskByVariant / maskPolygonsByVariant`,
+        );
+      }
+    }
+  }
+
+  // Probe every declared mask and shading file, including per-variant masks.
   await Promise.all(
     manifest.parts.map(async (p) => {
       const checks: Array<[string, string]> = [
@@ -105,6 +131,9 @@ export async function loadPartsForScene(
       ];
       if (p.renderMode === "color" && p.shading) {
         checks.push(["shading", resolveAssetUrl(scene, p.shading)]);
+      }
+      for (const [key, filename] of Object.entries(p.maskByVariant ?? {})) {
+        checks.push([`mask[${key}]`, resolveAssetUrl(scene, filename)]);
       }
       for (const [kind, url] of checks) {
         if (!(await probeAsset(url))) {

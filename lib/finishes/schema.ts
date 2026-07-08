@@ -133,6 +133,25 @@ export const finishOptionSchema = z
      * the primary sheet). Purely informational; runtime ignores it.
      */
     synthesized: z.boolean().optional(),
+    /**
+     * Optional per-option mask override: a full web-root path (e.g.
+     * `/assets/base/main/mask_14__sharp.png`) to a pre-existing mask PNG.
+     * When set, the runtime composites this option against this mask in
+     * preference to the part's base / per-variant mask, on every active
+     * variant (see `color-composition` "Per-option mask override"). It is
+     * loaded as-is — NOT resolved relative to the scene directory the way
+     * `part.mask` is — and is NOT probed at load. Independent of the
+     * `colorHex` / `textureUrl` xor; no per-option geometry is stored
+     * (runtime compositing needs only the PNG).
+     *
+     * The reserved sentinel value `"no"` disables mask compositing entirely
+     * for that option (texture mode only): the runtime skips the
+     * `destination-in` clip and paints the texture PNG as-is. In color mode
+     * the sentinel is ignored and the part mask resolves normally (a color
+     * fill needs a mask to clip its region). See `color-composition`
+     * "Per-option mask disable".
+     */
+    mask: z.string().min(1).optional(),
   })
   .refine(
     (o) => Boolean(o.colorHex) !== Boolean(o.textureUrl),
@@ -160,6 +179,62 @@ export const finishOptionsFileSchema = z.object({
 });
 
 export type FinishOptionsFile = z.infer<typeof finishOptionsFileSchema>;
+
+// ----- default-options.json -----
+//
+// Optional, hand-editable catalog declaring which finish option each part
+// starts pre-selected with, scoped per sheet (brand). Organized sheet-first
+// so a brand's part defaults are grouped together (mirrors the workbook).
+// Absent file ⇒ every part starts unselected (back-compat).
+
+// A part entry carries a required `default` (universal fallback option id) plus
+// any number of optional base-keyed overrides (key = scene variant key) picked
+// up by the `.catchall`. The effective default for an active base is
+// `byBase[activeBase] ?? default` (see `resolveSheetDefault`).
+export const defaultOptionsFileSchema = z.object({
+  version: z.literal(1),
+  sheet: z.array(
+    z.object({
+      id: sheetNameSchema,
+      parts: z.array(
+        z
+          .object({
+            id: z.string().regex(/^\d{2}$/),
+            default: z.string().min(1),
+          })
+          .catchall(z.string().min(1)),
+      ),
+    }),
+  ),
+});
+
+export type DefaultOptionsFile = z.infer<typeof defaultOptionsFileSchema>;
+
+/**
+ * Resolved per-part per-sheet default selection. For each `(partId, sheet)` the
+ * value holds the required `default` option id plus a `byBase` map of base
+ * (variant) key → option id overrides. Normalized from the sheet-first
+ * `default-options.json` at load time.
+ */
+export type SheetDefault = {
+  default: FinishOptionId;
+  byBase: Record<string, FinishOptionId>;
+};
+export type PartSheetDefaults = Record<string, Record<SheetName, SheetDefault>>;
+
+/**
+ * Resolve the effective default option id for a `(part, sheet)` entry under the
+ * active base: a base override wins when present, otherwise `default`. Returns
+ * `undefined` when the part has no default for the sheet.
+ */
+export function resolveSheetDefault(
+  entry: SheetDefault | undefined,
+  activeBase: string | null,
+): FinishOptionId | undefined {
+  if (!entry) return undefined;
+  if (activeBase && entry.byBase[activeBase]) return entry.byBase[activeBase];
+  return entry.default;
+}
 
 // ----- finish-variant-mapping.json -----
 //

@@ -1,7 +1,9 @@
 import {
+  defaultOptionsFileSchema,
   finishOptionsFileSchema,
   sheetsManifestSchema,
   type FinishOption,
+  type PartSheetDefaults,
   type SheetName,
   type SheetConfig,
   type SheetsManifest,
@@ -102,6 +104,123 @@ export function crossValidateAgainstParts(
       throw new FinishesLoadError(
         `Option "${opt.id}" targets texture-mode part "${opt.partId}" but has no textureUrl`,
       );
+    }
+  }
+}
+
+/**
+ * Load the optional per-part default-selection catalog and normalize the
+ * sheet-first file into `partId → sheet → optionId`. A 404 is treated as
+ * "no defaults" (every part starts unselected, back-compat). Rejects a
+ * duplicate `(sheet, part)` pair.
+ */
+export async function loadDefaultOptions(
+  url = "/catalog/default-options.json",
+): Promise<PartSheetDefaults> {
+  const res = await fetch(url, { cache: "no-store" });
+  if (res.status === 404) {
+    return {};
+  }
+  if (!res.ok) {
+    throw new FinishesLoadError(`Failed to fetch ${url}: HTTP ${res.status}`);
+  }
+  const raw = await res.text();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new FinishesLoadError(
+      `Default options file is not valid JSON: ${(err as Error).message}`,
+    );
+  }
+  const result = defaultOptionsFileSchema.safeParse(parsed);
+  if (!result.success) {
+    const first = result.error.issues[0];
+    throw new FinishesLoadError(
+      `Default options file invalid at ${
+        first.path.join(".") || "<root>"
+      }: ${first.message}`,
+    );
+  }
+  const defaults: PartSheetDefaults = {};
+  for (const block of result.data.sheet) {
+    for (const part of block.parts) {
+      const perSheet = (defaults[part.id] ??= {});
+      if (block.id in perSheet) {
+        throw new FinishesLoadError(
+          `Default options file has duplicate entry for part "${part.id}" on sheet "${block.id}"`,
+        );
+      }
+      // Split the entry into its required `default` and any base-keyed overrides
+      // (every key other than `id`/`default` is a base/variant override).
+      const byBase: Record<string, string> = {};
+      for (const [key, value] of Object.entries(part)) {
+        if (key === "id" || key === "default") continue;
+        byBase[key] = value as string;
+      }
+      perSheet[block.id] = { default: part.default, byBase };
+    }
+  }
+  return defaults;
+}
+
+/**
+ * Cross-validate every `(part, sheet) → default` against the finish-options
+ * catalog: the option MUST exist, belong to that part and sheet, and match
+ * the part's `renderMode`. Throws on the first mismatch naming part + sheet
+ * + option.
+ */
+export function crossValidateDefaultOptionsAgainstCatalog(
+  defaults: PartSheetDefaults,
+  options: FinishOption[],
+  parts: Part[],
+): void {
+  const optionById = new Map(options.map((o) => [o.id, o]));
+  const partById = new Map(parts.map((p) => [p.id, p]));
+  for (const [partId, perSheet] of Object.entries(defaults)) {
+    for (const [sheet, entry] of Object.entries(perSheet)) {
+      // Validate the universal `default` and every base override the same way.
+      const targets: { optionId: string; baseKey: string | null }[] = [
+        { optionId: entry.default, baseKey: null },
+        ...Object.entries(entry.byBase).map(([baseKey, optionId]) => ({
+          optionId,
+          baseKey,
+        })),
+      ];
+      for (const { optionId, baseKey } of targets) {
+        // e.g. `Default for part "14" on sheet "アーバンシー" (base "sharp")`.
+        const where = `Default for part "${partId}" on sheet "${sheet}"${
+          baseKey ? ` (base "${baseKey}")` : ""
+        }`;
+        const opt = optionById.get(optionId);
+        if (!opt) {
+          throw new FinishesLoadError(
+            `${where} references unknown option "${optionId}"`,
+          );
+        }
+        if (opt.partId !== partId) {
+          throw new FinishesLoadError(
+            `${where} references option "${optionId}" which belongs to part "${opt.partId}"`,
+          );
+        }
+        if (opt.sheet !== sheet) {
+          throw new FinishesLoadError(
+            `${where} references option "${optionId}" which belongs to sheet "${opt.sheet}"`,
+          );
+        }
+        const part = partById.get(partId);
+        if (!part) continue;
+        if (part.renderMode === "color" && !opt.colorHex) {
+          throw new FinishesLoadError(
+            `${where}: option "${optionId}" for color-mode part has no colorHex`,
+          );
+        }
+        if (part.renderMode === "texture" && !opt.textureUrl) {
+          throw new FinishesLoadError(
+            `${where}: option "${optionId}" for texture-mode part has no textureUrl`,
+          );
+        }
+      }
     }
   }
 }

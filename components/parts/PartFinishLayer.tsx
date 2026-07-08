@@ -66,6 +66,30 @@ export function PartFinishLayer() {
         const bustedTexture = resolvedTextureUrl
           ? bust(resolvedTextureUrl, optionsRev)
           : undefined;
+        // Mask resolution precedence (see color-composition "Per-option mask
+        // override" / "Per-option mask disable"):
+        //   0. option `mask === "no"` (texture mode only) — disables mask
+        //      compositing entirely: paint the texture PNG as-is, no clip.
+        //   1. the selected option's own `mask` — a full web-root path used
+        //      as-is, winning on every active variant; cache-busts on the
+        //      catalog `optionsRev` like the option's textureUrl.
+        //   2. else the active variant's mask (a different perspective places
+        //      the part in a different region);
+        //   3. else the part's base mask (no active variant, or no entry).
+        // Cases 2/3 resolve relative to the scene dir and cache-bust on the
+        // per-part `_rev`. The composite ordering below is unchanged — only
+        // which mask PNG is loaded changes. A null `maskUrl` means "no mask".
+        let maskUrl: string | null;
+        if (option.mask === "no" && part.renderMode === "texture") {
+          maskUrl = null;
+        } else if (option.mask && option.mask !== "no") {
+          maskUrl = bust(option.mask, optionsRev);
+        } else {
+          const resolvedMask =
+            (activeVariantKey && part.maskByVariant?.[activeVariantKey]) ||
+            part.mask;
+          maskUrl = bust(resolveAssetUrl(scene, resolvedMask), rev);
+        }
         return (
           <Layer key={part.id} listening={false}>
             <PartFinish
@@ -73,7 +97,7 @@ export function PartFinishLayer() {
               option={option}
               sceneWidth={scene.width}
               sceneHeight={scene.height}
-              maskUrl={bust(resolveAssetUrl(scene, part.mask), rev)}
+              maskUrl={maskUrl}
               shadingUrl={
                 part.shading
                   ? bust(resolveAssetUrl(scene, part.shading), rev)
@@ -95,7 +119,7 @@ type PartFinishProps = {
   option: FinishOption;
   sceneWidth: number;
   sceneHeight: number;
-  maskUrl: string;
+  maskUrl: string | null;
   shadingUrl: string | undefined;
   textureUrl: string | undefined;
   textureBox: TextureBox | undefined;
@@ -113,16 +137,21 @@ function PartFinish({
   textureBox,
   activeVariantKey,
 }: PartFinishProps) {
-  const mask = useImage(maskUrl);
+  // `maskUrl === null` means the option opted out of masking (mask: "no",
+  // texture mode only) — we paint the texture PNG as-is with no clip.
+  const noMask = maskUrl === null;
+  const mask = useImage(maskUrl ?? undefined);
   const shading = useImage(part.renderMode === "color" ? shadingUrl : undefined);
   const texture = useImage(
     part.renderMode === "texture" ? textureUrl : undefined,
   );
 
-  if (!mask) return null;
+  if (!noMask && !mask) return null;
 
   if (part.renderMode === "color") {
-    if (!shading || !option.colorHex) return null;
+    // Color mode always clips against a mask (the `mask: "no"` opt-out is
+    // texture-only, so `maskUrl` is never null here), but narrow it for TS.
+    if (!shading || !option.colorHex || !mask) return null;
     // Per-variant override: when the option declares colorHexByVariant
     // and the active variant has an entry, use it; else fall back to the
     // static colorHex. Lets ⑰ サッシ枠 carry per-variant palettes that
@@ -185,15 +214,17 @@ function PartFinish({
         height={th}
         listening={false}
       />
-      <KonvaImage
-        image={mask}
-        x={0}
-        y={0}
-        width={sceneWidth}
-        height={sceneHeight}
-        globalCompositeOperation="destination-in"
-        listening={false}
-      />
+      {!noMask && mask && (
+        <KonvaImage
+          image={mask}
+          x={0}
+          y={0}
+          width={sceneWidth}
+          height={sceneHeight}
+          globalCompositeOperation="destination-in"
+          listening={false}
+        />
+      )}
     </Fragment>
   );
 }

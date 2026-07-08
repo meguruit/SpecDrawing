@@ -19,9 +19,11 @@ import {
 import { loadPartsForScene, PartsLoadError } from "@/lib/parts/load";
 import {
   loadFinishOptions,
+  loadDefaultOptions,
   loadSheetsManifest,
   crossValidateAgainstParts,
   crossValidateColorHexByVariantAgainstScene,
+  crossValidateDefaultOptionsAgainstCatalog,
   crossValidateDefaultsAgainstScene,
   crossValidateOptionsAgainstSheets,
   crossValidatePartsAgainstSheets,
@@ -56,7 +58,9 @@ export default function Page() {
         const parts = await loadPartsForScene(scene);
         const { options, _rev: optionsRev } = await loadFinishOptions();
         const sheetsManifest = await loadSheetsManifest();
+        const partSheetDefaults = await loadDefaultOptions();
         crossValidateAgainstParts(options, parts);
+        crossValidateDefaultOptionsAgainstCatalog(partSheetDefaults, options, parts);
         crossValidateSheetsAgainstScene(sheetsManifest, scene);
         crossValidateDefaultsAgainstScene(options, scene);
         crossValidateColorHexByVariantAgainstScene(options, scene);
@@ -81,6 +85,7 @@ export default function Page() {
           sheets[0] ?? "",
           optionsRev,
           sheetsManifest,
+          partSheetDefaults,
         );
       } catch (err: unknown) {
         if (!alive) return;
@@ -129,6 +134,7 @@ export default function Page() {
           selections: state.partFinishSelections,
           activeSheet: state.activeOptionSheet,
           activeVariantKey: state.activeVariantKey,
+          partSheetDefaults: state.partSheetDefaults,
           filename,
           optionsRev: state.finishOptionsRev,
         });

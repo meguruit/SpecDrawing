@@ -18,7 +18,7 @@ export function SheetSwitcher() {
 
   return (
     <label className="flex items-center gap-1.5 text-xs text-slate-600">
-      シート
+      ブランド
       <select
         value={active}
         onChange={(e) => setActiveSheet(e.target.value)}

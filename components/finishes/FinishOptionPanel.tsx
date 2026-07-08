@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import Image from "next/image";
 import { useCanvasStore } from "@/lib/canvas/store";
+import { resolveSheetDefault } from "@/lib/finishes/schema";
 
 export function FinishOptionPanel() {
   const selectedPartId = useCanvasStore((s) => s.selectedPartId);
@@ -11,6 +12,8 @@ export function FinishOptionPanel() {
   const optionsRev = useCanvasStore((s) => s.finishOptionsRev);
   const sheet = useCanvasStore((s) => s.activeOptionSheet);
   const selections = useCanvasStore((s) => s.partFinishSelections);
+  const partSheetDefaults = useCanvasStore((s) => s.partSheetDefaults);
+  const activeVariantKey = useCanvasStore((s) => s.activeVariantKey);
   const setFinish = useCanvasStore((s) => s.setFinish);
   const clearFinish = useCanvasStore((s) => s.clearFinish);
 
@@ -38,6 +41,15 @@ export function FinishOptionPanel() {
   }
 
   const currentId = selections[part.id];
+  // Parts with a configured default for the active sheet never go unselected:
+  // クリア is shown only off-default and resets to the effective default (base
+  // override ?? default for the active base). Parts without a default keep the
+  // legacy behavior (クリア removes the selection entirely).
+  const defaultId = resolveSheetDefault(
+    partSheetDefaults[part.id]?.[sheet],
+    activeVariantKey,
+  );
+  const showClear = Boolean(currentId) && currentId !== defaultId;
 
   return (
     <div className="space-y-2">
@@ -49,10 +61,12 @@ export function FinishOptionPanel() {
           #{part.id} · {part.category} · {sheet}
         </p>
       </div>
-      {currentId && (
+      {showClear && (
         <button
           type="button"
-          onClick={() => clearFinish(part.id)}
+          onClick={() =>
+            defaultId ? setFinish(part.id, defaultId) : clearFinish(part.id)
+          }
           className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600 hover:border-slate-400"
         >
           クリア

@@ -27,6 +27,7 @@ import {
 } from "@/lib/scenes/load";
 import type { Scene } from "@/lib/scenes/types";
 import type { Part, PartsManifest, Vertex } from "@/lib/parts/types";
+import { deriveVariantMaskFilename } from "@/lib/parts/types";
 import {
   firstOuter,
   getRingVertices,
@@ -108,6 +109,11 @@ export default function TraceTool() {
   const [scene, setScene] = useState<Scene | null>(null);
   const [manifest, setManifest] = useState<PartsManifest | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Which mask layer is being edited: null = the shared base `polygons`
+  // (drives hit-testing + marker); a variant key = that variant's
+  // `maskPolygonsByVariant` entry (visual mask only). Only meaningful on
+  // scenes that declare variants.
+  const [editVariant, setEditVariant] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [productionDisabled, setProductionDisabled] = useState(false);
   const [restorePrompt, setRestorePrompt] = useState<{
@@ -143,7 +149,17 @@ export default function TraceTool() {
   // Latest manifest snapshot for autosave callbacks (avoids stale closures).
   const latestManifestRef = useRef<PartsManifest | null>(null);
 
-  const baseImage = useImage(scene?.baseImageUrl);
+  // The canvas base image follows the active edit variant so the designer
+  // traces against the perspective the mask will be used on.
+  const editBaseUrl = useMemo(() => {
+    if (!scene) return undefined;
+    if (!editVariant) return scene.baseImageUrl;
+    return (
+      scene.variants.find((v) => v.key === editVariant)?.baseImageUrl ??
+      scene.baseImageUrl
+    );
+  }, [scene, editVariant]);
+  const baseImage = useImage(editBaseUrl);
 
   // Load visibility preference once on mount.
   useEffect(() => {
@@ -236,16 +252,39 @@ export default function TraceTool() {
     setSaveStatus({ kind: "idle" });
   }
 
-  const editingPart: Part | undefined = useMemo(
+  // The raw part straight from the manifest (shared polygons + marker, plus
+  // any per-variant overrides). Used by variant-management actions.
+  const editingPartRaw: Part | undefined = useMemo(
     () => manifest?.parts.find((p) => p.id === editingId),
     [manifest, editingId],
   );
 
-  // Reset ring focus + hole-build mode whenever the editing part changes.
+  // The part as the editor sees it: when a variant is active, its `.polygons`
+  // is swapped for that variant's mask polygons — seeded from the shared
+  // `polygons` until the designer's first edit creates an override. All the
+  // editing ops + canvas rendering below read this view, so they work
+  // identically on the base layer and on a variant layer.
+  const editingPart: Part | undefined = useMemo(() => {
+    if (!editingPartRaw) return undefined;
+    if (!editVariant) return editingPartRaw;
+    const target =
+      editingPartRaw.maskPolygonsByVariant?.[editVariant] ??
+      editingPartRaw.polygons;
+    return { ...editingPartRaw, polygons: target };
+  }, [editingPartRaw, editVariant]);
+
+  // Whether the active part already has a committed override for the active
+  // variant (vs. still showing the seeded base polygons).
+  const variantOverrideExists = Boolean(
+    editVariant && editingPartRaw?.maskPolygonsByVariant?.[editVariant],
+  );
+
+  // Reset ring focus + hole-build mode whenever the editing part or the
+  // active variant changes (the polygon set under edit changed).
   useEffect(() => {
     setActiveRing({ kind: "outer", polygonIndex: 0 });
     setHoleBuildMode(false);
-  }, [editingId]);
+  }, [editingId, editVariant]);
 
   const displayScale = useMemo(
     () => (scene ? Math.min(1, MAX_DISPLAY_WIDTH / scene.width) : 1),
@@ -257,6 +296,7 @@ export default function TraceTool() {
     if (!editingPart) return null;
     return {
       editingId: editingPart.id,
+      editVariant,
       polygons: editingPart.polygons.map((poly) => ({
         outer: poly.outer.map((v) => [v[0], v[1]] as Vertex),
         holes: poly.holes?.map((h) =>
@@ -265,7 +305,7 @@ export default function TraceTool() {
       })),
       marker: { ...editingPart.marker },
     };
-  }, [editingPart]);
+  }, [editingPart, editVariant]);
 
   // ----- autosave + retry plumbing -----
 
@@ -436,11 +476,34 @@ export default function TraceTool() {
       if (!manifest) return;
       const next: PartsManifest = {
         ...manifest,
-        parts: manifest.parts.map((p) => (p.id === id ? mutator(p) : p)),
+        parts: manifest.parts.map((p) => {
+          if (p.id !== id) return p;
+          if (!editVariant) return mutator(p);
+          // Editing a variant: run the mutator against the variant's mask
+          // polygons (seeded from base on first touch), then route ONLY the
+          // resulting polygons into maskPolygonsByVariant — the shared
+          // `polygons` and `marker` (hit-test/marker) are left untouched.
+          const target =
+            p.maskPolygonsByVariant?.[editVariant] ?? p.polygons;
+          const mutated = mutator({ ...p, polygons: target });
+          return {
+            ...p,
+            maskByVariant: {
+              ...p.maskByVariant,
+              [editVariant]:
+                p.maskByVariant?.[editVariant] ??
+                deriveVariantMaskFilename(p.mask, editVariant),
+            },
+            maskPolygonsByVariant: {
+              ...p.maskPolygonsByVariant,
+              [editVariant]: mutated.polygons,
+            },
+          };
+        }),
       };
       commit(next, { pushBefore });
     },
-    [manifest, commit],
+    [manifest, commit, editVariant],
   );
 
   // Cleanup pending timers on unmount.
@@ -543,6 +606,10 @@ export default function TraceTool() {
   const handleMoveMarkerLive = useCallback(
     (x: number, y: number) => {
       if (!editingPart) return;
+      // Marker belongs to the shared part, not to any variant — ignore drags
+      // while a variant layer is active (the marker is non-draggable then,
+      // this is just belt-and-suspenders).
+      if (editVariant) return;
       updatePart(
         editingPart.id,
         (p) => ({
@@ -552,7 +619,7 @@ export default function TraceTool() {
         null,
       );
     },
-    [editingPart, updatePart],
+    [editingPart, updatePart, editVariant],
   );
 
   const handleClearActiveRing = useCallback(() => {
@@ -716,11 +783,59 @@ export default function TraceTool() {
     [editingId, snapshotCurrent],
   );
 
+  // ----- variant layer switch -----
+
+  // Switch which mask layer is being edited. `key === null` selects the base
+  // layer (shared polygons + marker); a variant key selects that variant's
+  // mask polygons (seeded from base until first edit). A history checkpoint
+  // is pushed so undo can step back across the switch.
+  const handleSelectVariant = useCallback(
+    (key: string | null) => {
+      if (key === editVariant) return;
+      const before = snapshotCurrent();
+      if (before) {
+        historyRef.current.push(before);
+        setHistoryRev((r) => r + 1);
+      }
+      setEditVariant(key);
+    },
+    [editVariant, snapshotCurrent],
+  );
+
+  // Drop the active variant's override (mask polygons + filename) and revert
+  // that variant to the part's base mask. Pushes one undo entry.
+  const handleRemoveVariantOverride = useCallback(() => {
+    if (!editingPartRaw || !editVariant || !manifest) return;
+    const key = editVariant;
+    const before = snapshotCurrent();
+    const next: PartsManifest = {
+      ...manifest,
+      parts: manifest.parts.map((p) => {
+        if (p.id !== editingPartRaw.id) return p;
+        const mbv = { ...(p.maskByVariant ?? {}) };
+        const mpbv = { ...(p.maskPolygonsByVariant ?? {}) };
+        delete mbv[key];
+        delete mpbv[key];
+        return {
+          ...p,
+          maskByVariant: Object.keys(mbv).length ? mbv : undefined,
+          maskPolygonsByVariant: Object.keys(mpbv).length ? mpbv : undefined,
+        };
+      }),
+    };
+    setEditVariant(null);
+    commit(next, { pushBefore: before });
+  }, [editingPartRaw, editVariant, manifest, snapshotCurrent, commit]);
+
   // ----- undo / redo -----
 
   const applyHistoryEntry = useCallback(
     (entry: HistoryEntry) => {
       if (!manifest) return;
+      // Restore the layer the snapshot was taken on before applying it.
+      if (entry.editVariant !== editVariant) {
+        setEditVariant(entry.editVariant);
+      }
       // If the entry's editingId differs, switch parts first (no further push).
       if (entry.editingId !== editingId) {
         setEditingId(entry.editingId);
@@ -730,26 +845,41 @@ export default function TraceTool() {
         return;
       }
       const id = entry.editingId;
+      const restoredPolygons = entry.polygons.map((poly) => ({
+        outer: poly.outer.map((v) => [v[0], v[1]] as Vertex),
+        holes: poly.holes?.map((h) => h.map((v) => [v[0], v[1]] as Vertex)),
+      }));
       const next: PartsManifest = {
         ...manifest,
-        parts: manifest.parts.map((p) =>
-          p.id === id
-            ? {
-                ...p,
-                polygons: entry.polygons.map((poly) => ({
-                  outer: poly.outer.map((v) => [v[0], v[1]] as Vertex),
-                  holes: poly.holes?.map((h) =>
-                    h.map((v) => [v[0], v[1]] as Vertex),
-                  ),
-                })),
-                marker: { ...entry.marker },
-              }
-            : p,
-        ),
+        parts: manifest.parts.map((p) => {
+          if (p.id !== id) return p;
+          if (!entry.editVariant) {
+            // Base layer: restore shared polygons + marker.
+            return {
+              ...p,
+              polygons: restoredPolygons,
+              marker: { ...entry.marker },
+            };
+          }
+          // Variant layer: restore that variant's mask polygons only.
+          return {
+            ...p,
+            maskByVariant: {
+              ...p.maskByVariant,
+              [entry.editVariant]:
+                p.maskByVariant?.[entry.editVariant] ??
+                deriveVariantMaskFilename(p.mask, entry.editVariant),
+            },
+            maskPolygonsByVariant: {
+              ...p.maskPolygonsByVariant,
+              [entry.editVariant]: restoredPolygons,
+            },
+          };
+        }),
       };
       commit(next);
     },
-    [manifest, editingId, commit],
+    [manifest, editingId, editVariant, commit],
   );
 
   const undo = useCallback(() => {
@@ -833,6 +963,7 @@ export default function TraceTool() {
         if (!ex) continue;
         const before: HistoryEntry = {
           editingId: part.id,
+          editVariant: null,
           polygons: part.polygons.map((poly) => ({
             outer: poly.outer.map((v) => [v[0], v[1]] as Vertex),
             holes: poly.holes?.map((h) =>
@@ -864,6 +995,7 @@ export default function TraceTool() {
       scheduleAutosave();
       setHistoryRev((r) => r + 1);
       setImportPanel(null);
+      setEditVariant(null);
       setError(`${count} 部材をインポートしました`);
     },
     [manifest, importPanel, scene, scheduleAutosave],
@@ -970,6 +1102,29 @@ export default function TraceTool() {
               ))}
             </select>
           </label>
+          {scene.variants.length > 0 && (
+            <label className="flex items-center gap-1.5 text-xs text-slate-600">
+              マスク層
+              <select
+                value={editVariant ?? ""}
+                onChange={(e) =>
+                  handleSelectVariant(e.target.value || null)
+                }
+                title="編集対象のマスク層。基準＝当たり判定/番号マーカー用の共有ポリゴン。各バリアントは見た目のマスクのみ（切り替え画像ごと）。"
+                className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-xs"
+              >
+                <option value="">基準（共有・当たり判定）</option>
+                {scene.variants.map((v) => (
+                  <option key={v.key} value={v.key}>
+                    {v.label}
+                    {editingPartRaw?.maskPolygonsByVariant?.[v.key]
+                      ? " ●"
+                      : " ○"}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="flex items-center gap-1.5 text-xs text-slate-600">
             表示
             <select
@@ -1062,6 +1217,29 @@ export default function TraceTool() {
                   #{editingPart.id} · {editingPart.category} · {editingPart.renderMode}
                 </div>
               </div>
+              {editVariant && (
+                <div className="rounded border border-indigo-200 bg-indigo-50 p-2 text-[11px] text-indigo-900">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold">
+                      マスク層: {scene.variants.find((v) => v.key === editVariant)?.label ?? editVariant}
+                    </span>
+                    {variantOverrideExists && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveVariantOverride}
+                        className="text-[11px] text-red-600 hover:underline"
+                      >
+                        このバリアントを削除
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-1 text-[10px] text-indigo-700">
+                    {variantOverrideExists
+                      ? "このバリアント専用のマスクを編集中（当たり判定・マーカーは基準のまま）。"
+                      : "基準ポリゴンを複製表示中。編集するとこのバリアント専用マスクが作成されます。"}
+                  </p>
+                </div>
+              )}
               <RingGroups
                 part={editingPart}
                 activeRing={activeRing}
@@ -1309,7 +1487,10 @@ export default function TraceTool() {
                       fill={CATEGORY_COLOR[editingPart.category] ?? "#0F172A"}
                       stroke="#ffffff"
                       strokeWidth={4}
-                      draggable
+                      // Marker is shared across variants — only editable on the
+                      // base layer. Dim + lock it while a variant is active.
+                      opacity={editVariant ? 0.4 : 1}
+                      draggable={!editVariant}
                       onDragStart={beginDrag}
                       onDragMove={(ev) =>
                         handleMoveMarkerLive(ev.target.x(), ev.target.y())
