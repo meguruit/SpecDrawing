@@ -4,9 +4,11 @@ import type { Part, PartId } from "@/lib/parts/types";
 import type {
   FinishOption,
   FinishOptionId,
+  PartSheetDefaults,
   SheetName,
   SheetsManifest,
 } from "@/lib/finishes/schema";
+import { resolveSheetDefault } from "@/lib/finishes/schema";
 import { formatExportTimestamp } from "@/lib/export/filename";
 
 export type PartFinishSelections = Record<PartId, FinishOptionId>;
@@ -25,6 +27,8 @@ type CanvasState = {
   finishOptionsRev: string;
   selectedPartId: PartId | null;
   partFinishSelections: PartFinishSelections;
+  /** Per-part per-sheet default selection from default-options.json (empty when absent). */
+  partSheetDefaults: PartSheetDefaults;
   activeOptionSheet: SheetName;
   /** Active variant key when the active sheet has variantsEnabled === true; null otherwise. */
   activeVariantKey: string | null;
@@ -43,6 +47,7 @@ type CanvasState = {
     defaultSheet: SheetName,
     finishOptionsRev: string,
     sheetsManifest: SheetsManifest,
+    partSheetDefaults: PartSheetDefaults,
   ) => void;
   selectPart: (partId: PartId | null) => void;
   clearSelection: () => void;
@@ -82,6 +87,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   finishOptionsRev: "",
   selectedPartId: null,
   partFinishSelections: {},
+  partSheetDefaults: {},
   activeOptionSheet: "",
   activeVariantKey: null,
   variantKeyBySheet: {},
@@ -90,21 +96,41 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   exportTimestamp: null,
   notification: null,
 
-  loadScene: (scene, parts, finishOptions, defaultSheet, finishOptionsRev, sheetsManifest) => {
+  loadScene: (
+    scene,
+    parts,
+    finishOptions,
+    defaultSheet,
+    finishOptionsRev,
+    sheetsManifest,
+    partSheetDefaults,
+  ) => {
     const variantKey = resolveVariantKeyForSheet(
       scene,
       sheetsManifest,
       defaultSheet,
       {},
     );
+    // Seed selections from the per-part effective default for the initial sheet
+    // and base (base override ?? default); parts without a default for that
+    // sheet start unselected.
+    const seeded: PartFinishSelections = {};
+    for (const part of parts) {
+      const def = resolveSheetDefault(
+        partSheetDefaults[part.id]?.[defaultSheet],
+        variantKey,
+      );
+      if (def) seeded[part.id] = def;
+    }
     set({
       activeScene: scene,
       parts,
       finishOptions,
       sheetsManifest,
       finishOptionsRev,
+      partSheetDefaults,
       selectedPartId: null,
-      partFinishSelections: {},
+      partFinishSelections: seeded,
       activeOptionSheet: defaultSheet,
       activeVariantKey: variantKey,
       variantKeyBySheet: variantKey ? { [defaultSheet]: variantKey } : {},
@@ -168,32 +194,16 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       activeOptionSheet,
       activeVariantKey,
       finishOptions,
+      parts,
       partFinishSelections,
+      partSheetDefaults,
       sheetsManifest,
       variantKeyBySheet,
     } = get();
     if (sheet === activeOptionSheet) return;
-    // Preserve selections by (partId, label) match across sheets.
-    const optionById = new Map(finishOptions.map((o) => [o.id, o]));
-    const cleared: string[] = [];
-    const next: PartFinishSelections = {};
-    for (const [partId, optId] of Object.entries(partFinishSelections)) {
-      const prev = optionById.get(optId);
-      if (!prev) {
-        cleared.push(partId);
-        continue;
-      }
-      const match = finishOptions.find(
-        (o) => o.partId === partId && o.sheet === sheet && o.label === prev.label,
-      );
-      if (match) {
-        next[partId] = match.id;
-      } else {
-        cleared.push(partId);
-      }
-    }
     // Remember the variant key for the sheet we are leaving, so a round-trip
-    // restores the user's pick.
+    // restores the user's pick, then resolve the base active on the new sheet —
+    // the effective default depends on it.
     const rememberedNext: Record<SheetName, string> = { ...variantKeyBySheet };
     if (activeVariantKey) {
       rememberedNext[activeOptionSheet] = activeVariantKey;
@@ -201,6 +211,47 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     const newVariantKey = activeScene
       ? resolveVariantKeyForSheet(activeScene, sheetsManifest, sheet, rememberedNext)
       : null;
+    // Resolve each part's selection on the newly active sheet. A selection is
+    // "explicit" when it differs from the part's effective default on the sheet
+    // and base we are leaving; explicit picks are preserved by (partId, label)
+    // match (falling to the new sheet's effective default, else cleared).
+    // Non-explicit parts (at the old default, or untouched) simply adopt the new
+    // sheet's effective default.
+    const optionById = new Map(finishOptions.map((o) => [o.id, o]));
+    const cleared: string[] = [];
+    const next: PartFinishSelections = {};
+    for (const part of parts) {
+      const prevId = partFinishSelections[part.id];
+      const oldDefault = resolveSheetDefault(
+        partSheetDefaults[part.id]?.[activeOptionSheet],
+        activeVariantKey,
+      );
+      const newDefault = resolveSheetDefault(
+        partSheetDefaults[part.id]?.[sheet],
+        newVariantKey,
+      );
+      const isExplicit = Boolean(prevId) && prevId !== oldDefault;
+      if (isExplicit) {
+        const prev = optionById.get(prevId);
+        const match = prev
+          ? finishOptions.find(
+              (o) =>
+                o.partId === part.id &&
+                o.sheet === sheet &&
+                o.label === prev.label,
+            )
+          : undefined;
+        if (match) {
+          next[part.id] = match.id;
+        } else if (newDefault) {
+          next[part.id] = newDefault;
+        } else {
+          cleared.push(part.id);
+        }
+      } else if (newDefault) {
+        next[part.id] = newDefault;
+      }
+    }
     const update: Partial<CanvasState> = {
       activeOptionSheet: sheet,
       partFinishSelections: next,
@@ -219,7 +270,16 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   },
 
   setActiveVariantKey: (key) => {
-    const { activeScene, activeOptionSheet, sheetsManifest, variantKeyBySheet } = get();
+    const {
+      activeScene,
+      activeOptionSheet,
+      activeVariantKey,
+      parts,
+      partFinishSelections,
+      partSheetDefaults,
+      sheetsManifest,
+      variantKeyBySheet,
+    } = get();
     if (!activeScene) return;
     const sheetCfg = sheetsManifest.sheets.find((s) => s.key === activeOptionSheet);
     if (!sheetCfg?.variantsEnabled) return;
@@ -228,9 +288,26 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       console.warn(`[canvas store] rejecting setActiveVariantKey: "${key}" not in scene variants`);
       return;
     }
+    // The effective default can differ per base. Re-resolve it for every part:
+    // an at-default/untouched part follows the new base's default; an explicit
+    // pick (selection differs from the old base's default) stays put. Same sheet
+    // ⇒ same option set, so no label re-match and no clearing notification.
+    const next: PartFinishSelections = { ...partFinishSelections };
+    for (const part of parts) {
+      const entry = partSheetDefaults[part.id]?.[activeOptionSheet];
+      if (!entry) continue;
+      const oldDefault = resolveSheetDefault(entry, activeVariantKey);
+      const newDefault = resolveSheetDefault(entry, key);
+      const prevId = partFinishSelections[part.id];
+      const isExplicit = Boolean(prevId) && prevId !== oldDefault;
+      if (isExplicit) continue;
+      if (newDefault) next[part.id] = newDefault;
+      else delete next[part.id];
+    }
     set({
       activeVariantKey: key,
       variantKeyBySheet: { ...variantKeyBySheet, [activeOptionSheet]: key },
+      partFinishSelections: next,
     });
   },
 

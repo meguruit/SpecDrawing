@@ -2,7 +2,8 @@
 // until the user actually clicks export, since `exceljs` adds ~200 KB gzipped.
 
 import type { Part, PartId } from "@/lib/parts/types";
-import type { FinishOption, SheetName } from "@/lib/finishes/schema";
+import type { FinishOption, PartSheetDefaults, SheetName } from "@/lib/finishes/schema";
+import { resolveSheetDefault } from "@/lib/finishes/schema";
 
 export type SelectionState = "選択" | "既定" | "対象外";
 
@@ -22,9 +23,10 @@ export function buildSpecSheetRows(args: {
   selections: Record<PartId, string>;
   activeSheet: SheetName;
   activeVariantKey?: string | null;
+  partSheetDefaults?: PartSheetDefaults;
   optionsRev?: string;
 }): SpecSheetRow[] {
-  const { parts, finishOptions, selections, activeSheet, activeVariantKey, optionsRev } = args;
+  const { parts, finishOptions, selections, activeSheet, activeVariantKey, partSheetDefaults, optionsRev } = args;
   const bust = (url: string | null | undefined) => {
     if (!url) return null;
     if (!optionsRev) return url;
@@ -38,6 +40,17 @@ export function buildSpecSheetRows(args: {
     );
     let pickedOptionId: string | undefined = selections[part.id];
     let state: SelectionState = "選択";
+    // The configured per-part default for the active sheet + base, from
+    // default-options.json (undefined when no default is configured).
+    const configuredDefault = resolveSheetDefault(
+      partSheetDefaults?.[part.id]?.[activeSheet],
+      activeVariantKey ?? null,
+    );
+    if (pickedOptionId && configuredDefault && pickedOptionId === configuredDefault) {
+      // An explicit selection that still equals the default definition counts
+      // as 既定, not 選択 — the customer hasn't moved off the as-designed default.
+      state = "既定";
+    }
     if (!pickedOptionId) {
       // No explicit selection — pick the option whose `defaultForVariants`
       // includes the active variant (matches what the canvas renders).
@@ -112,6 +125,7 @@ export async function buildSpecSheetWorkbook(args: {
   selections: Record<PartId, string>;
   activeSheet: SheetName;
   activeVariantKey?: string | null;
+  partSheetDefaults?: PartSheetDefaults;
   optionsRev?: string;
 }): Promise<{ workbook: import("exceljs").Workbook; rows: SpecSheetRow[] }> {
   const { default: ExcelJS } = await import("exceljs");
@@ -173,6 +187,7 @@ export async function downloadSpecSheet(args: {
   selections: Record<PartId, string>;
   activeSheet: SheetName;
   activeVariantKey?: string | null;
+  partSheetDefaults?: PartSheetDefaults;
   filename: string;
   optionsRev?: string;
 }): Promise<void> {

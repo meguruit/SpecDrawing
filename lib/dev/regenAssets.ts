@@ -13,7 +13,12 @@
 import sharp from "sharp";
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { Part, Polygon, Vertex } from "@/lib/parts/types";
+import {
+  deriveVariantMaskFilename,
+  type Part,
+  type Polygon,
+  type Vertex,
+} from "@/lib/parts/types";
 
 const MASK_FEATHER_RADIUS = 2;
 
@@ -101,14 +106,15 @@ async function ensureDir(filePath: string) {
   await mkdir(dirname(filePath), { recursive: true });
 }
 
-async function writeMaskPng(
-  part: Part,
+async function writeMaskFile(
+  polygons: ReadonlyArray<Polygon>,
   sceneDir: string,
+  filename: string,
   width: number,
   height: number,
 ) {
-  const raw = rasterizePolygonsMask(part.polygons, width, height);
-  const path = resolve(sceneDir, part.mask);
+  const raw = rasterizePolygonsMask(polygons, width, height);
+  const path = resolve(sceneDir, filename);
   await ensureDir(path);
   // Gaussian blur on the alpha buffer — same 1-pixel-half-coverage edge AA
   // as the prior single-polygon rasterizer.
@@ -116,6 +122,27 @@ async function writeMaskPng(
     .blur(MASK_FEATHER_RADIUS)
     .png({ compressionLevel: 9 })
     .toFile(path);
+}
+
+async function writeMaskPng(
+  part: Part,
+  sceneDir: string,
+  width: number,
+  height: number,
+) {
+  // Base mask from `polygons` — byte-identical to before for parts with no
+  // per-variant data.
+  await writeMaskFile(part.polygons, sceneDir, part.mask, width, height);
+  // One additional mask per `maskPolygonsByVariant` entry, written to the
+  // filename recorded in `maskByVariant[key]` (or the conventional derived
+  // name when the manifest hasn't recorded one yet).
+  for (const [key, polygons] of Object.entries(
+    part.maskPolygonsByVariant ?? {},
+  )) {
+    const filename =
+      part.maskByVariant?.[key] ?? deriveVariantMaskFilename(part.mask, key);
+    await writeMaskFile(polygons, sceneDir, filename, width, height);
+  }
 }
 
 async function writeShadingPng(

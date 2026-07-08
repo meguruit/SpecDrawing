@@ -69,6 +69,7 @@ public/                                   runtime, served by Next.js
   assets/finishes/<part-id>/<option-id>.png   per-option swatch / texture
   catalog/finish-options.json             generated from the workbook
   catalog/finish-options.warnings.json    color-extraction / missing-swatch warnings
+  catalog/default-options.json            optional per-sheet per-part default selection
 ```
 
 The `parts.json` manifest declares for each part: id, label, category,
@@ -84,10 +85,61 @@ assets.
 > `npm run migrate:multiring` once on an older `parts.json` to convert it
 > to `polygons: [{ outer: <existing> }]`, then re-run `npm run seed:masks`.
 
+A part may additionally declare **per-variant masks** so it presents a
+different masked region on each switchable base image (`scene.json`
+`variants`): `maskByVariant` maps a variant key → mask filename, and
+`maskPolygonsByVariant` maps a variant key → the polygons that filename is
+rasterized from. Both are optional; a variant without an entry falls back to
+the base `mask` / `polygons`. **Scope trade-off:** only the visual mask varies
+per variant — hit-testing and the numbered marker always use the shared
+`polygons` / `marker`, so on a strongly skewed perspective the clickable
+region and the painted region can diverge. Author per-variant masks in
+`/dev/trace` via the "マスク層" selector (base = shared polygons; a variant =
+that variant's mask, seeded from base on first edit); regen writes one
+`mask_<NN>__<variant>.png` per entry.
+
 The `finish-options.json` catalog is derived from `部材リスト.xlsx` by
 `scripts/extract-finish-options.mjs`. Each option entry sets exactly one of
 `colorHex` (color-mode parts) or `textureUrl` (texture-mode parts), and the
 loader cross-validates the shape against the part's `renderMode`.
+
+The optional, hand-edited `default-options.json` declares which finish option
+each part starts **pre-selected** with, scoped per sheet (brand). It is
+organized sheet-first:
+
+```json
+{
+  "version": 1,
+  "sheet": [
+    {
+      "id": "アーバンシー",
+      "parts": [
+        { "id": "03", "default": "03-urb-0-2" },
+        { "id": "14", "default": "14-urb-0-opt0", "sharp": "14-urb-syn-ブラック" }
+      ]
+    }
+  ]
+}
+```
+
+Each part entry has a required `default` plus any number of optional **base
+keys** (each equal to a scene `variant` key, e.g. `sharp`). The effective
+default is `byBase[activeBase] ?? default` — the base override wins when the
+active base has one, otherwise `default` applies (so partial base coverage is
+fine, and an entry with no base keys behaves as a plain per-sheet default).
+
+A part listed under the active sheet opens **selected** with its effective
+default (instead of 未選択); a part not listed starts unselected as before. The
+"クリア" button shows only when the current selection differs from the effective
+default and resets to it rather than to 未選択 (parts with no default keep the
+legacy behavior — クリア removes the selection). On a sheet switch, a part left
+at its default (or untouched) adopts the new sheet's effective default, while an
+explicit non-default pick is preserved by `(partId, label)` match; switching the
+active **base** likewise re-seeds at-default parts to the new base's effective
+default (explicit picks preserved). The file is optional (a 404 means every part
+starts unselected); each `default` **and base override** is cross-validated at
+load against the catalog (option must exist and match the part id, sheet, and
+`renderMode`), failing loudly on drift.
 
 > **Placeholder warning.** The shipped `parts.json`, `mask_<NN>.png`, and
 > `shading_<NN>.png` are placeholders authored to make the architecture run

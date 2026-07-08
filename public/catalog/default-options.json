@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "sheet": [
+    {
+      "id": "アーバンシー",
+      "parts": [
+        { "id": "03", "default": "03-urb-0-2" },
+        { "id": "14", "default": "14-urb-0-opt0", "sharp": "14-urb-syn-ブラック" }
+      ]
+    }
+  ]
+}

@@ -193,136 +193,6 @@
       }
     },
     {
-      "id": "03-urb-0-2",
-      "partId": "03",
-      "sheet": "アーバンシー",
-      "label": "2口縦",
-      "productCode": "RD322STSA",
-      "thumbnailUrl": "/assets/finishes/03/03-urb-0-2.png",
-      "iconUrl": "/catalog/icons/03-urb-0-2.png",
-      "defaultForVariants": [
-        "natural",
-        "flat",
-        "sharp"
-      ],
-      "textureUrl": "/assets/finishes/03/_v_natural.png",
-      "textureUrlByVariant": {
-        "natural": {
-          "url": "/assets/finishes/03/_v_natural.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        },
-        "flat": {
-          "url": "/assets/finishes/03/_v_flat.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        },
-        "sharp": {
-          "url": "/assets/finishes/03/_v_sharp.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        }
-      },
-      "textureBox": {
-        "x": 1542,
-        "y": 1213,
-        "width": 208,
-        "height": 69
-      }
-    },
-    {
-      "id": "03-urb-1-2",
-      "partId": "03",
-      "sheet": "アーバンシー",
-      "label": "2口横",
-      "productCode": "RD323STSA",
-      "thumbnailUrl": "/assets/finishes/03/03-urb-1-2.png",
-      "iconUrl": "/catalog/icons/03-urb-1-2.png",
-      "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/03/03-urb-1-2.png",
-      "textureUrlByVariant": {
-        "natural": {
-          "url": "/assets/finishes/03/_v_natural.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        },
-        "flat": {
-          "url": "/assets/finishes/03/_v_flat.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        },
-        "sharp": {
-          "url": "/assets/finishes/03/_v_sharp.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        }
-      }
-    },
-    {
-      "id": "03-urb-2-4",
-      "partId": "03",
-      "sheet": "アーバンシー",
-      "label": "4口",
-      "productCode": "RD641STSA",
-      "thumbnailUrl": "/assets/finishes/03/03-urb-2-4.png",
-      "iconUrl": "/catalog/icons/03-urb-2-4.png",
-      "defaultForVariants": [],
-      "textureUrl": "/assets/finishes/03/03-urb-2-4.png",
-      "textureUrlByVariant": {
-        "natural": {
-          "url": "/assets/finishes/03/_v_natural.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        },
-        "flat": {
-          "url": "/assets/finishes/03/_v_flat.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        },
-        "sharp": {
-          "url": "/assets/finishes/03/_v_sharp.png",
-          "textureBox": {
-            "x": 1542,
-            "y": 1213,
-            "width": 208,
-            "height": 69
-          }
-        }
-      }
-    },
-    {
       "id": "04-urb-0-opt0",
       "partId": "04",
       "sheet": "アーバンシー",
@@ -4572,6 +4442,92 @@
         "width": 166,
         "height": 96
       }
+    },
+    {
+      "id": "03-urb-0-2",
+      "partId": "03",
+      "sheet": "アーバンシー",
+      "label": "2口縦",
+      "productCode": "RD322STSA",
+      "thumbnailUrl": "/assets/finishes/03/03-urb-0-2.png",
+      "iconUrl": "/catalog/icons/03-urb-0-2.png",
+      "defaultForVariants": [
+        "natural",
+        "flat",
+        "sharp"
+      ],
+      "textureUrl": "/assets/finishes/03/_v_natural.png",
+      "textureUrlByVariant": {
+        "natural": {
+          "url": "/assets/finishes/03/_v_natural.png",
+          "textureBox": {
+            "x": 1542,
+            "y": 1213,
+            "width": 208,
+            "height": 69
+          }
+        },
+        "flat": {
+          "url": "/assets/finishes/03/_v_flat.png",
+          "textureBox": {
+            "x": 1542,
+            "y": 1213,
+            "width": 208,
+            "height": 69
+          }
+        },
+        "sharp": {
+          "url": "/assets/finishes/03/_v_sharp.png",
+          "textureBox": {
+            "x": 1542,
+            "y": 1213,
+            "width": 208,
+            "height": 69
+          }
+        }
+      },
+      "textureBox": {
+        "x": 1542,
+        "y": 1213,
+        "width": 208,
+        "height": 69
+      }
+    },
+    {
+      "id": "03-urb-1-2",
+      "partId": "03",
+      "sheet": "アーバンシー",
+      "label": "2口横",
+      "productCode": "RD323STSA",
+      "thumbnailUrl": "/assets/finishes/03/03-urb-1-2.png",
+      "iconUrl": "/catalog/icons/03-urb-1-2.png",
+      "defaultForVariants": [],
+      "textureUrl": "/assets/finishes/03/_v_1_2.png",
+      "textureBox": {
+        "x": 1542,
+        "y": 1213,
+        "width": 275,
+        "height": 69
+      },
+      "mask": "no"
+    },
+    {
+      "id": "03-urb-2-4",
+      "partId": "03",
+      "sheet": "アーバンシー",
+      "label": "4口",
+      "productCode": "RD641STSA",
+      "thumbnailUrl": "/assets/finishes/03/03-urb-2-4.png",
+      "iconUrl": "/catalog/icons/03-urb-2-4.png",
+      "defaultForVariants": [],
+      "textureUrl": "/assets/finishes/03/_v_2_4.png",
+      "textureBox": {
+        "x": 1542,
+        "y": 1213,
+        "width": 275,
+        "height": 69
+      },
+      "mask": "no"
     }
   ]
 }

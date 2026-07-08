@@ -11,6 +11,10 @@ import type { Part, PartId } from "@/lib/parts/types";
 
 export type HistoryEntry = {
   editingId: PartId | null;
+  // Which mask layer the snapshot belongs to: null = the shared base
+  // `polygons`; a variant key = that variant's `maskPolygonsByVariant` entry.
+  // Undo/redo restores the polygons to the matching slot.
+  editVariant: string | null;
   polygons: Part["polygons"];
   marker: Part["marker"];
 };

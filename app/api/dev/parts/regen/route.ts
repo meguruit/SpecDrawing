@@ -70,7 +70,15 @@ function previewReadOnly(): NextResponse | null {
 // ring add/remove, polygon entry add/remove, hole add/remove — invalidates.
 function partRegenKey(part: Part): string {
   const payload =
-    JSON.stringify(part.polygons) + "|" + part.mask + "|" + (part.shading ?? "");
+    JSON.stringify(part.polygons) +
+    "|" +
+    part.mask +
+    "|" +
+    (part.shading ?? "") +
+    "|" +
+    JSON.stringify(part.maskByVariant ?? null) +
+    "|" +
+    JSON.stringify(part.maskPolygonsByVariant ?? null);
   let h = 0x811c9dc5;
   for (let i = 0; i < payload.length; i++) {
     h ^= payload.charCodeAt(i);
