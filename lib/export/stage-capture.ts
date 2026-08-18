@@ -34,18 +34,18 @@ function nextFrame(): Promise<void> {
  * `pixelRatio` compensates for the on-screen display scale, so a stage shown
  * at 1100 px wide for a 3000 px scene exports at the full 3000 px.
  *
- * `beforeCapture` runs after the editor chrome has been hidden and before the
- * pixels are read — it is where callers suppress their own affordances. Its
- * cleanup runs even if the capture throws.
+ * `beforeCapture` runs before the pixels are read and receives the stage — it
+ * is where callers suppress their own affordances (selection handles, ring
+ * outlines). It returns a cleanup, which runs even if the capture throws.
  */
 export async function captureStagePngBlob(options: {
   pixelRatio: number;
-  beforeCapture?: () => () => void;
+  beforeCapture?: (stage: Konva.Stage) => () => void;
 }): Promise<Blob> {
   const stage = getStage?.();
   if (!stage) throw new Error("エクスポート対象のキャンバスがありません");
 
-  const restore = options.beforeCapture?.();
+  const restore = options.beforeCapture?.(stage);
   try {
     // Let the chrome-hiding render land before we read pixels.
     await nextFrame();

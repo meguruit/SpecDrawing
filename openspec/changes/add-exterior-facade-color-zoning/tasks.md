@@ -42,67 +42,67 @@
 
 ## 5. 外観データモデルと永続化
 
-- [ ] 5.1 `lib/exterior/types.ts` — `ExteriorProject` / `ExteriorAngle` / `FacadeZone` / `ExtrasBrief` の型と Zod スキーマ。ゾーンは `{ id, label, polygons: Polygon[], colorCode: string | null, opacity: number, finishTexture: "sandstone" | null }`。`polygons` は既存 `lib/parts/types.ts` の `polygonSchema` を再利用する
-- [ ] 5.2 `lib/exterior/db.ts` — IndexedDB ラッパ。`images` store（key: imageId、value: `{ blob, filename, width, height, byteSize }`）と `projects` store を分離する。`version: 1` と `onupgradeneeded` migration の骨格を用意する
-- [ ] 5.3 プロジェクト書き込みを 600ms デバウンスにする。1 頂点ドラッグで Blob が書き直されないことを確認する
-- [ ] 5.4 `lib/exterior/store.ts` — Zustand store。内観の `activeScene` / `parts` / `finishOptions` / `partFinishSelections` / `activeVariantKey` を一切持たないこと
-- [ ] 5.5 object URL のライフサイクル管理を実装する（アングル切替・アンマウント時に `revokeObjectURL`）
-- [ ] 5.6 `navigator.storage.estimate()` による使用量表示と 80% 超の警告（消費上位プロジェクトを名指し）
+- [x] 5.1 `lib/exterior/types.ts` — `ExteriorProject` / `ExteriorAngle` / `FacadeZone` / `ExtrasBrief` の型と Zod スキーマ。ゾーンは `{ id, label, polygons: Polygon[], colorCode: string | null, opacity: number, finishTexture: "sandstone" | null }`。`polygons` は既存 `lib/parts/types.ts` の `polygonSchema` を再利用する
+- [x] 5.2 `lib/exterior/db.ts` — IndexedDB ラッパ。`images` store（key: imageId、value: `{ blob, filename, width, height, byteSize }`）と `projects` store を分離する。`version: 1` と `onupgradeneeded` migration の骨格を用意する
+- [x] 5.3 プロジェクト書き込みを 600ms デバウンスにする。1 頂点ドラッグで Blob が書き直されないことを確認する
+- [x] 5.4 `lib/exterior/store.ts` — Zustand store。内観の `activeScene` / `parts` / `finishOptions` / `partFinishSelections` / `activeVariantKey` を一切持たないこと
+- [x] 5.5 object URL のライフサイクル管理を実装する（アングル切替・アンマウント時に `revokeObjectURL`）
+- [x] 5.6 `navigator.storage.estimate()` による使用量表示と 80% 超の警告（消費上位プロジェクトを名指し）
 
 ## 6. 外観ワークスペースの骨格
 
-- [ ] 6.1 `app/exterior/page.tsx` + `app/exterior/ExteriorWorkspace.client.tsx`（`next/dynamic({ ssr: false })` 境界。サーバ側で Konva / IndexedDB をモジュールスコープ参照しない）
-- [ ] 6.2 `components/exterior/ImageUploader.tsx` — ファイルピッカー + ドラッグ&ドロップ。JPEG/PNG 以外はファイル名と検出型を名指しして拒否し、保存しない
-- [ ] 6.3 長辺 4000px 超の画像を 4000px に縮小してから保存する。保存後の寸法がそのアングルのゾーン座標系になること
-- [ ] 6.4 プロジェクト CRUD（名前必須の作成 / 一覧 / 切替 / 確認付き削除。削除時に画像 Blob も回収）
-- [ ] 6.5 `components/exterior/AngleSwitcher.tsx` — アングルの切替・リネーム・確認付き削除。ゾーンがアングル間で混ざらないこと
-- [ ] 6.6 「このデータはこのブラウザにのみ保存されています」の常時表示
-- [ ] 6.7 リロード復元スモーク — 画像アップロード → リロード → 同じプロジェクト・アングル・ゾーンが復元される
+- [x] 6.1 `app/exterior/page.tsx` + `app/exterior/ExteriorWorkspace.client.tsx`（`next/dynamic({ ssr: false })` 境界。サーバ側で Konva / IndexedDB をモジュールスコープ参照しない）
+- [x] 6.2 `components/exterior/ImageUploader.tsx` — ファイルピッカー + ドラッグ&ドロップ。JPEG/PNG 以外はファイル名と検出型を名指しして拒否し、保存しない
+- [x] 6.3 長辺 4000px 超の画像を 4000px に縮小してから保存する。保存後の寸法がそのアングルのゾーン座標系になること
+- [x] 6.4 プロジェクト CRUD（名前必須の作成 / 一覧 / 切替 / 確認付き削除。削除時に画像 Blob も回収）
+- [x] 6.5 `components/exterior/AngleSwitcher.tsx` — アングルの切替・リネーム・確認付き削除。ゾーンがアングル間で混ざらないこと
+- [x] 6.6 「このデータはこのブラウザにのみ保存されています」の常時表示
+- [x] 6.7 リロード復元スモーク — 画像アップロード → リロード → 同じプロジェクト・アングル・ゾーンが復元される
 
 ## 7. ゾーン編集
 
-- [ ] 7.1 `components/exterior/ExteriorCanvas.client.tsx` — ベース画像をステージにフィット表示（内部座標は画像原寸のまま）
-- [ ] 7.2 `PolygonEditor` を組み込む。クリック頂点追加 / 12px 中点挿入 / 右クリック削除 / 頂点ドラッグが production ビルドで動くこと
+- [x] 7.1 `components/exterior/ExteriorCanvas.client.tsx` — ベース画像をステージにフィット表示（内部座標は画像原寸のまま）
+- [x] 7.2 `PolygonEditor` を組み込む。クリック頂点追加 / 12px 中点挿入 / 右クリック削除 / 頂点ドラッグが production ビルドで動くこと
 - [ ] 7.3 リングが 3 頂点未満にならないよう削除を拒否し、理由を表示する
-- [ ] 7.4 ゾーン CRUD（一意 id + 連番既定ラベル / 自由リネーム / 3 頂点以上のゾーン削除は確認必須）
+- [x] 7.4 ゾーン CRUD（一意 id + 連番既定ラベル / 自由リネーム / 3 頂点以上のゾーン削除は確認必須）
 - [ ] 7.5 hole リングの追加と編集（穴の頂点も outer と同じ操作で編集可能）
 - [ ] 7.6 undo/redo（深さ 30 以上、頂点追加・削除・ドラッグ終了・リングクリア・ゾーン追加・ゾーン削除・ゾーン選択変更で 1 段。ドラッグ中 100 連発は 1 段）。ゾーン削除の undo で色も復元されること
-- [ ] 7.7 `components/exterior/ZoneList.tsx` — ラベル / 色番（未割当インジケータ）/ 不透明度を行表示。行クリックで選択、選択ゾーンをリストとキャンバス両方で強調
-- [ ] 7.8 ゾーンの並べ替え UI（並び順 = 重なり順）
+- [x] 7.7 `components/exterior/ZoneList.tsx` — ラベル / 色番（未割当インジケータ）/ 不透明度を行表示。行クリックで選択、選択ゾーンをリストとキャンバス両方で強調
+- [x] 7.8 ゾーンの並べ替え UI（並び順 = 重なり順）
 
 ## 8. 合成パイプライン
 
-- [ ] 8.1 `components/exterior/ZoneFillLayer.tsx` — 1 ゾーン = 1 `Konva.Group`（cache 済み）を単一 Layer に載せる。cache キーは描画依存フィールド（polygons / colorCode / opacity / finishTexture）の FNV-1a ハッシュ 1 本
-- [ ] 8.2 合成順を実装する: 色 Rect（`multiply` + zone.opacity）→ 砂岩テクスチャ（`soft-light`）→ マスク Shape（`destination-in`）。**クリップは必ず最後**
-- [ ] 8.3 マスク Shape を `sceneFunc` 内の `Path2D` + `ctx.fill(path, "evenodd")` で実装する（穴を even-odd で抜く。`clipFunc` は使わない）
+- [x] 8.1 `components/exterior/ZoneFillLayer.tsx` — 1 ゾーン = 1 `Konva.Group`（cache 済み）を単一 Layer に載せる。cache キーは描画依存フィールド（polygons / colorCode / opacity / finishTexture）の FNV-1a ハッシュ 1 本
+- [x] 8.2 合成順を実装する: 色 Rect（`multiply` + zone.opacity）→ 砂岩テクスチャ（`soft-light`）→ マスク Shape（`destination-in`）。**クリップは必ず最後**
+- [x] 8.3 マスク Shape を `sceneFunc` 内の `Path2D` + `ctx.fill(path, "evenodd")` で実装する（穴を even-odd で抜く。`clipFunc` は使わない）
 - [ ] 8.4 編集中（ドラッグ中）のゾーンは cache を外して直描きし、drag-end で再 cache する
-- [ ] 8.5 ゾーン隔離を検証する — 3 ゾーン描画時に 1 ゾーンのクリップが他ゾーンとベース画像を削らないこと。壊れる場合は design.md D4 のとおり 1 ゾーン = 1 Layer にフォールバックし、ゾーン数上限と警告を入れる
-- [ ] 8.6 `components/exterior/OpacitySlider.tsx` — 0–1 のスライダ + 数値表示、新規ゾーンの既定 0.85。変更が当該ゾーンのみ再描画すること
+- [x] 8.5 ゾーン隔離を検証する — 3 ゾーン描画時に 1 ゾーンのクリップが他ゾーンとベース画像を削らないこと。壊れる場合は design.md D4 のとおり 1 ゾーン = 1 Layer にフォールバックし、ゾーン数上限と警告を入れる
+- [x] 8.6 `components/exterior/OpacitySlider.tsx` — 0–1 のスライダ + 数値表示、新規ゾーンの既定 0.85。変更が当該ゾーンのみ再描画すること
 - [ ] 8.7 砂岩テクスチャのタイル描画。継ぎ目が目立つ場合はミラータイル（4 象限鏡像）にフォールバックする
 - [ ] 8.8 未割当ゾーンがベース画像を一切変えないこと、かつ選択・編集は可能であることを確認する
 - [ ] 8.9 色クリアでベースが復元され、geometry / label / opacity / finishTexture が保持されることを確認する
-- [ ] 8.10 頂点ハンドル・アウトライン・選択強調がゾーン塗りの上に描かれること（濃色ゾーンでも見えること）
+- [x] 8.10 頂点ハンドル・アウトライン・選択強調がゾーン塗りの上に描かれること（濃色ゾーンでも見えること）
 
 ## 9. カラー選択 UI
 
-- [ ] 9.1 `components/exterior/JolypateColorPanel.tsx` — スウォッチ + 色番 + 色名のチップ。カテゴリ（NEUTRAL/MISTY/SUNNY/TRAD）でグルーピング
-- [ ] 9.2 色番・色名に対するテキストフィルタ
-- [ ] 9.3 チップクリックで選択中ゾーンに色を割り当て、即時再描画する
-- [ ] 9.4 ゾーン未選択時のクリックは「ゾーンを選択してください」を表示し、どのゾーンも変更しない
-- [ ] 9.5 実データスモーク — `駒込駅前_外観_1_20260807.jpg` をアップロードして外壁面にゾーンを引き、中明度色（例 `T3016`）を当てて陰影が残ることを確認する。ここで既定不透明度 0.85 の妥当性を判断し、必要なら調整する
+- [x] 9.1 `components/exterior/JolypateColorPanel.tsx` — スウォッチ + 色番 + 色名のチップ。カテゴリ（NEUTRAL/MISTY/SUNNY/TRAD）でグルーピング
+- [x] 9.2 色番・色名に対するテキストフィルタ
+- [x] 9.3 チップクリックで選択中ゾーンに色を割り当て、即時再描画する
+- [x] 9.4 ゾーン未選択時のクリックは「ゾーンを選択してください」を表示し、どのゾーンも変更しない
+- [x] 9.5 実データスモーク — `駒込駅前_外観_1_20260807.jpg` をアップロードして外壁面にゾーンを引き、中明度色（例 `T3016`）を当てて陰影が残ることを確認する。ここで既定不透明度 0.85 の妥当性を判断し、必要なら調整する
 
 ## 10. その他外装（プロンプト記録）
 
-- [ ] 10.1 `components/exterior/ExtrasBriefPanel.tsx` — 固定 7 カテゴリ（`ライティング` / `アクセント` / `館銘サイン` / `ポスト` / `外構-緑化` / `外構-舗装` / `門扉`）の自由記述欄。カテゴリの追加・削除・リネーム UI は設けない
-- [ ] 10.2 「入力内容は画像には反映されません（仕様書に記録されます）」を常時表示する
-- [ ] 10.3 プロンプトをプロジェクト単位（アングル単位ではない）で保存し、`updatedAt` を記録する。リロードで復元されること
+- [x] 10.1 `components/exterior/ExtrasBriefPanel.tsx` — 固定 7 カテゴリ（`ライティング` / `アクセント` / `館銘サイン` / `ポスト` / `外構-緑化` / `外構-舗装` / `門扉`）の自由記述欄。カテゴリの追加・削除・リネーム UI は設けない
+- [x] 10.2 「入力内容は画像には反映されません（仕様書に記録されます）」を常時表示する
+- [x] 10.3 プロンプトをプロジェクト単位（アングル単位ではない）で保存し、`updatedAt` を記録する。リロードで復元されること
 - [ ] 10.4 LLM / 画像生成サービスへのリクエストも新規 API ルートも一切追加していないことを確認する
 
 ## 11. エクスポート
 
 - [x] 11.0a `lib/export/download.ts` を新設 — blob object URL 経由のダウンロード、即時 revoke の廃止、複数ファイルの逐次配信（内観エクスポートで「ブラウザ上は成功するがファイルが落ちない」不具合の修正）
 - [x] 11.0b `lib/export/stage-capture.ts` を新設 — ステージ登録 + `toCanvas` → `toBlob`（14MB の data URL を廃止）。PNG と Excel のダウンロード主体をページに一本化し、同一 tick での二重発火を解消
-- [ ] 11.1 `lib/export/filename.ts` に `buildExteriorExportFilename(projectSlug, angleSlug, ts, ext)` を追加する（既存 `buildExportFilename` のシグネチャは不変）。プロジェクト名・アングル名のファイルシステム安全な slug 化を実装する
+- [x] 11.1 `lib/export/filename.ts` に `buildExteriorExportFilename(projectSlug, angleSlug, ts, ext)` を追加する（既存 `buildExportFilename` のシグネチャは不変）。プロジェクト名・アングル名のファイルシステム安全な slug 化を実装する
 - [ ] 11.2 単一アングル PNG エクスポート（`pixelRatio: 2`、編集 chrome 除外）
 - [ ] 11.3 全アングル一括 PNG エクスポート（**逐次処理**。非アクティブアングルも自分のゾーンで合成されること。同一 timestamp を共有）
 - [ ] 11.4 `lib/export/spec-sheet.ts` に `downloadExteriorSpecSheet(...)` を追加する（`exceljs` 動的 import）。`塗り分け` シート: `アングル / ゾーン / 色番 / 色名 / カテゴリ / 不透明度 / 砂岩仕上げ / スウォッチ`、アングルでグループ化し重なり順で並べる
@@ -113,7 +113,7 @@
 
 ## 12. 案件 JSON 書き出し / 読み込み
 
-- [ ] 12.1 画像バイナリを含まない `<projectSlug>.specdrawing-ext.json` の書き出し（案件名 / アングル定義（元ファイル名 + 保存寸法）/ ゾーン / 色 / 不透明度 / 砂岩 / プロンプト）
+- [x] 12.1 画像バイナリを含まない `<projectSlug>.specdrawing-ext.json` の書き出し（案件名 / アングル定義（元ファイル名 + 保存寸法）/ ゾーン / 色 / 不透明度 / 砂岩 / プロンプト）
 - [ ] 12.2 読み込み時にアングルごとの画像再添付を求める UI
 - [ ] 12.3 寸法不一致の画像を両方の寸法を名指しして拒否する（ゾーン座標が画像ピクセル座標系のため）
 - [ ] 12.4 往復スモーク — 書き出し → プロジェクト削除 → 読み込み + 画像再添付 → ゾーンが元どおり画像に一致すること
