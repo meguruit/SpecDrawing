@@ -12,10 +12,7 @@ import {
   PartMarkerLayer,
   isPointInsideAnyPart,
 } from "@/components/parts/PartMarkerLayer";
-import {
-  buildExportFilename,
-  formatExportTimestamp,
-} from "@/lib/export/filename";
+import { registerExportStage } from "@/lib/export/stage-capture";
 
 const MAX_DISPLAY_WIDTH = 1100;
 
@@ -46,44 +43,19 @@ export default function CanvasStage() {
     return Math.min(1, MAX_DISPLAY_WIDTH / scene.width);
   }, [scene]);
 
+  // Publish the stage so the page can drive the export. The page owns the
+  // whole export (PNG + Excel, downloaded in sequence) — having the canvas
+  // download its own file on the same trigger made the two race, and a burst
+  // of downloads from one click is what browsers gate behind a permission.
   useEffect(() => {
-    if (!exportRequestedAt) return;
-    const stage = stageRef.current;
-    const sceneNow = useCanvasStore.getState().activeScene;
-    if (!stage || !sceneNow) return;
+    registerExportStage(() => stageRef.current);
+    return () => registerExportStage(null);
+  }, []);
 
-    const previousMarkersVisible =
-      useCanvasStore.getState().markersVisible;
-    if (previousMarkersVisible) {
-      // Hide markers in export by toggling off for the snapshot.
-      useCanvasStore.setState({ markersVisible: false });
-    }
-
-    const handle = requestAnimationFrame(() => {
-      try {
-        // pixelRatio compensates for the on-screen displayScale so the export
-        // is at native scene resolution.
-        const dataUrl = stage.toDataURL({
-          pixelRatio: 1 / displayScale,
-          mimeType: "image/png",
-        });
-        const ts =
-          useCanvasStore.getState().exportTimestamp ?? formatExportTimestamp();
-        const variantKey = useCanvasStore.getState().activeVariantKey;
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = buildExportFilename(sceneNow.id, variantKey, ts, "png");
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } finally {
-        if (previousMarkersVisible) {
-          useCanvasStore.setState({ markersVisible: true });
-        }
-      }
-    });
-    return () => cancelAnimationFrame(handle);
-  }, [exportRequestedAt, displayScale]);
+  // The page needs the display scale to ask for a native-resolution export.
+  useEffect(() => {
+    useCanvasStore.setState({ exportPixelRatio: 1 / displayScale });
+  }, [displayScale]);
 
   const handleStageMouseDown = useCallback(
     (e: KonvaEventObject<MouseEvent | TouchEvent>) => {

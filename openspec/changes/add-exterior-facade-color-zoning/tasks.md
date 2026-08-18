@@ -1,10 +1,10 @@
 ## 1. ルート移設とモード選択メニュー（内観の挙動を変えない）
 
-- [ ] 1.1 `app/page.tsx` の中身を `app/interior/page.tsx` へそのまま移設する（import パスのみ調整、ロジック差分ゼロ）
-- [ ] 1.2 `app/page.tsx` を 2 択のモード選択メニューに差し替える（「内観パースイメージ作成」→ `/interior`、「外観パース塗り分け」→ `/exterior`）。scene / parts / finish-options のフェッチも IndexedDB 接続も行わないこと
-- [ ] 1.3 `/interior` で既存内観スモークを通す（デフォルトシーン自動ロード / 17 マーカー / ⑦ 選択とチップ表示 / シート切替の選択保持 + トースト / バリアント切替 / 番号オーバーレイ OFF / 選択部材エクスポート）
-- [ ] 1.4 `/` がネットワークリクエストを一切出さないことを DevTools Network で確認する
-- [ ] 1.5 ここまでを独立コミットにする（単独 revert 可能にするため）
+- [x] 1.1 `app/page.tsx` の中身を `app/interior/page.tsx` へそのまま移設する（import パスのみ調整、ロジック差分ゼロ）
+- [x] 1.2 `app/page.tsx` を 2 択のモード選択メニューに差し替える（「内観パースイメージ作成」→ `/interior`、「外観パース塗り分け」→ `/exterior`）。scene / parts / finish-options のフェッチも IndexedDB 接続も行わないこと
+- [x] 1.3 `/interior` で既存内観スモークを通す（デフォルトシーン自動ロード / 17 マーカー / ⑦ 選択とチップ表示 / シート切替の選択保持 + トースト / バリアント切替 / 番号オーバーレイ OFF / 選択部材エクスポート）
+- [x] 1.4 `/` がネットワークリクエストを一切出さないことを DevTools Network で確認する
+- [x] 1.5 ここまでを独立コミットにする（単独 revert 可能にするため）
 
 ## 2. ポリゴン編集ロジックの共有化（`/dev/trace` を壊さない）
 
@@ -100,6 +100,8 @@
 
 ## 11. エクスポート
 
+- [x] 11.0a `lib/export/download.ts` を新設 — blob object URL 経由のダウンロード、即時 revoke の廃止、複数ファイルの逐次配信（内観エクスポートで「ブラウザ上は成功するがファイルが落ちない」不具合の修正）
+- [x] 11.0b `lib/export/stage-capture.ts` を新設 — ステージ登録 + `toCanvas` → `toBlob`（14MB の data URL を廃止）。PNG と Excel のダウンロード主体をページに一本化し、同一 tick での二重発火を解消
 - [ ] 11.1 `lib/export/filename.ts` に `buildExteriorExportFilename(projectSlug, angleSlug, ts, ext)` を追加する（既存 `buildExportFilename` のシグネチャは不変）。プロジェクト名・アングル名のファイルシステム安全な slug 化を実装する
 - [ ] 11.2 単一アングル PNG エクスポート（`pixelRatio: 2`、編集 chrome 除外）
 - [ ] 11.3 全アングル一括 PNG エクスポート（**逐次処理**。非アクティブアングルも自分のゾーンで合成されること。同一 timestamp を共有）

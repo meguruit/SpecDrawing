@@ -122,6 +122,34 @@ The exterior export action MUST be disabled when the active project has no angle
 - **WHEN** the project has one uploaded image and no zones
 - **THEN** the export action is enabled and clicking it downloads the PNG and the Excel
 
+### Requirement: Downloads are delivered as blobs, in sequence
+
+Every exported file MUST be handed to the browser as a blob object URL. Exports MUST NOT be delivered as `data:` URLs, whose practical size ceiling a native-resolution PNG exceeds. The object URL MUST NOT be revoked on the same tick as the download is triggered.
+
+When one action produces more than one file, the files MUST be delivered one after another with a gap between them, rather than all on the same tick — browsers gate a burst of downloads from a single user gesture behind a permission, and once that permission is denied for the origin, every file after the first is dropped with no error observable by the page. For the same reason, when an action produces both a PNG and a spec sheet, the PNG MUST be delivered first.
+
+Because a blocked download is not observable from the page, a multi-file export MUST tell the user what to check if fewer files arrive than expected.
+
+#### Scenario: Native-resolution PNG is delivered as a blob
+
+- **WHEN** a scene 3000 px wide is exported at native resolution, producing roughly 11 MB of PNG
+- **THEN** the download is triggered from a blob object URL, not a `data:` URL
+
+#### Scenario: Two files are delivered in order, not at once
+
+- **WHEN** one export click produces a PNG and a spec sheet
+- **THEN** the PNG download is triggered first and the spec sheet follows after a delay, rather than both being triggered on the same tick
+
+#### Scenario: Partial delivery is explained
+
+- **WHEN** an export produces more than one file
+- **THEN** the user is told that if only some files are saved, the browser's multiple-automatic-downloads permission needs to be granted
+
+#### Scenario: One click produces one export
+
+- **WHEN** the user clicks the export action once
+- **THEN** exactly one set of files is produced, sharing one timestamp
+
 ### Requirement: Interior export path is unaffected by exterior export
 
 Adding exterior export MUST NOT change the interior export's behaviour, its worksheet name, its column set, its `選択状態` resolution, or its filename pattern.

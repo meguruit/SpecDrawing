@@ -38,6 +38,12 @@ type CanvasState = {
   exportRequestedAt: number;
   /** Shared timestamp string for the in-flight export click, so PNG and Excel filenames match. */
   exportTimestamp: string | null;
+  /**
+   * Scale factor that takes the stage from its on-screen size back to native
+   * scene resolution. Published by the canvas (which owns the display scale)
+   * and read by the page (which drives the export).
+   */
+  exportPixelRatio: number;
   notification: Notification | null;
 
   loadScene: (
@@ -94,6 +100,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   markersVisible: true,
   exportRequestedAt: 0,
   exportTimestamp: null,
+  exportPixelRatio: 1,
   notification: null,
 
   loadScene: (

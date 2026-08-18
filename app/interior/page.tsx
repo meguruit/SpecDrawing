@@ -107,8 +107,13 @@ export default function Page() {
 
   const onExport = useCallback(() => requestExport(), [requestExport]);
 
-  // Excel spec-sheet export: triggered by the same `requestExport` action
-  // as the PNG. Dynamic-imported so `exceljs` lands only on first click.
+  // One click produces two files. Both are built here and downloaded in
+  // sequence: when the canvas downloaded the PNG on its own and this effect
+  // downloaded the Excel independently, the two fired on the same tick, and
+  // browsers gate a burst of downloads from one gesture behind a permission
+  // — once that is denied for the origin, files vanish with no error.
+  //
+  // `exceljs` stays dynamic-imported so it lands only on the first click.
   useEffect(() => {
     if (!exportRequestedAt) return;
     if (lastExcelExportAt.current === exportRequestedAt) return;
@@ -116,33 +121,81 @@ export default function Page() {
     const state = useCanvasStore.getState();
     if (!state.activeScene) return;
     (async () => {
-      const [{ downloadSpecSheet }, { buildExportFilename }] = await Promise.all([
+      const [
+        { buildSpecSheetBlob },
+        { buildExportFilename },
+        { captureStagePngBlob },
+        { downloadBlobsSequentially },
+      ] = await Promise.all([
         import("@/lib/export/spec-sheet"),
         import("@/lib/export/filename"),
+        import("@/lib/export/stage-capture"),
+        import("@/lib/export/download"),
       ]);
       const ts = state.exportTimestamp ?? "";
-      const filename = buildExportFilename(
-        state.activeScene!.id,
-        state.activeVariantKey,
-        ts,
-        "xlsx",
-      );
+      const sceneId = state.activeScene!.id;
+      const variantKey = state.activeVariantKey;
+      const files: Array<{ blob: Blob; filename: string }> = [];
+
+      // PNG first — it is the artifact people actually look at, so if the
+      // browser only lets one file through, it should be this one.
       try {
-        await downloadSpecSheet({
+        const pngBlob = await captureStagePngBlob({
+          pixelRatio: state.exportPixelRatio,
+          beforeCapture: () => {
+            const wasVisible = useCanvasStore.getState().markersVisible;
+            if (wasVisible) useCanvasStore.setState({ markersVisible: false });
+            return () => {
+              if (wasVisible) useCanvasStore.setState({ markersVisible: true });
+            };
+          },
+        });
+        files.push({
+          blob: pngBlob,
+          filename: buildExportFilename(sceneId, variantKey, ts, "png"),
+        });
+      } catch (err) {
+        useCanvasStore.setState({
+          notification: {
+            id: Date.now(),
+            message: `PNG エクスポートに失敗しました: ${(err as Error).message}`,
+          },
+        });
+      }
+
+      try {
+        const xlsxBlob = await buildSpecSheetBlob({
           parts: state.parts,
           finishOptions: state.finishOptions,
           selections: state.partFinishSelections,
           activeSheet: state.activeOptionSheet,
           activeVariantKey: state.activeVariantKey,
           partSheetDefaults: state.partSheetDefaults,
-          filename,
           optionsRev: state.finishOptionsRev,
+        });
+        files.push({
+          blob: xlsxBlob,
+          filename: buildExportFilename(sceneId, variantKey, ts, "xlsx"),
         });
       } catch (err) {
         useCanvasStore.setState({
           notification: {
             id: Date.now(),
             message: `Excel エクスポートに失敗しました: ${(err as Error).message}`,
+          },
+        });
+      }
+
+      if (files.length === 0) return;
+      await downloadBlobsSequentially(files);
+      if (files.length > 1) {
+        // The page cannot observe whether the browser actually wrote the
+        // files, so say what to check when only one of them shows up.
+        useCanvasStore.setState({
+          notification: {
+            id: Date.now(),
+            message:
+              "PNG と Excel をダウンロードしました。1 つしか保存されない場合はブラウザの「複数ファイルの自動ダウンロード」を許可してください。",
           },
         });
       }

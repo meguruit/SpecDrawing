@@ -44,7 +44,12 @@ import {
   clearDraft,
 } from "@/lib/dev/draftStore";
 import { History, type HistoryEntry } from "@/lib/dev/history";
-import { nearestEdge, type Point } from "@/lib/dev/geometry";
+import {
+  nearestEdge,
+  nearestEdgeAcrossRings,
+  type Point,
+} from "@/lib/dev/geometry";
+import { PolygonEditor } from "@/components/polygon/PolygonEditor";
 import { RestoreDraftPrompt } from "@/components/dev/RestoreDraftPrompt";
 import {
   ExtractorImportPanel,
@@ -721,38 +726,11 @@ export default function TraceTool() {
       // wins regardless of which sub-polygon is currently active. The
       // matched ring also becomes the new active ring so subsequent
       // clicks build coherently.
-      let best: { active: ActiveRing; edgeIndex: number; foot: Point; distance: number } | null = null;
-      editingPart.polygons.forEach((poly, pi) => {
-        const outer = nearestEdge(poly.outer as ReadonlyArray<Point>, [sx, sy], tol);
-        if (outer && (!best || outer.distance < best.distance)) {
-          best = {
-            active: { kind: "outer", polygonIndex: pi },
-            edgeIndex: outer.edgeIndex,
-            foot: outer.foot,
-            distance: outer.distance,
-          };
-        }
-        poly.holes?.forEach((h, hi) => {
-          const inner = nearestEdge(h as ReadonlyArray<Point>, [sx, sy], tol);
-          if (inner && (!best || inner.distance < best.distance)) {
-            best = {
-              active: { kind: "hole", polygonIndex: pi, holeIndex: hi },
-              edgeIndex: inner.edgeIndex,
-              foot: inner.foot,
-              distance: inner.distance,
-            };
-          }
-        });
-      });
+      const best = nearestEdgeAcrossRings(editingPart.polygons, [sx, sy], tol);
 
       if (best) {
-        const hit = best as {
-          active: ActiveRing;
-          edgeIndex: number;
-          foot: Point;
-        };
-        handleInsertVertexAt(hit.edgeIndex, hit.foot, hit.active);
-        setActiveRing(hit.active);
+        handleInsertVertexAt(best.edgeIndex, best.foot, best.ring);
+        setActiveRing(best.ring);
       } else {
         // Fall through: append to the active ring (default = active outer).
         handleAddVertex(sx, sy, activeRing);
@@ -1344,140 +1322,25 @@ export default function TraceTool() {
             )}
             {editingPart && (
               <Layer>
-                {/* One <Line> per ring. Outer rings get the part's category
-                    color and a translucent fill (subdued for inactive
-                    sub-polygons); hole rings get a contrasting accent
-                    color and a shorter dash to distinguish them visually.
-                    All lines stay non-listening so click events fall
-                    through to the Stage's onClick handler. */}
-                {editingPart.polygons.flatMap((poly, pi) => {
-                  const lines: ReactNode[] = [];
-                  const isActiveOuter =
-                    activeRing.kind === "outer" &&
-                    activeRing.polygonIndex === pi;
-                  const outerStroke =
-                    CATEGORY_COLOR[editingPart.category] ?? "#0F172A";
-                  lines.push(
-                    <Line
-                      key={`p${pi}-outer`}
-                      points={poly.outer.flatMap(([x, y]) => [x, y])}
-                      closed
-                      stroke={outerStroke}
-                      strokeWidth={isActiveOuter ? 6 : 3}
-                      opacity={isActiveOuter ? 1 : 0.45}
-                      fill={
-                        isActiveOuter
-                          ? "rgba(59,130,246,0.10)"
-                          : "rgba(59,130,246,0.04)"
-                      }
-                      listening={false}
-                    />,
-                  );
-                  poly.holes?.forEach((hole, hi) => {
-                    const isActiveHole =
-                      activeRing.kind === "hole" &&
-                      activeRing.polygonIndex === pi &&
-                      activeRing.holeIndex === hi;
-                    lines.push(
-                      <Line
-                        key={`p${pi}-hole-${hi}`}
-                        points={hole.flatMap(([x, y]) => [x, y])}
-                        closed
-                        stroke="#DC2626"
-                        strokeWidth={isActiveHole ? 5 : 3}
-                        dash={[8, 6]}
-                        opacity={isActiveHole ? 1 : 0.5}
-                        listening={false}
-                      />,
-                    );
-                  });
-                  return lines;
-                })}
-                {/* Vertex handles for every ring of the editing part. The
-                    handlers take an explicit `target` so the active ring
-                    state isn't read inside the closure (which would stale-
-                    close over the previous render's value during a burst). */}
-                {editingPart.polygons.flatMap((poly, pi) => {
-                  const handles: ReactNode[] = [];
-                  const outerTarget: ActiveRing = {
-                    kind: "outer",
-                    polygonIndex: pi,
-                  };
-                  // Keep handles at a constant ~2 px screen radius
-                  // regardless of the stage's displayScale so fine
-                  // adjustment is comfortable on both small and large scenes.
-                  const handleRadius = 2 / displayScale;
-                  const holeRadius = 1.75 / displayScale;
-                  const handleStroke = 0.75 / displayScale;
-                  poly.outer.forEach((v, i) => {
-                    handles.push(
-                      <Circle
-                        key={`p${pi}-outer-v${i}`}
-                        x={v[0]}
-                        y={v[1]}
-                        radius={handleRadius}
-                        fill="#ffffff"
-                        stroke={
-                          CATEGORY_COLOR[editingPart.category] ?? "#0F172A"
-                        }
-                        strokeWidth={handleStroke}
-                        draggable
-                        onMouseDown={() => setActiveRing(outerTarget)}
-                        onDragStart={beginDrag}
-                        onDragMove={(ev) =>
-                          handleMoveVertexLive(
-                            outerTarget,
-                            i,
-                            ev.target.x(),
-                            ev.target.y(),
-                          )
-                        }
-                        onDragEnd={endDrag}
-                        onContextMenu={(ev) => {
-                          ev.evt.preventDefault();
-                          handleDeleteVertex(outerTarget, i);
-                        }}
-                      />,
-                    );
-                  });
-                  poly.holes?.forEach((hole, hi) => {
-                    const holeTarget: ActiveRing = {
-                      kind: "hole",
-                      polygonIndex: pi,
-                      holeIndex: hi,
-                    };
-                    hole.forEach((v, i) => {
-                      handles.push(
-                        <Circle
-                          key={`p${pi}-hole-${hi}-v${i}`}
-                          x={v[0]}
-                          y={v[1]}
-                          radius={holeRadius}
-                          fill="#FEE2E2"
-                          stroke="#DC2626"
-                          strokeWidth={handleStroke}
-                          draggable
-                          onMouseDown={() => setActiveRing(holeTarget)}
-                          onDragStart={beginDrag}
-                          onDragMove={(ev) =>
-                            handleMoveVertexLive(
-                              holeTarget,
-                              i,
-                              ev.target.x(),
-                              ev.target.y(),
-                            )
-                          }
-                          onDragEnd={endDrag}
-                          onContextMenu={(ev) => {
-                            ev.evt.preventDefault();
-                            handleDeleteVertex(holeTarget, i);
-                          }}
-                        />,
-                      );
-                    });
-                  });
-                  return handles;
-                })}
+                {/* Ring outlines + vertex handles come from the shared
+                    editor, so `/dev/trace` and the exterior zone editor
+                    stay on one implementation of the interaction rules. */}
+                <PolygonEditor
+                  polygons={editingPart.polygons}
+                  activeRing={activeRing}
+                  displayScale={displayScale}
+                  style={{
+                    outerStroke:
+                      CATEGORY_COLOR[editingPart.category] ?? "#0F172A",
+                  }}
+                  onActivateRing={setActiveRing}
+                  onVertexDragStart={beginDrag}
+                  onVertexDragMove={(at, i, x, y) =>
+                    handleMoveVertexLive(at, i, x, y)
+                  }
+                  onVertexDragEnd={endDrag}
+                  onVertexDelete={(at, i) => handleDeleteVertex(at, i)}
+                />
                 {visibility !== "hidden" && (
                   <>
                     <Circle
