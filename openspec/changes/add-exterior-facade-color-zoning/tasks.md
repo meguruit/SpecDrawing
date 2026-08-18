@@ -8,14 +8,14 @@
 
 ## 2. ポリゴン編集ロジックの共有化（`/dev/trace` を壊さない）
 
-- [ ] 2.1 `lib/polygon/interactions.ts` を新設し、`TraceTool.client.tsx` から純粋関数（`nearestEdge` / 垂線足計算 / 12px 判定 / 頂点ヒット判定 / 全リング横断の最近傍エッジ探索）を移設する。`TraceTool` は import するだけに変える
-- [ ] 2.2 `/dev/trace` スモーク: エッジ近傍クリックで中点挿入 / 遠方クリックで末尾追加 / hole のエッジ近傍クリックが hole に入る / 右クリック頂点削除 / 頂点ドラッグ
-- [ ] 2.3 `lib/dev/history.ts` を `lib/polygon/history.ts` へ移し、`lib/dev/history.ts` は re-export のみ残す（モード非依存化）
-- [ ] 2.4 `components/polygon/PolygonEditor.tsx` を切り出す。props は「編集対象 polygons / 変更コールバック / 表示スタイル / 選択状態」のみ。dev API・localStorage draft・regen への参照を一切持たないこと
-- [ ] 2.5 `TraceTool.client.tsx` を `PolygonEditor` 利用形にリファクタする。`/dev/trace` の外形挙動（autosave 600ms / draft 復元 / regen デバウンス / undo 30 段 / part 切替チェックポイント / ヘッダー高さ固定）は不変
-- [ ] 2.6 `/dev/trace` フルスモーク（2.2 に加えて autosave 保存済みバッジ / draft 復元プロンプト / マスク auto-regen / undo-redo 30 段 / 手動ダウンロード）
-- [ ] 2.7 dev/preview ゲートが変わっていないことを確認する（`/api/dev/parts` が production ビルドで 404）
-- [ ] 2.8 ここまでを独立コミットにする
+- [x] 2.1 `lib/polygon/interactions.ts` を新設し、`TraceTool.client.tsx` から純粋関数（`nearestEdge` / 垂線足計算 / 12px 判定 / 頂点ヒット判定 / 全リング横断の最近傍エッジ探索）を移設する。`TraceTool` は import するだけに変える
+- [x] 2.2 `/dev/trace` スモーク: エッジ近傍クリックで中点挿入 / 遠方クリックで末尾追加 / hole のエッジ近傍クリックが hole に入る / 右クリック頂点削除 / 頂点ドラッグ
+- [x] 2.3 `lib/dev/history.ts` を `lib/polygon/history.ts` へ移し、`lib/dev/history.ts` は re-export のみ残す（モード非依存化）
+- [x] 2.4 `components/polygon/PolygonEditor.tsx` を切り出す。props は「編集対象 polygons / 変更コールバック / 表示スタイル / 選択状態」のみ。dev API・localStorage draft・regen への参照を一切持たないこと
+- [x] 2.5 `TraceTool.client.tsx` を `PolygonEditor` 利用形にリファクタする。`/dev/trace` の外形挙動（autosave 600ms / draft 復元 / regen デバウンス / undo 30 段 / part 切替チェックポイント / ヘッダー高さ固定）は不変
+- [x] 2.6 `/dev/trace` フルスモーク（2.2 に加えて autosave 保存済みバッジ / draft 復元プロンプト / マスク auto-regen / undo-redo 30 段 / 手動ダウンロード）
+- [x] 2.7 dev/preview ゲートが変わっていないことを確認する（`/api/dev/parts` が production ビルドで 404）
+- [x] 2.8 ここまでを独立コミットにする
 
 ## 3. ジョリパッドカラー seed
 
