@@ -18,7 +18,7 @@ import type { JolypateColor } from "@/lib/jolypate/schema";
 //
 // Draw order inside the group, which must not change:
 //
-//   1. colour Rect      globalCompositeOperation="multiply", opacity=zone.opacity
+//   1. colour Rect      globalCompositeOperation="multiply"
 //   2. finish texture   globalCompositeOperation="soft-light"   (optional)
 //   3. mask Shape       globalCompositeOperation="destination-in"  <- LAST
 //
@@ -32,12 +32,18 @@ import type { JolypateColor } from "@/lib/jolypate/schema";
 // instead of erasing siblings and the base image. One Layer per zone would
 // isolate them too, but exterior projects can carry dozens of zones and Konva
 // allocates a DOM canvas per Layer.
+//
+// `zone.opacity` is applied to the Group, outside the cached bitmap, so it
+// blends the fully-treated zone over the perspective and can be dragged
+// without re-rasterizing anything.
 
 const SANDSTONE_URL = "/assets/jolypate/sandstone.jpg";
 
 /** FNV-1a over the fields that affect this zone's pixels. */
+// Opacity is deliberately absent: it lives on the Group, outside the cached
+// bitmap, so changing it must NOT invalidate the cache.
 function renderKey(zone: FacadeZone, colorHex: string | null): string {
-  const src = JSON.stringify([zone.polygons, colorHex, zone.opacity, zone.finishTexture]);
+  const src = JSON.stringify([zone.polygons, colorHex, zone.finishTexture]);
   let h = 0x811c9dc5;
   for (let i = 0; i < src.length; i++) {
     h ^= src.charCodeAt(i);
@@ -80,14 +86,19 @@ export function ZoneFillLayer({ zone, color, width, height, live }: ZoneFillLaye
   if (!color) return null;
 
   return (
-    <Group ref={groupRef} listening={false}>
+    // Zone strength lives on the Group, not on the colour Rect. Inside the
+    // group the colour is composited at full strength, so the group's cached
+    // bitmap is exactly "the zone, fully treated"; the group's opacity then
+    // blends that whole result over the perspective. Putting the opacity on
+    // the Rect instead made it interact with the group's own compositing, and
+    // the slider ended up delivering ~0.83x the strength it claimed.
+    <Group ref={groupRef} listening={false} opacity={zone.opacity}>
       <Rect
         x={0}
         y={0}
         width={width}
         height={height}
         fill={color.colorHex}
-        opacity={zone.opacity}
         globalCompositeOperation="multiply"
       />
 

@@ -13,6 +13,14 @@ immediately to reflect the choice. Supports two render modes per part:
 
 Export the result as a PNG at native scene resolution.
 
+The app has **two modes**, chosen from the menu at `/`:
+
+- **内観パースイメージ作成** (`/interior`) — the numbered-part finish picker
+  described above, over registered interior perspectives.
+- **外観パース塗り分け** (`/exterior`) — upload a project's own white exterior
+  perspective, draw colour-zoning polygons on it, and apply Jolypate colours.
+  See [Exterior facade colour zoning](#exterior-facade-colour-zoning).
+
 This is the redesign that supersedes the original MVP (free-drop catalog).
 See [`openspec/changes/redesign-numbered-part-finish-picker/proposal.md`](openspec/changes/redesign-numbered-part-finish-picker/proposal.md)
 for the change record and explicit non-goals, and the archived
@@ -27,6 +35,7 @@ npm install
 npm run seed:parts               # extract finish options from the workbook
 npm run seed:masks               # generate mask + shading PNGs from parts.json polygons
 npm run seed:variants            # crop per-(part, variant) textures from base variants
+npm run seed:jolypate            # extract the Jolypate colour catalogue from the PDF
 npm run migrate:multiring        # one-shot: legacy `polygon` field → `polygons: [{ outer }]`
 npm run dev                      # http://localhost:3000
 ```
@@ -150,6 +159,58 @@ load against the catalog (option must exist and match the part id, sheet, and
 > seed currently re-uses workbook swatches as placeholders). See
 > [`resources/reference/AUTHORING.md`](resources/reference/AUTHORING.md).
 
+## Exterior facade colour zoning
+
+`/exterior` is a separate mode with its own data model. Unlike the interior
+presenter — whose scenes, parts and masks are committed assets shared across
+every job — an exterior perspective is a one-off per project, so nothing here
+is seeded and nothing is committed.
+
+**Everything is stored in the browser only.** Uploaded images, zones, colours
+and prompts live in IndexedDB and are never sent to a server. That means the
+data is lost if the browser's storage is cleared, the user switches machines,
+or works in a private window. Use **JSON 書き出し** for a backup: it saves
+everything except the image bytes, and **JSON 読み込み** asks for the original
+images back, refusing any whose pixel dimensions differ (zone coordinates are
+in image pixel space, so a resized copy would silently misplace every zone).
+
+Workflow:
+
+1. **＋案件** — name the project.
+2. Drag in one or more white perspectives (JPEG/PNG). Each file becomes an
+   angle; zones are per-angle. Images longer than 4000 px on their long edge
+   are downscaled on ingest, and the stored size becomes the zone coordinate
+   space.
+3. Click the canvas to place zone vertices — the same interaction rules as
+   `/dev/trace` (click near an edge inserts a midpoint within 12 px,
+   right-click deletes a vertex, drag moves one, `Cmd/Ctrl+Z` / `Cmd/Ctrl+Shift+Z`
+   undo and redo). **＋新規ゾーン** starts another zone; **＋穴を追加** cuts an
+   opening (a window) out of the current one.
+4. Pick a Jolypate colour in the right panel, and adjust 不透明度 and
+   砂岩風仕上げ per zone.
+5. **外観仕様エクスポート** downloads one PNG per angle at the image's native
+   resolution plus one `.xlsx` (`塗り分け` + `その他外装` sheets), all sharing
+   one timestamp.
+
+**その他外装** records lighting, signage, post and landscaping specifications
+as free text. It calls no model and no service and does not change the
+rendered image — the text is carried into the spec sheet only.
+
+### How exterior colour is composited
+
+The white perspective already carries the lighting, so it *is* the shading
+map — there is no shading asset and no mask PNG. Per zone:
+
+1. colour `Rect` with `globalCompositeOperation="multiply"`
+2. finish texture with `soft-light` (optional)
+3. mask `Shape` with `destination-in` — **last**, same invariant as the
+   interior compositor
+
+Each zone is a **cached `Konva.Group`** inside a single layer. The cache gives
+the group a private offscreen canvas, which is what stops its `destination-in`
+from erasing sibling zones and the base image. `zone.opacity` sits on the
+group, outside the cached bitmap, so dragging it re-rasterizes nothing.
+
 ## Color composition pipeline
 
 For each part with an active finish selection, the canvas renders a
@@ -266,6 +327,20 @@ full workflow.
 - No CMS / admin UI.
 - No multi-perspective gallery (registry supports it; only `main` ships).
 - No `/dev/trace` designer tool yet (deferred follow-up).
+
+## Smoke test — exterior
+
+1. `/` → 外観パース塗り分け → **＋案件** → name it.
+2. Drop a white exterior perspective. It renders fit-to-window at native
+   internal coordinates.
+3. Click four points on a wall → a zone appears in the left list.
+4. Filter the colour panel to a mid-value colour and click it. The wall takes
+   the colour **and the windows and shadows still read through it**.
+5. **＋穴を追加**, click around a window → that opening returns to the
+   original render.
+6. Reload. The project, angle, zones and colours all come back.
+7. **外観仕様エクスポート** → one PNG per angle at the image's native size
+   (no vertex handles) plus the `.xlsx`.
 
 ## Smoke test
 

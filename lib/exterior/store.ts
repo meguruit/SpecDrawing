@@ -210,6 +210,16 @@ export const useExteriorStore = create<ExteriorState>((set, get) => {
         set({ projects, loading: false });
         if (projects.length > 0) await get().selectProject(projects[0].id);
         await get().refreshUsage();
+        // Stored-but-unreadable records look exactly like deleted ones from
+        // the user's side, so say so rather than leaving silent orphan bytes.
+        const bad = db.unreadableProjects();
+        if (bad.length > 0) {
+          get().notify(
+            `${bad.length} 件の案件を読み込めませんでした（${bad
+              .map((b) => `${b.name}: ${b.reason}`)
+              .join(" / ")}）。データは残っています。`,
+          );
+        }
       } catch (err) {
         set({ loading: false });
         get().notify(`読み込みに失敗しました: ${(err as Error).message}`);

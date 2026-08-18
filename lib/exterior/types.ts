@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { polygonSchema, type Polygon } from "@/lib/parts/types";
+import type { Polygon } from "@/lib/parts/types";
 
 // Data model for exterior facade colour-zoning projects.
 //
@@ -36,15 +36,35 @@ export const DEFAULT_ZONE_OPACITY = 0.85;
 /** Cap on stored image size; larger uploads are downscaled to this on ingest. */
 export const MAX_IMAGE_EDGE = 4000;
 
+const pointSchema = z.tuple([z.number(), z.number()]);
+
+/**
+ * A zone's rings, in the angle image's pixel coordinates.
+ *
+ * Structurally the parts manifest's multi-ring shape — so the shared polygon
+ * editor, hit-test and ring operations all apply unchanged — but WITHOUT its
+ * minimum of three vertices per ring.
+ *
+ * That minimum is right for a committed parts manifest, which is only ever
+ * written in a finished state. Zone geometry is different: it is persisted
+ * continuously while the user draws, so a ring legitimately has one vertex
+ * after the first click and zero right after "add a hole". Enforcing the
+ * minimum here made every project saved mid-draw fail validation on reload —
+ * and since the loader skips records it cannot parse, the project silently
+ * disappeared.
+ *
+ * Renderers and exporters skip rings shorter than MIN_RING_VERTICES instead;
+ * an incomplete ring simply describes no area yet.
+ */
+export const draftPolygonSchema = z.object({
+  outer: z.array(pointSchema),
+  holes: z.array(z.array(pointSchema)).optional(),
+});
+
 export const facadeZoneSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
-  /**
-   * Multi-ring geometry in the angle image's pixel coordinates. Reuses the
-   * parts manifest's shape so the shared polygon editor, hit-test and ring
-   * operations all apply unchanged.
-   */
-  polygons: z.array(polygonSchema).min(1),
+  polygons: z.array(draftPolygonSchema).min(1),
   /** Jolypate catalogue colour number, or null while unassigned. */
   colorCode: z.string().min(1).nullable(),
   opacity: z.number().min(0).max(1),

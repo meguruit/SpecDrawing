@@ -466,9 +466,20 @@ async function main() {
 
   // ------------------------------------------------- sandstone finish tile
 
-  // Greyscale, normalized to mean luminance 0.5, square-cropped so it tiles.
-  // Mean-0.5 is what lets the overlay add grain without shifting the colour's
-  // value: a flat mid-grey multiplied in soft-light leaves the base unchanged.
+  // Greyscale, centred on mid-grey, square-cropped so it tiles.
+  //
+  // Two adjustments, both needed for the overlay to read as *grain* rather
+  // than as a darkening:
+  //
+  //   * Centre the mean on 127.5. Soft-light against exactly mid-grey is a
+  //     no-op, so this is what stops the texture shifting the base colour.
+  //   * Compress contrast toward that centre. Soft-light is not symmetric:
+  //     over a bright base, pixels below mid-grey darken more than pixels
+  //     above it lighten, so a full-contrast texture with a correct *mean*
+  //     still drags the result down. Measured on a real zone, the raw tile
+  //     cost 8.6% of luminance. Compression trades some grain depth for a
+  //     colour that stays the colour the customer picked.
+  const SANDSTONE_CONTRAST = 0.35;
   const meta = await sharp(SANDSTONE_SRC).metadata();
   const side = Math.min(meta.width, meta.height);
   const grey = sharp(SANDSTONE_SRC)
@@ -484,16 +495,24 @@ async function main() {
   let sum = 0;
   for (let i = 0; i < gbuf.length; i++) sum += gbuf[i];
   const meanLum = sum / gbuf.length;
-  const shift = 127.5 - meanLum;
   const norm = Buffer.alloc(gbuf.length);
   for (let i = 0; i < gbuf.length; i++) {
-    norm[i] = Math.max(0, Math.min(255, gbuf[i] + shift));
+    // Recentre on mid-grey, then pull toward it by the contrast factor.
+    norm[i] = Math.max(
+      0,
+      Math.min(255, 127.5 + (gbuf[i] - meanLum) * SANDSTONE_CONTRAST),
+    );
   }
+  let sum2 = 0;
+  for (let i = 0; i < norm.length; i++) sum2 += norm[i];
   await sharp(norm, { raw: { width: ginfo.width, height: ginfo.height, channels: 1 } })
     .jpeg({ quality: 90 })
     .toFile(SANDSTONE_OUT);
   log("");
-  log(`sandstone tile: 512x512, mean luminance ${meanLum.toFixed(1)} -> 127.5`);
+  log(
+    `sandstone tile: 512x512, mean ${meanLum.toFixed(1)} -> ${(sum2 / norm.length).toFixed(1)} ` +
+      `(contrast x${SANDSTONE_CONTRAST})`,
+  );
 
   rmSync(tmpDir, { recursive: true, force: true });
 

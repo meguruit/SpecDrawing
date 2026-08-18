@@ -90,16 +90,38 @@ function run<T>(
 
 // ---------------------------------------------------------------- projects
 
+/** Records that failed validation on the last `listProjects`, for surfacing. */
+export type UnreadableProject = { id: string; name: string; reason: string };
+let lastUnreadable: UnreadableProject[] = [];
+
+export function unreadableProjects(): UnreadableProject[] {
+  return lastUnreadable;
+}
+
 export async function listProjects(): Promise<ExteriorProject[]> {
   const raw = await run<unknown[]>(STORE_PROJECTS, "readonly", (s) => s.getAll());
   const out: ExteriorProject[] = [];
+  const bad: UnreadableProject[] = [];
   for (const r of raw) {
     const parsed = exteriorProjectSchema.safeParse(r);
     // A record written by an older or broken build must not take the whole
-    // workspace down — skip it and keep the rest usable.
-    if (parsed.success) out.push(parsed.data);
-    else console.warn("[exterior] skipping unreadable project record", parsed.error.issues[0]);
+    // workspace down — skip it and keep the rest usable. But never skip it
+    // *quietly*: from the user's side an unreadable record is indistinguish-
+    // able from a deleted one, and stored bytes they cannot see is the worst
+    // possible failure for browser-local data.
+    if (parsed.success) {
+      out.push(parsed.data);
+    } else {
+      const rec = r as { id?: unknown; name?: unknown };
+      const issue = parsed.error.issues[0];
+      bad.push({
+        id: typeof rec?.id === "string" ? rec.id : "(unknown)",
+        name: typeof rec?.name === "string" ? rec.name : "(名称不明)",
+        reason: `${issue.path.join(".") || "(ルート)"}: ${issue.message}`,
+      });
+    }
   }
+  lastUnreadable = bad;
   return out.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 

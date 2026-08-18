@@ -9,6 +9,7 @@ import { ExtrasBriefPanel } from "@/components/exterior/ExtrasBriefPanel";
 import { ImageUploader } from "@/components/exterior/ImageUploader";
 import { JolypateColorPanel } from "@/components/exterior/JolypateColorPanel";
 import { ProjectBar } from "@/components/exterior/ProjectBar";
+import { ProjectImportDialog } from "@/components/exterior/ProjectImportDialog";
 import { ZoneList } from "@/components/exterior/ZoneList";
 import { ZoneSettings } from "@/components/exterior/ZoneSettings";
 import {
@@ -30,6 +31,7 @@ const ExteriorCanvas = dynamic(
 export default function ExteriorWorkspace() {
   const [colors, setColors] = useState<JolypateColor[] | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const project = useExteriorStore(selectActiveProject);
   const angle = useExteriorStore(selectActiveAngle);
   const loading = useExteriorStore((s) => s.loading);
@@ -142,6 +144,7 @@ export default function ExteriorWorkspace() {
   return (
     <div className="flex h-screen flex-col">
       <Toast message={notification?.message ?? null} onDismiss={dismiss} />
+      {importing && <ProjectImportDialog onClose={() => setImporting(false)} />}
 
       <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-2">
         <div className="flex items-start gap-4">
@@ -177,9 +180,17 @@ export default function ExteriorWorkspace() {
             type="button"
             onClick={() => void onExportJson()}
             disabled={!project}
+            title="画像を含まない案件データを書き出します（バックアップ用）"
             className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 disabled:opacity-40"
           >
-            案件 JSON
+            JSON 書き出し
+          </button>
+          <button
+            type="button"
+            onClick={() => setImporting(true)}
+            className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
+          >
+            JSON 読み込み
           </button>
           <button
             type="button"
