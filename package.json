@@ -14,7 +14,8 @@
     "seed:parts": "node scripts/extract-finish-options.mjs",
     "seed:masks": "node scripts/generate-placeholder-masks.mjs",
     "seed:variants": "node scripts/cut-base-variants.mjs",
-    "migrate:multiring": "node scripts/migrate-parts-multiring.mjs"
+    "migrate:multiring": "node scripts/migrate-parts-multiring.mjs",
+    "seed:jolypate": "node scripts/extract-jolypate-colors.mjs"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
@@ -27,6 +28,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.0.7",
     "@types/node": "^20.16.10",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
@@ -34,6 +36,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.35",
+    "pdfjs-dist": "^4.10.38",
     "postcss": "^8.4.47",
     "sharp": "^0.33.5",
     "tailwindcss": "^3.4.13",

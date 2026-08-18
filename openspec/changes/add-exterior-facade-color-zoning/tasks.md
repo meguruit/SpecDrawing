@@ -19,26 +19,26 @@
 
 ## 3. ジョリパッドカラー seed
 
-- [ ] 3.1 `pdfjs-dist` を devDependency に追加し、`package.json` に `seed:jolypate` スクリプトを登録する
-- [ ] 3.2 `scripts/extract-jolypate-colors.mjs` — PDF 全 8 ページを 300 DPI でラスタライズし、同時に `getTextContent()` でテキスト item を bbox 付きで取得する
-- [ ] 3.3 黄色帯検出を実装する（HSV `hue ∈ [45°,65°] ∧ S > 0.45 ∧ V > 0.80` の連結成分のうち幅 > 30px・高さ 8–30px の横長矩形）
-- [ ] 3.4 帯とテキスト item の幾何マッチで色番を確定する（OCR は使わない）。帯に重なるテキストが無い場合は `orphan-band` 警告
-- [ ] 3.5 スウォッチ矩形（帯の直上・同幅・高さは帯幅の 0.9 倍）から 10% トリム平均で `colorHex` を算出する。サンプル不足は低信頼警告にして emit しない
-- [ ] 3.6 スウォッチ切り出しを `public/assets/jolypate/swatches/<code>.png`（128×128）へ書き出す
-- [ ] 3.7 カテゴリ解決を実装する（ページ見出し `NEUTRAL/MISTY/SUNNY/TRAD COLOR` から。見出しの無い続きページ（p.2）は直前のカテゴリを継承）
-- [ ] 3.8 索引ページ（p.8「カラー品番インデックス」）を解析し、`品番 / 色名 / ページ / カテゴリー / 座標` の台帳を作る。`nameJa` をここから取り込む
-- [ ] 3.9 自己検証を実装する — 抽出 code が索引に無ければ `unknown-code`、索引にあって未抽出のものを「黄色なしで意図的除外」か「抽出失敗」に分類。`抽出 N / 除外 M / 索引 148` が合わなければ非ゼロ終了
-- [ ] 3.10 `resources/catalog/jolypate-color-overrides.json`（任意）の読み込みを実装する（`colorHex` / `nameJa` / `include` を per-code で上書き、適用分をサマリに列挙。ファイル不在はエラーにしない）
-- [ ] 3.11 `public/catalog/jolypate-colors.json` と `public/catalog/jolypate-colors.warnings.json` を出力する。2 回連続実行で byte-identical になること（冪等性）を確認する
-- [ ] 3.12 砂岩テクスチャ正規化を同スクリプトに追加する（グレースケール化 + 平均輝度 0.5 + タイル可能な正方クロップ → `public/assets/jolypate/sandstone.jpg`。ソース JPG は書き換えない）
-- [ ] 3.13 `.gitattributes` に swatches PNG / sandstone.jpg の LFS パターンを追加し、生成物を commit する
-- [ ] 3.14 除外された色番の一覧を目視レビューする（`T6013` / `JP-100BK` / `JP-100SBK` / `JQ-200SBK` / `JQ-650SWH` / `T6401` / `T6405` / `T6404` / `T6010` / `T6702` 等が意図どおり除外されているか）
+- [x] 3.1 `pdfjs-dist` を devDependency に追加し、`package.json` に `seed:jolypate` スクリプトを登録する
+- [x] 3.2 `scripts/extract-jolypate-colors.mjs` — PDF 全 8 ページを 300 DPI でラスタライズし、同時に `getTextContent()` でテキスト item を bbox 付きで取得する
+- [x] 3.3 黄色帯検出を実装する（HSV `hue ∈ [45°,65°] ∧ S > 0.45 ∧ V > 0.80` の連結成分のうち幅 > 30px・高さ 8–30px の横長矩形）
+- [x] 3.4 帯とテキスト item の幾何マッチで色番を確定する（OCR は使わない）。帯に重なるテキストが無い場合は `orphan-band` 警告
+- [x] 3.5 スウォッチ矩形（帯の直上・同幅・高さは帯幅の 0.9 倍）から 10% トリム平均で `colorHex` を算出する。サンプル不足は低信頼警告にして emit しない
+- [x] 3.6 スウォッチ切り出しを `public/assets/jolypate/swatches/<code>.png`（128×128）へ書き出す
+- [x] 3.7 カテゴリ解決を実装する（ページ見出し `NEUTRAL/MISTY/SUNNY/TRAD COLOR` から。見出しの無い続きページ（p.2）は直前のカテゴリを継承）
+- [x] 3.8 索引ページ（p.8「カラー品番インデックス」）を解析し、`品番 / 色名 / ページ / カテゴリー / 座標` の台帳を作る。`nameJa` をここから取り込む
+- [x] 3.9 自己検証を実装する — 抽出 code が索引に無ければ `unknown-code`、索引にあって未抽出のものを「黄色なしで意図的除外」か「抽出失敗」に分類。`抽出 N / 除外 M / 索引 148` が合わなければ非ゼロ終了
+- [x] 3.10 `resources/catalog/jolypate-color-overrides.json`（任意）の読み込みを実装する（`colorHex` / `nameJa` / `include` を per-code で上書き、適用分をサマリに列挙。ファイル不在はエラーにしない）
+- [x] 3.11 `public/catalog/jolypate-colors.json` と `public/catalog/jolypate-colors.warnings.json` を出力する。2 回連続実行で byte-identical になること（冪等性）を確認する
+- [x] 3.12 砂岩テクスチャ正規化を同スクリプトに追加する（グレースケール化 + 平均輝度 0.5 + タイル可能な正方クロップ → `public/assets/jolypate/sandstone.jpg`。ソース JPG は書き換えない）
+- [x] 3.13 `.gitattributes` に swatches PNG / sandstone.jpg の LFS パターンを追加し、生成物を commit する
+- [x] 3.14 除外された色番の一覧を目視レビューする（`T6013` / `JP-100BK` / `JP-100SBK` / `JQ-200SBK` / `JQ-650SWH` / `T6401` / `T6405` / `T6404` / `T6010` / `T6702` 等が意図どおり除外されているか）
 
 ## 4. カタログのスキーマとローダ
 
-- [ ] 4.1 `lib/jolypate/schema.ts` — `{ code, category, page, colorHex, nameJa?, swatchUrl }` の Zod スキーマ。`colorHex` は `^#[0-9a-fA-F]{6}$` で検証
-- [ ] 4.2 `lib/jolypate/load.ts` — `jolypate-colors.json` をフェッチ・検証してロードする。検証失敗は `code` とフィールド名を名指しするエラーにし、部分適用しない
-- [ ] 4.3 カテゴリ別グルーピングとテキストフィルタ（`code` / `nameJa` 両方に一致）のヘルパを実装する
+- [x] 4.1 `lib/jolypate/schema.ts` — `{ code, category, page, colorHex, nameJa?, swatchUrl }` の Zod スキーマ。`colorHex` は `^#[0-9a-fA-F]{6}$` で検証
+- [x] 4.2 `lib/jolypate/load.ts` — `jolypate-colors.json` をフェッチ・検証してロードする。検証失敗は `code` とフィールド名を名指しするエラーにし、部分適用しない
+- [x] 4.3 カテゴリ別グルーピングとテキストフィルタ（`code` / `nameJa` 両方に一致）のヘルパを実装する
 
 ## 5. 外観データモデルと永続化
 

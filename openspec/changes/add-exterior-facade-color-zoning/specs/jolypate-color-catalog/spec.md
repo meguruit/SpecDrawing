@@ -66,24 +66,54 @@ The `colorHex` of an entry MUST be derived from the printed swatch area associat
 - **WHEN** a swatch area cannot be located for an otherwise highlighted colour number, or its sampled pixels are too few to aggregate reliably
 - **THEN** the colour is reported in `jolypate-colors.warnings.json` with a low-confidence reason instead of being emitted with an unreliable `colorHex`
 
-### Requirement: Extraction is self-verified against the catalog index
+### Requirement: Extraction accounts for every colour number it finds
 
-The seed MUST parse the catalog PDF's colour-number index page and use it as the ground-truth roster. Every extracted colour number MUST exist in the index. Index entries that were not extracted MUST be classified as either deliberately excluded (no yellow highlight) or as extraction failures. The run MUST print a summary of index-total, extracted, and excluded counts, and MUST exit non-zero when extracted plus excluded does not account for the full index.
+The seed MUST guarantee that no colour number is dropped silently: every colour-number label the PDF's text layer yields MUST be either emitted into the catalog or recorded in the warnings file with a reason for its omission. The run MUST print a summary of labels found, labels accounted for, distinct colours, emitted colours, and excluded colours, and MUST exit non-zero when the accounting does not balance or when no highlighted colour is found at all.
 
-#### Scenario: Extracted code absent from the index is an error
+The catalog PDF's own index page MUST NOT be relied on as the ground-truth roster: its fonts carry no character mapping, so its colour numbers are not machine-readable without optical character recognition. The total the catalog states on its cover MAY be reported for reference but MUST NOT gate the run, because it is not derivable from the swatch pages alone.
 
-- **WHEN** extraction yields a colour number that does not appear on the index page
-- **THEN** the run reports that colour number as unknown and exits non-zero
+#### Scenario: Unaccounted labels fail the run
 
-#### Scenario: Unaccounted index entries fail the run
-
-- **WHEN** the index lists 148 colour numbers but extracted plus excluded accounts for only 140
-- **THEN** the run reports the 8 unaccounted colour numbers by name and exits non-zero
+- **WHEN** the text layer yields 168 colour-number labels but only 160 are either emitted or recorded in the warnings file
+- **THEN** the run reports the shortfall and exits non-zero
 
 #### Scenario: Fully accounted run succeeds
 
-- **WHEN** every index colour number is either extracted or classified as excluded
-- **THEN** the run prints the index-total, extracted, and excluded counts and exits zero
+- **WHEN** every colour-number label found is either emitted or recorded with an omission reason
+- **THEN** the run prints the label, distinct-colour, emitted, and excluded counts and exits zero
+
+#### Scenario: Total collapse of highlight detection fails the run
+
+- **WHEN** extraction finds colour numbers but classifies none of them as highlighted
+- **THEN** the run reports that highlight detection is broken and exits non-zero
+
+#### Scenario: Non-swatch pages are recorded, not silently skipped
+
+- **WHEN** a colour number appears on a page that holds no catalog swatches, such as the explainer page
+- **THEN** that colour number is recorded in the warnings file with a reason rather than being dropped without trace
+
+### Requirement: Swatch entries are identified structurally
+
+The seed MUST distinguish catalog swatches from the colour numbers that appear in the PDF's legend and specification tables, and MUST exclude the latter from the catalog and from the distinct-colour count. The distinction MUST be made structurally — from the printed grid layout — rather than from a hardcoded list of colour numbers or page positions.
+
+#### Scenario: Legend colour numbers are not catalog colours
+
+- **WHEN** a colour number appears alone on its line inside a product-series legend table
+- **THEN** it is not emitted as a catalog colour and is recorded in the warnings file
+
+#### Scenario: Grid rows of differing widths are both recognised
+
+- **WHEN** one page lays its swatches out four-up and another six-up
+- **THEN** colour numbers on both pages are recognised as swatches
+
+### Requirement: A colour is selectable if highlighted anywhere
+
+A colour number MAY be printed on more than one page, because some colours appear under two categories. Such a colour MUST appear once in the catalog, and MUST be treated as selectable when it carries a yellow highlight on **any** page on which it is printed.
+
+#### Scenario: Colour highlighted on one page of two
+
+- **WHEN** a colour number is printed with a yellow highlight under one category and without one under another
+- **THEN** it appears exactly once in the catalog and is selectable
 
 ### Requirement: Designer override of extracted colour data
 
