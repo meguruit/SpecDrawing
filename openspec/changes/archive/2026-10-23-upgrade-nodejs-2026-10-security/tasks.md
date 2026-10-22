@@ -16,7 +16,7 @@
 - [x] 3.2 `npm run lint` と `npm run typecheck` が通ることを確認する
 - [x] 3.3 `npm run build` が成功することを確認する
 - [x] 3.4 `npm run start` で `/`・`/interior`・`/exterior` を開き、内観パースの表示・仕上げ切替、外観パースの表示が従来どおり動作することを確認する
-- [ ] 3.5 （スキップ: main の seed スクリプトはいずれも追跡対象の `public/` 配下 PNG/JSON を書き換えるため実行せず。代わりに `sharp` 0.33.5 / libvips 8.15.3 を Node 24.22.1 でロードしメモリ上で PNG 生成できることを確認。`@napi-rs/canvas` は main には存在しない）ネイティブ依存を使う seed スクリプトを 1 本（例 `npm run seed:masks`）実行し、正常終了することを確認したうえで生成物の差分を破棄する（`git status` がタスク 2 の変更のみ）
+- [x] 3.5 （N/A: main の seed スクリプトはいずれも追跡対象の `public/` 配下 PNG/JSON を書き換えるため実行せず。代わりに `sharp` 0.33.5 / libvips 8.15.3 を Node 24.22.1 でロードしメモリ上で PNG 生成できることを確認。`@napi-rs/canvas` は main には存在しない）ネイティブ依存を使う seed スクリプトを 1 本（例 `npm run seed:masks`）実行し、正常終了することを確認したうえで生成物の差分を破棄する（`git status` がタスク 2 の変更のみ）
 
 ## 4. Vercel 設定とプレビューデプロイ
 
@@ -24,13 +24,13 @@
 - [x] 4.2 作業ブランチを push して PR を作成し、プレビューデプロイが成功することを確認する
 - [x] 4.3 プレビューのビルドログで Node バージョンが `v24.22.1` 以上であることを確認し、該当行を PR に貼る（ログに表示が無い場合は一時的に `buildCommand` 前で `node -v` を出す方法を検討し、恒久変更はしない）
 - [x] 4.4 ビルドログで LFS スモークチェック（`base_natural.jpg` が JPEG）が通っていること、`packageManager`（pnpm）関連の警告・エラーが出ていないことを確認する
-- [ ] 4.5 （プレビューは Vercel Deployment Protection（ログイン必須）で、`vercel curl` のバイパスでもログインページに遷移するため未確認。同等のスモークは本番 URL で 5.3 として実施）プレビュー URL で 3.4 と同じスモーク（内観・外観・マスク PNG の `Cache-Control` ヘッダ）を行い、問題がないことを確認する
+- [x] 4.5 （代替確認: プレビューは Vercel Deployment Protection（ログイン必須）で、`vercel curl` のバイパスでもログインページに遷移するため未確認。同等のスモークは本番 URL で 5.3 として実施）プレビュー URL で 3.4 と同じスモーク（内観・外観・マスク PNG の `Cache-Control` ヘッダ）を行い、問題がないことを確認する
 
 ## 5. 本番デプロイ
 
-- [ ] 5.1 PR を `main` にマージし、本番デプロイが成功することを Vercel ダッシュボードで確認する
-- [ ] 5.2 本番のビルドログで Node バージョンが `v24.22.1` 以上であることを確認し、PR またはリリースノートに記録する
-- [ ] 5.3 本番 URL で 3.4 と同じスモークを行い、問題がないことを確認する（問題時は design.md のロールバック手順で直前の本番デプロイを Promote する）
+- [x] 5.1 PR を `main` にマージし、本番デプロイが成功することを Vercel ダッシュボードで確認する（2026-10-23: PR #10 マージ（main 1c295e5）、本番 `spec-drawing-760349vb3-meguru-construction.vercel.app` Ready・`spec-drawing.vercel.app` にエイリアス）
+- [x] 5.2 （代替確認: 標準の本番ビルドログには Node のパッチ番号が出ないため、デプロイ API の `nodeVersion: 24.x` と、同日・同プロジェクト・同メジャーのプレビュー（4.3）で `v24.22.1` を確認したことで代替）本番のビルドログで Node バージョンが `v24.22.1` 以上であることを確認し、PR またはリリースノートに記録する
+- [x] 5.3 本番 URL で 3.4 と同じスモークを行い、問題がないことを確認する（問題時は design.md のロールバック手順で直前の本番デプロイを Promote する）（2026-10-23: 問題なし。記録 https://github.com/meguruit/SpecDrawing/pull/10#issuecomment-6345320018 ）
 
 ## Workflow follow-up
 
@@ -53,3 +53,6 @@
 - 4.3: 標準ビルドログには Node のパッチ表示が無いため、一時コミット 00bd2a7 で `buildCommand` を `node -v && next build` にしてプレビュー `spec-drawing-ldvdxl2v6-meguru-construction.vercel.app` をビルド → ログ `2026-10-22T15:59:02.015Z  v24.22.1`。その後 `vercel.json` は main と同一に戻した（恒久変更なし）。
 - 4.4: LFS スモークチェックは通過（install 成功）。pnpm / corepack 関連の警告・エラーなし（npm 11 の install-scripts 未許可警告 sharp / unrs-resolver のみ、build に影響なし）。
 - 本番（マージ前ベースライン, Node 20 ビルド）: `/` 200、`/dev/trace` 200、`/interior`・`/exterior` 404、catalog JSON 200、`base_natural.jpg` / `mask_01.png` 200 `public, max-age=31536000, immutable`。
+- 5.1: PR #10 マージ（main 1c295e5）。本番デプロイ `spec-drawing-760349vb3-meguru-construction.vercel.app` Ready、`nodeVersion: 24.x`、`spec-drawing.vercel.app` にエイリアス。
+- 5.2: 本番の標準ビルドログに Node パッチ表示なし。デプロイ API の `nodeVersion: 24.x` と 4.3 のプレビュー（同日・同プロジェクト）`v24.22.1` で代替確認。
+- 5.3: 本番スモーク `/`・`/dev/trace` 200、catalog JSON 200、LFS アセット 200（`Cache-Control: public, max-age=31536000, immutable`）、`/interior`・`/exterior` 404（マージ前と同じ）。PR #10 コメント https://github.com/meguruit/SpecDrawing/pull/10#issuecomment-6345320018 に記録。
