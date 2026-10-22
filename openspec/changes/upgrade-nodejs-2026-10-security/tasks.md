@@ -21,10 +21,10 @@
 ## 4. Vercel 設定とプレビューデプロイ
 
 - [x] 4.1 Vercel Project Settings の Node.js Version を `24.x` に変更し、保存後の表示が `24.x` であることを確認する
-- [ ] 4.2 作業ブランチを push して PR を作成し、プレビューデプロイが成功することを確認する
-- [ ] 4.3 プレビューのビルドログで Node バージョンが `v24.22.1` 以上であることを確認し、該当行を PR に貼る（ログに表示が無い場合は一時的に `buildCommand` 前で `node -v` を出す方法を検討し、恒久変更はしない）
-- [ ] 4.4 ビルドログで LFS スモークチェック（`base_natural.jpg` が JPEG）が通っていること、`packageManager`（pnpm）関連の警告・エラーが出ていないことを確認する
-- [ ] 4.5 プレビュー URL で 3.4 と同じスモーク（内観・外観・マスク PNG の `Cache-Control` ヘッダ）を行い、問題がないことを確認する
+- [x] 4.2 作業ブランチを push して PR を作成し、プレビューデプロイが成功することを確認する
+- [x] 4.3 プレビューのビルドログで Node バージョンが `v24.22.1` 以上であることを確認し、該当行を PR に貼る（ログに表示が無い場合は一時的に `buildCommand` 前で `node -v` を出す方法を検討し、恒久変更はしない）
+- [x] 4.4 ビルドログで LFS スモークチェック（`base_natural.jpg` が JPEG）が通っていること、`packageManager`（pnpm）関連の警告・エラーが出ていないことを確認する
+- [ ] 4.5 （プレビューは Vercel Deployment Protection（ログイン必須）で、`vercel curl` のバイパスでもログインページに遷移するため未確認。同等のスモークは本番 URL で 5.3 として実施）プレビュー URL で 3.4 と同じスモーク（内観・外観・マスク PNG の `Cache-Control` ヘッダ）を行い、問題がないことを確認する
 
 ## 5. 本番デプロイ
 
@@ -49,3 +49,7 @@
 - 3.3: `npm run build`（Next 14.2.35）成功。
 - 3.4: `next start` で `/` 200、`/dev/trace` 200、`/catalog/finish-options.json` 200、`base_natural.jpg` 200 (image/jpeg)、`mask_01.png` 200。`/interior`・`/exterior` は main にルートが存在せず 404（変更前から同じ。ルートはフィーチャーブランチ側）。
 - 4.1: Project Settings は既に `24.x`。
+- 4.2: PR #10 のプレビュー `spec-drawing-fk4enzxs7-meguru-construction.vercel.app`（ee8aefd）Ready。デプロイ API で `nodeVersion: 24.x`。
+- 4.3: 標準ビルドログには Node のパッチ表示が無いため、一時コミット 00bd2a7 で `buildCommand` を `node -v && next build` にしてプレビュー `spec-drawing-ldvdxl2v6-meguru-construction.vercel.app` をビルド → ログ `2026-10-22T15:59:02.015Z  v24.22.1`。その後 `vercel.json` は main と同一に戻した（恒久変更なし）。
+- 4.4: LFS スモークチェックは通過（install 成功）。pnpm / corepack 関連の警告・エラーなし（npm 11 の install-scripts 未許可警告 sharp / unrs-resolver のみ、build に影響なし）。
+- 本番（マージ前ベースライン, Node 20 ビルド）: `/` 200、`/dev/trace` 200、`/interior`・`/exterior` 404、catalog JSON 200、`base_natural.jpg` / `mask_01.png` 200 `public, max-age=31536000, immutable`。

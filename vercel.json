@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "git lfs install --force && git lfs pull && npm install && (file -b public/assets/base/main/base_natural.jpg | grep -q JPEG || (echo 'LFS pull failed: base_natural.jpg is not a JPEG' >&2; exit 1))",
-  "buildCommand": "node -v && next build",
+  "buildCommand": "next build",
   "headers": [
     {
       "source": "/assets/base/main/mask_:file",
