@@ -1,0 +1,185 @@
+{
+  "generatedFrom": "ジョリパカタログ 3.pdf",
+  "warnings": [
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-810",
+      "page": 2,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-200",
+      "page": 2,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-500",
+      "page": 2,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-810",
+      "page": 4,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-200",
+      "page": 4,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-500",
+      "page": 4,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-810",
+      "page": 5,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-200",
+      "page": 5,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-500",
+      "page": 5,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-810",
+      "page": 6,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-200",
+      "page": 6,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-not-in-swatch-grid",
+      "code": "JQ-500",
+      "page": 6,
+      "rowSize": 1
+    },
+    {
+      "reason": "skipped-non-swatch-page",
+      "code": "JP-100AA8",
+      "page": 7
+    },
+    {
+      "reason": "skipped-non-swatch-page",
+      "code": "JP-100AA6",
+      "page": 7
+    },
+    {
+      "reason": "skipped-non-swatch-page",
+      "code": "JP-100AA3",
+      "page": 7
+    },
+    {
+      "reason": "skipped-non-swatch-page",
+      "code": "JP-100AA1",
+      "page": 7
+    },
+    {
+      "reason": "skipped-non-swatch-page",
+      "code": "JP-100AA13",
+      "page": 7
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "T6013",
+      "category": "NEUTRAL",
+      "pages": [
+        3,
+        6
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "JQ-650SWH",
+      "category": "NEUTRAL",
+      "pages": [
+        3
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "JP-100SBK",
+      "category": "NEUTRAL",
+      "pages": [
+        3,
+        6
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "JQ-200SBK",
+      "category": "NEUTRAL",
+      "pages": [
+        3
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "JP-100BK",
+      "category": "NEUTRAL",
+      "pages": [
+        3,
+        6
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "T6401",
+      "category": "NEUTRAL",
+      "pages": [
+        3
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "T6405",
+      "category": "NEUTRAL",
+      "pages": [
+        3
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "T6404",
+      "category": "NEUTRAL",
+      "pages": [
+        3
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "T6010",
+      "category": "MISTY",
+      "pages": [
+        4
+      ]
+    },
+    {
+      "reason": "excluded-not-highlighted",
+      "code": "T6702",
+      "category": "MISTY",
+      "pages": [
+        4
+      ]
+    }
+  ]
+}

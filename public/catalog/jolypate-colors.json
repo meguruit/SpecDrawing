@@ -1,0 +1,944 @@
+{
+  "version": 1,
+  "generatedFrom": "ジョリパカタログ 3.pdf",
+  "colors": [
+    {
+      "code": "T1000",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#f4f4f2",
+      "swatchUrl": "/assets/jolypate/swatches/T1000.png"
+    },
+    {
+      "code": "T1001",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#e7e6d7",
+      "swatchUrl": "/assets/jolypate/swatches/T1001.png"
+    },
+    {
+      "code": "T1008",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#f2e8e1",
+      "swatchUrl": "/assets/jolypate/swatches/T1008.png"
+    },
+    {
+      "code": "T1010",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#e8e4d4",
+      "swatchUrl": "/assets/jolypate/swatches/T1010.png"
+    },
+    {
+      "code": "T1018",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#eeeed5",
+      "swatchUrl": "/assets/jolypate/swatches/T1018.png"
+    },
+    {
+      "code": "T1020",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f5e7da",
+      "swatchUrl": "/assets/jolypate/swatches/T1020.png"
+    },
+    {
+      "code": "T1022",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f6e8d8",
+      "swatchUrl": "/assets/jolypate/swatches/T1022.png"
+    },
+    {
+      "code": "T1027",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f5e3d0",
+      "swatchUrl": "/assets/jolypate/swatches/T1027.png"
+    },
+    {
+      "code": "T1028",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f7ead6",
+      "swatchUrl": "/assets/jolypate/swatches/T1028.png"
+    },
+    {
+      "code": "T1030",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f3e6ca",
+      "swatchUrl": "/assets/jolypate/swatches/T1030.png"
+    },
+    {
+      "code": "T1034",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f4e4c2",
+      "swatchUrl": "/assets/jolypate/swatches/T1034.png"
+    },
+    {
+      "code": "T1035",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f7ecc9",
+      "swatchUrl": "/assets/jolypate/swatches/T1035.png"
+    },
+    {
+      "code": "T1038",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f4edd5",
+      "swatchUrl": "/assets/jolypate/swatches/T1038.png"
+    },
+    {
+      "code": "T1401",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#f5f3e8",
+      "swatchUrl": "/assets/jolypate/swatches/T1401.png"
+    },
+    {
+      "code": "T1403",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#f3f3ed",
+      "swatchUrl": "/assets/jolypate/swatches/T1403.png"
+    },
+    {
+      "code": "T1405",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#f9f5e6",
+      "swatchUrl": "/assets/jolypate/swatches/T1405.png"
+    },
+    {
+      "code": "T1420",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#eaeae2",
+      "swatchUrl": "/assets/jolypate/swatches/T1420.png"
+    },
+    {
+      "code": "T1701",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f6e8db",
+      "swatchUrl": "/assets/jolypate/swatches/T1701.png"
+    },
+    {
+      "code": "T1702",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#f7f0e3",
+      "swatchUrl": "/assets/jolypate/swatches/T1702.png"
+    },
+    {
+      "code": "T1703",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#f0e7d7",
+      "swatchUrl": "/assets/jolypate/swatches/T1703.png"
+    },
+    {
+      "code": "T1704",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f0e7d6",
+      "swatchUrl": "/assets/jolypate/swatches/T1704.png"
+    },
+    {
+      "code": "T1705",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#e3e2e0",
+      "swatchUrl": "/assets/jolypate/swatches/T1705.png"
+    },
+    {
+      "code": "T2001",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#d9d7cb",
+      "swatchUrl": "/assets/jolypate/swatches/T2001.png"
+    },
+    {
+      "code": "T2004",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#dad2c6",
+      "swatchUrl": "/assets/jolypate/swatches/T2004.png"
+    },
+    {
+      "code": "T2005",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#d2cfbf",
+      "swatchUrl": "/assets/jolypate/swatches/T2005.png"
+    },
+    {
+      "code": "T2008",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#e1d8cd",
+      "swatchUrl": "/assets/jolypate/swatches/T2008.png"
+    },
+    {
+      "code": "T2009",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#cfc6ba",
+      "swatchUrl": "/assets/jolypate/swatches/T2009.png"
+    },
+    {
+      "code": "T2010",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#d8d6c3",
+      "swatchUrl": "/assets/jolypate/swatches/T2010.png"
+    },
+    {
+      "code": "T2013",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#ece0d6",
+      "swatchUrl": "/assets/jolypate/swatches/T2013.png"
+    },
+    {
+      "code": "T2014",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#eedbcc",
+      "swatchUrl": "/assets/jolypate/swatches/T2014.png"
+    },
+    {
+      "code": "T2015",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#ebdecf",
+      "swatchUrl": "/assets/jolypate/swatches/T2015.png"
+    },
+    {
+      "code": "T2016",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#e9dbc9",
+      "swatchUrl": "/assets/jolypate/swatches/T2016.png"
+    },
+    {
+      "code": "T2017",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#ede5d9",
+      "swatchUrl": "/assets/jolypate/swatches/T2017.png"
+    },
+    {
+      "code": "T2020",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#ecd3cc",
+      "swatchUrl": "/assets/jolypate/swatches/T2020.png"
+    },
+    {
+      "code": "T2021",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#ecd2bd",
+      "swatchUrl": "/assets/jolypate/swatches/T2021.png"
+    },
+    {
+      "code": "T2022",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#e0cab0",
+      "swatchUrl": "/assets/jolypate/swatches/T2022.png"
+    },
+    {
+      "code": "T2023",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#e7d8b7",
+      "swatchUrl": "/assets/jolypate/swatches/T2023.png"
+    },
+    {
+      "code": "T2024",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#e9ddbb",
+      "swatchUrl": "/assets/jolypate/swatches/T2024.png"
+    },
+    {
+      "code": "T2025",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#ecdfba",
+      "swatchUrl": "/assets/jolypate/swatches/T2025.png"
+    },
+    {
+      "code": "T2026",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f5d1c6",
+      "swatchUrl": "/assets/jolypate/swatches/T2026.png"
+    },
+    {
+      "code": "T2027",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#ecccb3",
+      "swatchUrl": "/assets/jolypate/swatches/T2027.png"
+    },
+    {
+      "code": "T2028",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f0cea8",
+      "swatchUrl": "/assets/jolypate/swatches/T2028.png"
+    },
+    {
+      "code": "T2029",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#ebd5ab",
+      "swatchUrl": "/assets/jolypate/swatches/T2029.png"
+    },
+    {
+      "code": "T2030",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#e9d6ac",
+      "swatchUrl": "/assets/jolypate/swatches/T2030.png"
+    },
+    {
+      "code": "T2400",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#dfdfd7",
+      "swatchUrl": "/assets/jolypate/swatches/T2400.png"
+    },
+    {
+      "code": "T2403",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#d5d7d1",
+      "swatchUrl": "/assets/jolypate/swatches/T2403.png"
+    },
+    {
+      "code": "T2702",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f5ddc0",
+      "swatchUrl": "/assets/jolypate/swatches/T2702.png"
+    },
+    {
+      "code": "T2703",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f6e3cb",
+      "swatchUrl": "/assets/jolypate/swatches/T2703.png"
+    },
+    {
+      "code": "T2704",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#ece0be",
+      "swatchUrl": "/assets/jolypate/swatches/T2704.png"
+    },
+    {
+      "code": "T2705",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#ebd6b4",
+      "swatchUrl": "/assets/jolypate/swatches/T2705.png"
+    },
+    {
+      "code": "T2709",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#ecdfcc",
+      "swatchUrl": "/assets/jolypate/swatches/T2709.png"
+    },
+    {
+      "code": "T3001",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#bebeb6",
+      "swatchUrl": "/assets/jolypate/swatches/T3001.png"
+    },
+    {
+      "code": "T3004",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#beb6aa",
+      "swatchUrl": "/assets/jolypate/swatches/T3004.png"
+    },
+    {
+      "code": "T3005",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#c0bbae",
+      "swatchUrl": "/assets/jolypate/swatches/T3005.png"
+    },
+    {
+      "code": "T3009",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#bbada1",
+      "swatchUrl": "/assets/jolypate/swatches/T3009.png"
+    },
+    {
+      "code": "T3010",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#b3ae9d",
+      "swatchUrl": "/assets/jolypate/swatches/T3010.png"
+    },
+    {
+      "code": "T3014",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#c5aca4",
+      "swatchUrl": "/assets/jolypate/swatches/T3014.png"
+    },
+    {
+      "code": "T3015",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#b9a395",
+      "swatchUrl": "/assets/jolypate/swatches/T3015.png"
+    },
+    {
+      "code": "T3016",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#b5a58e",
+      "swatchUrl": "/assets/jolypate/swatches/T3016.png"
+    },
+    {
+      "code": "T3017",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#b8ae93",
+      "swatchUrl": "/assets/jolypate/swatches/T3017.png"
+    },
+    {
+      "code": "T3021",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#ceaea0",
+      "swatchUrl": "/assets/jolypate/swatches/T3021.png"
+    },
+    {
+      "code": "T3022",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#bda48c",
+      "swatchUrl": "/assets/jolypate/swatches/T3022.png"
+    },
+    {
+      "code": "T3023",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#c6b38e",
+      "swatchUrl": "/assets/jolypate/swatches/T3023.png"
+    },
+    {
+      "code": "T3024",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#ccbb93",
+      "swatchUrl": "/assets/jolypate/swatches/T3024.png"
+    },
+    {
+      "code": "T3025",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#dacb8b",
+      "swatchUrl": "/assets/jolypate/swatches/T3025.png"
+    },
+    {
+      "code": "T3026",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#e1ac96",
+      "swatchUrl": "/assets/jolypate/swatches/T3026.png"
+    },
+    {
+      "code": "T3027",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#e2ad94",
+      "swatchUrl": "/assets/jolypate/swatches/T3027.png"
+    },
+    {
+      "code": "T3028",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#d6ae81",
+      "swatchUrl": "/assets/jolypate/swatches/T3028.png"
+    },
+    {
+      "code": "T3029",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#d8ac71",
+      "swatchUrl": "/assets/jolypate/swatches/T3029.png"
+    },
+    {
+      "code": "T3030",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#d9c27f",
+      "swatchUrl": "/assets/jolypate/swatches/T3030.png"
+    },
+    {
+      "code": "T3031",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#f3a68a",
+      "swatchUrl": "/assets/jolypate/swatches/T3031.png"
+    },
+    {
+      "code": "T3033",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#e6bd85",
+      "swatchUrl": "/assets/jolypate/swatches/T3033.png"
+    },
+    {
+      "code": "T3034",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#e9c380",
+      "swatchUrl": "/assets/jolypate/swatches/T3034.png"
+    },
+    {
+      "code": "T3037",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#bac79f",
+      "swatchUrl": "/assets/jolypate/swatches/T3037.png"
+    },
+    {
+      "code": "T3400",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#caccc6",
+      "swatchUrl": "/assets/jolypate/swatches/T3400.png"
+    },
+    {
+      "code": "T3401",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#cfccc4",
+      "swatchUrl": "/assets/jolypate/swatches/T3401.png"
+    },
+    {
+      "code": "T3403",
+      "category": "NEUTRAL",
+      "page": 2,
+      "colorHex": "#c4c7c4",
+      "swatchUrl": "/assets/jolypate/swatches/T3403.png"
+    },
+    {
+      "code": "T3410",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#a6a5a0",
+      "swatchUrl": "/assets/jolypate/swatches/T3410.png"
+    },
+    {
+      "code": "T3413",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#a6aba8",
+      "swatchUrl": "/assets/jolypate/swatches/T3413.png"
+    },
+    {
+      "code": "T3518",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#a28763",
+      "swatchUrl": "/assets/jolypate/swatches/T3518.png"
+    },
+    {
+      "code": "T3522",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#b29682",
+      "swatchUrl": "/assets/jolypate/swatches/T3522.png"
+    },
+    {
+      "code": "T3523",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#aa9375",
+      "swatchUrl": "/assets/jolypate/swatches/T3523.png"
+    },
+    {
+      "code": "T3524",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#a8977b",
+      "swatchUrl": "/assets/jolypate/swatches/T3524.png"
+    },
+    {
+      "code": "T3528",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#c19072",
+      "swatchUrl": "/assets/jolypate/swatches/T3528.png"
+    },
+    {
+      "code": "T3534",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#daa75d",
+      "swatchUrl": "/assets/jolypate/swatches/T3534.png"
+    },
+    {
+      "code": "T3701",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f3d5af",
+      "swatchUrl": "/assets/jolypate/swatches/T3701.png"
+    },
+    {
+      "code": "T3703",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#f8d5a1",
+      "swatchUrl": "/assets/jolypate/swatches/T3703.png"
+    },
+    {
+      "code": "T4001",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#8f928c",
+      "swatchUrl": "/assets/jolypate/swatches/T4001.png"
+    },
+    {
+      "code": "T4005",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#8f8c82",
+      "swatchUrl": "/assets/jolypate/swatches/T4005.png"
+    },
+    {
+      "code": "T4009",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#948a82",
+      "swatchUrl": "/assets/jolypate/swatches/T4009.png"
+    },
+    {
+      "code": "T4011",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#969e8d",
+      "swatchUrl": "/assets/jolypate/swatches/T4011.png"
+    },
+    {
+      "code": "T4016",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#9e8c7a",
+      "swatchUrl": "/assets/jolypate/swatches/T4016.png"
+    },
+    {
+      "code": "T4021",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#9a7f77",
+      "swatchUrl": "/assets/jolypate/swatches/T4021.png"
+    },
+    {
+      "code": "T4022",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#a89380",
+      "swatchUrl": "/assets/jolypate/swatches/T4022.png"
+    },
+    {
+      "code": "T4023",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#a28d70",
+      "swatchUrl": "/assets/jolypate/swatches/T4023.png"
+    },
+    {
+      "code": "T4024",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#95886a",
+      "swatchUrl": "/assets/jolypate/swatches/T4024.png"
+    },
+    {
+      "code": "T4027",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#ba857a",
+      "swatchUrl": "/assets/jolypate/swatches/T4027.png"
+    },
+    {
+      "code": "T4028",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#b88b74",
+      "swatchUrl": "/assets/jolypate/swatches/T4028.png"
+    },
+    {
+      "code": "T4029",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#b7895f",
+      "swatchUrl": "/assets/jolypate/swatches/T4029.png"
+    },
+    {
+      "code": "T4030",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#b59965",
+      "swatchUrl": "/assets/jolypate/swatches/T4030.png"
+    },
+    {
+      "code": "T4032",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#d18a63",
+      "swatchUrl": "/assets/jolypate/swatches/T4032.png"
+    },
+    {
+      "code": "T4034",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#c6934e",
+      "swatchUrl": "/assets/jolypate/swatches/T4034.png"
+    },
+    {
+      "code": "T4038",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#80a48d",
+      "swatchUrl": "/assets/jolypate/swatches/T4038.png"
+    },
+    {
+      "code": "T4052",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#939960",
+      "swatchUrl": "/assets/jolypate/swatches/T4052.png"
+    },
+    {
+      "code": "T4400",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#7e7e7f",
+      "swatchUrl": "/assets/jolypate/swatches/T4400.png"
+    },
+    {
+      "code": "T4403",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#898d8c",
+      "swatchUrl": "/assets/jolypate/swatches/T4403.png"
+    },
+    {
+      "code": "T4702",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#e5b35e",
+      "swatchUrl": "/assets/jolypate/swatches/T4702.png"
+    },
+    {
+      "code": "T5001",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#818481",
+      "swatchUrl": "/assets/jolypate/swatches/T5001.png"
+    },
+    {
+      "code": "T5004",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#837d78",
+      "swatchUrl": "/assets/jolypate/swatches/T5004.png"
+    },
+    {
+      "code": "T5005",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#7a7973",
+      "swatchUrl": "/assets/jolypate/swatches/T5005.png"
+    },
+    {
+      "code": "T5008",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#7f7777",
+      "swatchUrl": "/assets/jolypate/swatches/T5008.png"
+    },
+    {
+      "code": "T5009",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#7b7471",
+      "swatchUrl": "/assets/jolypate/swatches/T5009.png"
+    },
+    {
+      "code": "T5014",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#8e7b7a",
+      "swatchUrl": "/assets/jolypate/swatches/T5014.png"
+    },
+    {
+      "code": "T5015",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#7d706c",
+      "swatchUrl": "/assets/jolypate/swatches/T5015.png"
+    },
+    {
+      "code": "T5016",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#7d7267",
+      "swatchUrl": "/assets/jolypate/swatches/T5016.png"
+    },
+    {
+      "code": "T5020",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#8c7777",
+      "swatchUrl": "/assets/jolypate/swatches/T5020.png"
+    },
+    {
+      "code": "T5021",
+      "category": "MISTY",
+      "page": 4,
+      "colorHex": "#897471",
+      "swatchUrl": "/assets/jolypate/swatches/T5021.png"
+    },
+    {
+      "code": "T5022",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#8a7669",
+      "swatchUrl": "/assets/jolypate/swatches/T5022.png"
+    },
+    {
+      "code": "T5026",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#96746f",
+      "swatchUrl": "/assets/jolypate/swatches/T5026.png"
+    },
+    {
+      "code": "T5045",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#919358",
+      "swatchUrl": "/assets/jolypate/swatches/T5045.png"
+    },
+    {
+      "code": "T5400",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#6b6c6f",
+      "swatchUrl": "/assets/jolypate/swatches/T5400.png"
+    },
+    {
+      "code": "T5403",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#707576",
+      "swatchUrl": "/assets/jolypate/swatches/T5403.png"
+    },
+    {
+      "code": "T5404",
+      "category": "NEUTRAL",
+      "page": 3,
+      "colorHex": "#7d7571",
+      "swatchUrl": "/assets/jolypate/swatches/T5404.png"
+    },
+    {
+      "code": "T5451",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#ab5f56",
+      "swatchUrl": "/assets/jolypate/swatches/T5451.png"
+    },
+    {
+      "code": "T5452",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#8d5364",
+      "swatchUrl": "/assets/jolypate/swatches/T5452.png"
+    },
+    {
+      "code": "T5453",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#534d61",
+      "swatchUrl": "/assets/jolypate/swatches/T5453.png"
+    },
+    {
+      "code": "T5454",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#4c7084",
+      "swatchUrl": "/assets/jolypate/swatches/T5454.png"
+    },
+    {
+      "code": "T5455",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#647455",
+      "swatchUrl": "/assets/jolypate/swatches/T5455.png"
+    },
+    {
+      "code": "T5701",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#515d73",
+      "swatchUrl": "/assets/jolypate/swatches/T5701.png"
+    },
+    {
+      "code": "T6001",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#b17470",
+      "swatchUrl": "/assets/jolypate/swatches/T6001.png"
+    },
+    {
+      "code": "T6002",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#f3b990",
+      "swatchUrl": "/assets/jolypate/swatches/T6002.png"
+    },
+    {
+      "code": "T6004",
+      "category": "SUNNY",
+      "page": 5,
+      "colorHex": "#eed16a",
+      "swatchUrl": "/assets/jolypate/swatches/T6004.png"
+    },
+    {
+      "code": "T6011",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#ca7969",
+      "swatchUrl": "/assets/jolypate/swatches/T6011.png"
+    },
+    {
+      "code": "T6706",
+      "category": "TRAD",
+      "page": 6,
+      "colorHex": "#677064",
+      "swatchUrl": "/assets/jolypate/swatches/T6706.png"
+    }
+  ]
+}

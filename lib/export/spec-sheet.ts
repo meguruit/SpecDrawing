@@ -181,27 +181,36 @@ export async function buildSpecSheetWorkbook(args: {
   return { workbook: wb, rows };
 }
 
-export async function downloadSpecSheet(args: {
+const XLSX_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+export type SpecSheetArgs = {
   parts: Part[];
   finishOptions: FinishOption[];
   selections: Record<PartId, string>;
   activeSheet: SheetName;
   activeVariantKey?: string | null;
   partSheetDefaults?: PartSheetDefaults;
-  filename: string;
   optionsRev?: string;
-}): Promise<void> {
+};
+
+/**
+ * Build the spec sheet as a blob, without downloading it.
+ *
+ * Split out from `downloadSpecSheet` so a caller producing several files from
+ * one click can collect every blob first and then hand them to the browser in
+ * sequence — see `lib/export/download.ts` for why the burst matters.
+ */
+export async function buildSpecSheetBlob(args: SpecSheetArgs): Promise<Blob> {
   const { workbook } = await buildSpecSheetWorkbook(args);
   const buf = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buf], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = args.filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  return new Blob([buf], { type: XLSX_MIME });
+}
+
+export async function downloadSpecSheet(
+  args: SpecSheetArgs & { filename: string },
+): Promise<void> {
+  const blob = await buildSpecSheetBlob(args);
+  const { downloadBlob } = await import("./download");
+  downloadBlob(blob, args.filename);
 }
