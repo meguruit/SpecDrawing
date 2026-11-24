@@ -1,3 +1,5 @@
+"use client";
+
 import dynamic from "next/dynamic";
 
 // The workspace touches IndexedDB and Konva, neither of which exists on the

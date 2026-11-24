@@ -50,9 +50,9 @@ npm run build                    # production build
 
 ## Tech stack
 
-- **Next.js 14** (App Router, TypeScript) — single-tier app, no separate
+- **Next.js 15** (App Router, TypeScript) — single-tier app, no separate
   backend (see the change's `design.md` D10 for the rationale).
-- **React 18** + **Tailwind CSS**.
+- **React 19** + **Tailwind CSS**.
 - **Konva 9** + **react-konva** for the canvas. Loaded only on the client via
   `next/dynamic({ ssr: false })`.
 - **Zustand** for canvas state.
